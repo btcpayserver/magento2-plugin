@@ -37,33 +37,29 @@
                 <field id="new_status" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="0"
                        showInStore="0">
                     <label>New Order Status</label>
-                    <source_model>Storefront\BTCPayServer\Model\Config\Source\Order\Status\New</source_model>
+                    <comment>Order was just created. Not paid yet. Choose a status that falls under the "new" state.</comment>
+                    <source_model>Storefront\BTCPayServer\Model\Config\Source\Order\Status\NewStatuses</source_model>
                 </field>
 
                 <field id="payment_paid_status" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="0"
                        showInStore="0">
                     <label>Paid Order Status</label>
-                    <comment>A full payment is underway, but not yet confirmed.</comment>
+                    <comment>A full payment is underway, but not yet confirmed. Choose a status that falls under the "new" state.</comment>
                     <source_model>Storefront\BTCPayServer\Model\Config\Source\Order\Status\NewStatuses</source_model>
                 </field>
 
                 <field id="payment_confirmed_status" translate="label" type="select" sortOrder="61" showInDefault="1" showInWebsite="0"
                        showInStore="0">
-                    <label>Payment Confirmed Order Status</label>
-                    <comment>The payment has 1 or more confirmations on the blockchain, but not the required number to be considered complete.</comment>
+                    <label>Confirmed Order Status</label>
+                    <comment>The payment has 1 or more confirmations on the blockchain, but not the required number to be considered complete. Choose a status that falls under the "new" state.</comment>
                     <source_model>Storefront\BTCPayServer\Model\Config\Source\Order\Status\NewStatuses</source_model>
                 </field>
 
                 <field id="payment_completed_status" translate="label" type="select" sortOrder="62" showInDefault="1" showInWebsite="0"
                        showInStore="0">
-                    <label>Payment Completed Order Status</label>
-                    <comment>The payment has the required number of confirmations on the blockchain and is considered final.</comment>
+                    <label>Completed Order Status</label>
+                    <comment>The payment has the required number of confirmations on the blockchain and is considered final. Choose a status that falls under the "processing" state.</comment>
                     <source_model>Storefront\BTCPayServer\Model\Config\Source\Order\Status\ProcessingStatuses</source_model>
-                </field>
-
-                <field id="ipn_mapping" translate="label" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Status mapping</label>
-                    <source_model>Storefront\BTCPayServer\Model\Config\Source\Ipn</source_model>
                 </field>
 
                 <field id="sort_order" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="1"

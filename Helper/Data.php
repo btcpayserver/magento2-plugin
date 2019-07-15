@@ -1,28 +1,30 @@
 <?php
+/**
+ * Data
+ *
+ * @copyright Copyright © 2019 Storefront bvba. All rights reserved.
+ * @author    info@storefront.be
+ */
 
-namespace Storefront\BTCPayServer\Model;
+namespace Storefront\BTCPayServer\Helper;
 
-use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Framework\App\ObjectManager;
+
+use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Transaction;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\OrderRepository;
 use Magento\Sales\Model\Service\InvoiceService;
-use Magento\Store\Model\ScopeInterface;
 use stdClass;
-use Magento\Framework\App\ResourceConnection;
-use Magento\Sales\Api\Data\OrderInterface;
+use Storefront\BTCPayServer\Model\Invoice;
+use Storefront\BTCPayServer\Model\Item;
 
-class IpnManagement {
+
+class Data {
+
 
     private $invoiceService;
     private $transaction;
     private $orderRepository;
-
-    /**
-     * @var ScopeConfigInterface
-     */
-    private $scopeConfig;
 
     /**
      * @var \Magento\Framework\DB\Adapter\AdapterInterface
@@ -31,43 +33,18 @@ class IpnManagement {
 
 
     /**
-     * IpnManagement constructor.
-     * @param ScopeConfigInterface $scopeConfig
      * @param OrderRepository $orderRepository
      * @param InvoiceService $invoiceService
      * @param Transaction $transaction
+     * @param ResourceConnection $resourceConnection
      */
-    public function __construct(ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, InvoiceService $invoiceService, Transaction $transaction, ResourceConnection $resourceConnection) {
-        $this->scopeConfig = $scopeConfig;
-        // TODO can we use the orderRepository ? Does not have loadByIncrementId() though...
+    public function __construct(OrderRepository $orderRepository, InvoiceService $invoiceService, Transaction $transaction, ResourceConnection $resourceConnection) {
         $this->orderRepository = $orderRepository;
         $this->invoiceService = $invoiceService;
         $this->transaction = $transaction;
         $this->db = $resourceConnection->getConnection();
     }
 
-    public function getStoreConfig($path, $storeId) {
-        $_val = $this->scopeConfig->getValue($path, ScopeInterface::SCOPE_STORE, $storeId);
-        return $_val;
-
-    }
-
-
-
-    public function postIpn() {
-        $postedString = file_get_contents('php://input');
-        if (!$postedString) {
-            throw new \RuntimeException('No data posted. Cannot process BTCPay Server IPN.');
-        }
-        $data = json_decode($postedString, true);
-
-        $btcpayInvoiceId = $data['data']['id'];
-
-        // Only use the "id" field from the POSTed data and discard the rest. The posted data can be malicious.
-        unset($data);
-
-        $this->updateInvoice($btcpayInvoiceId);
-    }
 
     /**
      * @param $transactionId
@@ -75,8 +52,8 @@ class IpnManagement {
      * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function updateInvoice($transactionId) {
-        $table_name = $this->db->getTableName('btcpayserver_transactions');
-        $select = $this->db->select()->from($table_name)->where('transaction_id = ?', $transactionId)->limit(1);
+        $tableName = $this->db->getTableName('btcpayserver_transactions');
+        $select = $this->db->select()->from($tableName)->where('transaction_id = ?', $transactionId)->limit(1);
 
         $result = $this->db->fetchRow($select);
         $row = $result->fetch();
@@ -106,7 +83,7 @@ class IpnManagement {
 
 
             $where = $this->db->quoteInto('order_id = ?', $orderId) . ' and ' . $this->db->quoteInto('transaction_id = ?', $transactionId);
-            $rowsChanged = $this->db->update($table_name, ['transaction_status' => $invoice_status], $where);
+            $rowsChanged = $this->db->update($tableName, ['transaction_status' => $invoice_status], $where);
 
 
             // TODO fill $event in some other way...
@@ -198,6 +175,4 @@ class IpnManagement {
             return null;
         }
     }
-
-
 }
