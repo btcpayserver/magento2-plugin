@@ -18,7 +18,7 @@ class InstallSchema implements InstallSchemaInterface {
             'nullable' => false,
             'primary' => true,
             'unsigned' => true
-        ], 'ID')->addColumn('order_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Order ID')->addColumn('transaction_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction ID')->addColumn('transaction_status', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction Status')->addColumn('date_added', Table::TYPE_TIMESTAMP, 255, [
+        ], 'ID')->addColumn('order_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Order ID')->addColumn('transaction_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction ID')->addColumn('transaction_status', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction Status')->addColumn('created_at', Table::TYPE_TIMESTAMP, 255, [
             'nullable' => false,
             'default' => Table::TIMESTAMP_INIT_UPDATE
         ], 'Date Added');
@@ -30,7 +30,7 @@ class InstallSchema implements InstallSchemaInterface {
             'nullable' => false,
             'primary' => true,
             'unsigned' => true
-        ], 'ID')->addColumn('order_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Order ID')->addColumn('transaction_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction ID')->addColumn('transaction_status', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction Status')->addColumn('date_added', Table::TYPE_TIMESTAMP, 255, [
+        ], 'ID')->addColumn('order_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Order ID')->addColumn('transaction_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction ID')->addColumn('transaction_status', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction Status')->addColumn('transaction_data', Table::TYPE_TEXT, 4096, ['nullable' => false], 'Transaction Data')->addColumn('created_at', Table::TYPE_TIMESTAMP, 255, [
             'nullable' => false,
             'default' => Table::TIMESTAMP_INIT_UPDATE
         ], 'Date Added');
