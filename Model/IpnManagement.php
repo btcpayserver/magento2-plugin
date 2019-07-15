@@ -4,10 +4,7 @@ namespace Storefront\BTCPayServer\Model;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\ObjectManager;
-use Magento\Framework\App\ResponseFactory;
 use Magento\Framework\DB\Transaction;
-use Magento\Framework\Module\ModuleListInterface;
-use Magento\Framework\UrlInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\OrderRepository;
 use Magento\Sales\Model\Service\InvoiceService;
@@ -21,44 +18,32 @@ class IpnManagement {
     private $invoiceService;
     private $transaction;
     private $orderRepository;
-    /**
-     * @var ModuleListInterface
-     */
-    private $moduleList;
+
     /**
      * @var ScopeConfigInterface
      */
     private $scopeConfig;
-    /**
-     * @var ResponseFactory
-     */
-    private $responseFactory;
-    /**
-     * @var UrlInterface
-     */
-    private $url;
 
+    /**
+     * @var \Magento\Framework\DB\Adapter\AdapterInterface
+     */
+    private $db;
 
 
     /**
      * IpnManagement constructor.
      * @param ScopeConfigInterface $scopeConfig
-     * @param ResponseFactory $responseFactory
-     * @param UrlInterface $url
-     * @param ModuleListInterface $moduleList
      * @param OrderRepository $orderRepository
      * @param InvoiceService $invoiceService
      * @param Transaction $transaction
      */
-    public function __construct(ScopeConfigInterface $scopeConfig, ResponseFactory $responseFactory, UrlInterface $url, ModuleListInterface $moduleList, OrderRepository $orderRepository, InvoiceService $invoiceService, Transaction $transaction) {
-        $this->moduleList = $moduleList;
-
+    public function __construct(ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, InvoiceService $invoiceService, Transaction $transaction, ResourceConnection $resourceConnection) {
         $this->scopeConfig = $scopeConfig;
-        $this->responseFactory = $responseFactory;
-        $this->url = $url;
+        // TODO can we use the orderRepository ? Does not have loadByIncrementId() though...
         $this->orderRepository = $orderRepository;
         $this->invoiceService = $invoiceService;
         $this->transaction = $transaction;
+        $this->db = $resourceConnection->getConnection();
     }
 
     public function getStoreConfig($path, $storeId) {
@@ -67,48 +52,38 @@ class IpnManagement {
 
     }
 
-    public function getOrder($_order_id) {
-        // TODO remove use of ObjectManager
-        $objectManager = ObjectManager::getInstance();
 
-        // TODO should we load by increment?!? Loading by ID is better as increment is not unique! However, this will be less user friendly for the merchant as he cannot see the order ID in Magento and BTCPay Server
-
-        $order = $objectManager->create(OrderInterface::class)->loadByIncrementId($_order_id);
-        return $order;
-
-    }
 
     public function postIpn() {
-        // TODO remove use of ObjectManager
-        $objectManager = ObjectManager::getInstance(); // Instance of object manager
-        $resource = $objectManager->get(ResourceConnection::class);
-        $connection = $resource->getConnection();
-        $table_name = $resource->getTableName('btcpayserver_transactions');
-
         $postedString = file_get_contents('php://input');
+        if (!$postedString) {
+            throw new \RuntimeException('No data posted. Cannot process BTCPay Server IPN.');
+        }
         $data = json_decode($postedString, true);
 
         $btcpayInvoiceId = $data['data']['id'];
-        $orderId = $data['data']['orderId'];
 
-        $order = $this->getOrder($orderId);
-
-        // Only use "id" and "orderId" fields from the POSTed data and discard the rest. The posted data can be malicious.
+        // Only use the "id" field from the POSTed data and discard the rest. The posted data can be malicious.
         unset($data);
 
-        if(!$order || !$order->getId()){
-            return;
-        }
+        $this->updateInvoice($btcpayInvoiceId);
+    }
 
-        // TODO instead of just updating the transation, let's record all IPN requests! Also create an Admin grid so we can look at them.
+    /**
+     * @param $transactionId
+     * @return \Magento\Sales\Model\Order | null
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    public function updateInvoice($transactionId) {
+        $table_name = $this->db->getTableName('btcpayserver_transactions');
+        $select = $this->db->select()->from($table_name)->where('transaction_id = ?', $transactionId)->limit(1);
 
-        // TODO remove ugly SQL
-        $sql = "SELECT * FROM $table_name WHERE order_id = '$orderId' and transaction_id = '$btcpayInvoiceId' ";
-        $result = $connection->query($sql);
+        $result = $this->db->fetchRow($select);
         $row = $result->fetch();
         if ($row) {
 
-            // Validate
+            $orderId = $row['order_id'];
+            $order = $this->orderRepository->get($orderId);
 
             $storeId = $order->getStoreId();
 
@@ -116,20 +91,22 @@ class IpnManagement {
             $host = $this->getStoreConfig('payment/btcpayserver/host', $storeId);
 
             $params = new stdClass();
-
-            $params->invoiceID = $btcpayInvoiceId;
+            $params->invoiceID = $transactionId;
             //$params->extension_version = $this->getExtensionVersion();
             $item = new Item($token, $host, $params);
             $invoice = new Invoice($item);
 
-            $orderStatus = json_decode($invoice->checkInvoiceStatus($btcpayInvoiceId), true);
+            $orderStatus = json_decode($invoice->checkInvoiceStatus($transactionId), true);
+
+            if ($orderId !== $orderStatus['orderID']) {
+                throw new \RuntimeException('The supplied order ID ' . $orderId . ' does not match transaction ID ' . $transactionId . '. Cannot process BTCPay Server IPN.');
+            }
+
             $invoice_status = $orderStatus['data']['status'] ?? false;
 
-            // TODO fix SQL injection
-            $update_sql = "UPDATE $table_name SET transaction_status = '$invoice_status' WHERE order_id = '$orderid' AND transaction_id = '$btcpayInvoiceId'";
 
-            $update_result = $connection->query($update_sql);
-
+            $where = $this->db->quoteInto('order_id = ?', $orderId) . ' and ' . $this->db->quoteInto('transaction_id = ?', $transactionId);
+            $rowsChanged = $this->db->update($table_name, ['transaction_status' => $invoice_status], $where);
 
 
             // TODO fill $event in some other way...
@@ -156,7 +133,6 @@ class IpnManagement {
 
                         $confirmedStatus = $this->getStoreConfig('payment/btcpayserver/payment_confirmed_status', $storeId);
                         $order->addStatusHistoryComment('Payment confirmed, but not completed yet', $confirmedStatus);
-
 
                         $order->save();
                         return true;
@@ -215,6 +191,11 @@ class IpnManagement {
                 // TODO what about partial refunds, partial payments and overpayment?
             }
 
+            return $order;
+
+        } else {
+            // No transaction round found
+            return null;
         }
     }
 

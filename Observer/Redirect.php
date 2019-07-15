@@ -81,9 +81,9 @@ class Redirect implements ObserverInterface {
         $this->actionFlag->set('', Action::FLAG_NO_DISPATCH, true);
 
         $order_ids = $observer->getEvent()->getOrderIds();
-        $order_id = $order_ids[0];
-        $order = $this->getOrder($order_id);
-        $order_id_long = $order->getIncrementId();
+        $orderId = $order_ids[0];
+        $order = $this->getOrder($orderId);
+        $orderIncrementId = $order->getIncrementId();
 
         if ($order->getPayment()->getMethodInstance()->getCode() === 'btcpayserver') {
             // Force status
@@ -113,11 +113,10 @@ class Redirect implements ObserverInterface {
                 $buyerInfo->email = $order->getCustomerEmail();
             }
             $params->buyer = $buyerInfo;
-
-            $params->orderId = trim($order_id_long);
+            $params->orderId = trim($orderIncrementId);
 
             if ($this->customerSession->isLoggedIn()) {
-                $params->redirectURL = $this->url->getUrl() . 'sales/order/view/', ['order_id' => $order_id]);
+                $params->redirectURL = $this->url->getUrl('sales/order/view/', ['order_id' => $orderId]);
 
             } else {
                 // Send the guest back to the order/returns page to lookup
@@ -125,7 +124,7 @@ class Redirect implements ObserverInterface {
 
                 // TODO set cookies the Magento way
                 $duration = 30 * 24 * 60 * 60;
-                setcookie('oar_order_id', $order_id_long, time() + $duration, '/');
+                setcookie('oar_order_id', $orderIncrementId, time() + $duration, '/');
                 setcookie('oar_billing_lastname', $order->getBillingAddress()->getLastName(), time() + $duration, '/');
                 setcookie('oar_email', $order->getCustomerEmail(), time() + $duration, '/');
             }
@@ -136,7 +135,7 @@ class Redirect implements ObserverInterface {
             $params->acceptanceWindow = 1200000;
 
 
-            $params->cartFix = $this->url->getUrl('btcpayserver/cart/restore', ['order_id' => $order_id]);
+            $params->cartFix = $this->url->getUrl('btcpayserver/cart/restore', ['order_id' => $orderId]);
             $item = new Item($token, $host, $params);
             $invoice = new Invoice($item);
 
@@ -145,12 +144,20 @@ class Redirect implements ObserverInterface {
             $invoiceData = json_decode($invoice->getInvoiceData(), true);
 
             // now we have to append the invoice transaction id for the callback verification
-            $invoiceID = $invoiceData['data']['id'] ?? false;
+            $invoiceID = $invoiceData['data']['id'] ?? null;
 
-            $table_name = $this->db->getTableName('btcpayserver_transactions');
-            $this->db->insert($table_name, ['order_id' => $order_id_long, 'transaction_id' => $invoiceID, 'transaction_status' => 'new']);
+            if (!$invoiceID) {
+                $table_name = $this->db->getTableName('btcpayserver_transactions');
+                $this->db->insert($table_name, [
+                    'order_id' => $orderId,
+                    'transaction_id' => $invoiceID,
+                    'transaction_status' => 'new'
+                ]);
 
-            $this->redirect->redirect($this->response, $invoice->getInvoiceURL());
+                $this->redirect->redirect($this->response, $invoice->getInvoiceURL());
+            } else {
+                throw new \RuntimeException('Could not create the transaction in BTCPay Server');
+            }
         }
     }
 

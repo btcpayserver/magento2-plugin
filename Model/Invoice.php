@@ -54,7 +54,7 @@ class Invoice {
     }
 
     public function updateBuyersEmail($invoice_result, $buyers_email) {
-        $invoice_result = json_decode($invoice_result);
+        $invoice_result = json_decode($invoice_result, false);
 
         $update_fields = new stdClass();
         $update_fields->token = $this->item->item_params->token;
