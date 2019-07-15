@@ -2,23 +2,17 @@
 
 namespace Storefront\BTCPayServer\Observer;
 
-use Magento\Checkout\Model\Session;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\ActionFlag;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\ObjectManager;
 use Magento\Framework\App\Response\RedirectInterface;
-use Magento\Framework\App\ResponseFactory;
 use Magento\Framework\App\ResponseInterface;
-use Magento\Framework\Controller\ResultFactory;
-use Magento\Framework\DB\Transaction;
+use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use Magento\Framework\Module\ModuleListInterface;
-use Magento\Framework\Registry;
 use Magento\Framework\UrlInterface;
 use Magento\Sales\Model\OrderRepository;
-use Magento\Sales\Model\Service\InvoiceService;
 use Magento\Store\Model\ScopeInterface;
 use stdClass;
 use Magento\Sales\Api\Data\OrderInterface;
@@ -26,62 +20,65 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\ResourceConnection;
 use Storefront\BTCPayServer\Model\Invoice;
 use Storefront\BTCPayServer\Model\Item;
-
+use Magento\Customer\Model\Session as CustomerSession;
 
 class Redirect implements ObserverInterface {
-    protected $checkoutSession;
-    protected $resultRedirect;
-    protected $url;
-    protected $coreRegistry;
-    protected $_redirect;
-    protected $_response;
-    public $orderRepository;
-    protected $_invoiceService;
-    protected $_transaction;
 
-    public function __construct(ScopeConfigInterface $scopeConfig, ResponseFactory $responseFactory, UrlInterface $url, ModuleListInterface $moduleList, Session $checkoutSession, ResultFactory $result, Registry $registry, ActionFlag $actionFlag, RedirectInterface $redirect, ResponseInterface $response, OrderRepository $orderRepository, InvoiceService $invoiceService, Transaction $transaction) {
-        $this->coreRegistry = $registry;
-        $this->_moduleList = $moduleList;
-        $this->_scopeConfig = $scopeConfig;
-        $this->_responseFactory = $responseFactory;
-        $this->_url = $url;
-        $this->checkoutSession = $checkoutSession;
-        $this->resultRedirect = $result;
-        $this->_actionFlag = $actionFlag;
-        $this->_redirect = $redirect;
-        $this->_response = $response;
+    private $url;
+    private $redirect;
+    private $response;
+    private $orderRepository;
+    /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
+    /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
+    /**
+     * @var CustomerSession
+     */
+    private $customerSession;
+    /**
+     * @var AdapterInterface
+     */
+    private $db;
+
+    public function __construct(ScopeConfigInterface $scopeConfig, ResourceConnection $resource, UrlInterface $url, StoreManagerInterface $storeManager, ActionFlag $actionFlag, RedirectInterface $redirect, ResponseInterface $response, OrderRepository $orderRepository, CustomerSession $customerSession) {
+
+        $this->scopeConfig = $scopeConfig;
+        $this->url = $url;
+        $this->actionFlag = $actionFlag;
+        $this->redirect = $redirect;
+        $this->response = $response;
         $this->orderRepository = $orderRepository;
-        $this->_invoiceService = $invoiceService;
-        $this->_transaction = $transaction;
+        $this->storeManager = $storeManager;
+        $this->customerSession = $customerSession;
+        $this->db = $resource->getConnection();
     }
 
-    public function getStoreConfig($path) {
-        $_val = $this->_scopeConfig->getValue($path, ScopeInterface::SCOPE_STORE);
-        return $_val;
-
+    public function getStoreConfig($path, $storeId) {
+        $r = $this->scopeConfig->getValue($path, ScopeInterface::SCOPE_STORE, $storeId);
+        return $r;
     }
 
-    public function getOrder($_order_id) {
+    public function getOrder($orderId) {
         // TODO remove use of ObjectManager
+        // TODO is this the order ID or the increment id ?
         $objectManager = ObjectManager::getInstance();
-        $order = $objectManager->create(OrderInterface::class)->load($_order_id);
+        $order = $objectManager->create(OrderInterface::class)->load($orderId);
         return $order;
 
     }
 
     public function getBaseUrl() {
-        // TODO remove use of ObjectManager
-        $objectManager = ObjectManager::getInstance();
-        $storeManager = $objectManager->get(StoreManagerInterface::class);
-        return $storeManager->getStore()->getBaseUrl();
+        return $this->storeManager->getStore()->getBaseUrl();
 
     }
 
     public function execute(Observer $observer) {
-        $this->_actionFlag->set('', Action::FLAG_NO_DISPATCH, true);
-
-        // TODO remove objectmanager
-        $objectManager = ObjectManager::getInstance();
+        $this->actionFlag->set('', Action::FLAG_NO_DISPATCH, true);
 
         $order_ids = $observer->getEvent()->getOrderIds();
         $order_id = $order_ids[0];
@@ -95,8 +92,8 @@ class Redirect implements ObserverInterface {
 
             $order->save();
 
-            $token = $this->getStoreConfig('payment/btcpayserver/token');
-            $host = $this->getStoreConfig('payment/btcpayserver/host');
+            $token = $this->getStoreConfig('payment/btcpayserver/token', $order->getStoreId());
+            $host = $this->getStoreConfig('payment/btcpayserver/host', $order->getStoreId());
 
 
             //create an item, should be passed as an object'
@@ -106,12 +103,10 @@ class Redirect implements ObserverInterface {
             $params->currency = $order['base_currency_code']; //set as needed
 
 
-            $customerSession = $objectManager->create(\Magento\Customer\Model\Session::class);
-
             $buyerInfo = new stdClass();
-            if ($customerSession->isLoggedIn()) {
-                $buyerInfo->name = $customerSession->getCustomer()->getName();
-                $buyerInfo->email = $customerSession->getCustomer()->getEmail();
+            if ($this->customerSession->isLoggedIn()) {
+                $buyerInfo->name = $this->customerSession->getCustomer()->getName();
+                $buyerInfo->email = $this->customerSession->getCustomer()->getEmail();
 
             } else {
                 $buyerInfo->name = $order->getBillingAddress()->getFirstName() . ' ' . $order->getBillingAddress()->getLastName();
@@ -121,13 +116,12 @@ class Redirect implements ObserverInterface {
 
             $params->orderId = trim($order_id_long);
 
-            if ($customerSession->isLoggedIn()) {
-                // TODO build URL the Magento way
-                $params->redirectURL = $this->getBaseUrl() . 'sales/order/view/order_id/' . $order_id . '/';
+            if ($this->customerSession->isLoggedIn()) {
+                $params->redirectURL = $this->url->getUrl() . 'sales/order/view/', ['order_id' => $order_id]);
 
             } else {
                 // Send the guest back to the order/returns page to lookup
-                $params->redirectURL = $this->getBaseUrl() . 'sales/guest/form';
+                $params->redirectURL = $this->url->getUrl('sales/guest/form');
 
                 // TODO set cookies the Magento way
                 $duration = 30 * 24 * 60 * 60;
@@ -136,13 +130,13 @@ class Redirect implements ObserverInterface {
                 setcookie('oar_email', $order->getCustomerEmail(), time() + $duration, '/');
             }
 
-            // TODO build URL the Magento way
+            // TODO build URL to the REST API the Magento way
             $params->notificationURL = $this->getBaseUrl() . 'rest/V1/btcpayserver/ipn';
             $params->extendedNotifications = true;
             $params->acceptanceWindow = 1200000;
 
-            // TODO build URL the Magento way
-            $params->cartFix = $this->getBaseUrl() . 'btcpayserver/cart/restore?order_id=' . $order_id;
+
+            $params->cartFix = $this->url->getUrl('btcpayserver/cart/restore', ['order_id' => $order_id]);
             $item = new Item($token, $host, $params);
             $invoice = new Invoice($item);
 
@@ -153,17 +147,10 @@ class Redirect implements ObserverInterface {
             // now we have to append the invoice transaction id for the callback verification
             $invoiceID = $invoiceData['data']['id'] ?? false;
 
-            // TODO insert into the database the Magento way
-            $resource = $objectManager->get(ResourceConnection::class);
-            $connection = $resource->getConnection();
-            $table_name = $resource->getTableName('btcpayserver_transactions');
+            $table_name = $this->db->getTableName('btcpayserver_transactions');
+            $this->db->insert($table_name, ['order_id' => $order_id_long, 'transaction_id' => $invoiceID, 'transaction_status' => 'new']);
 
-            // TODO unsafe due to SQL injection
-            $sql = "INSERT INTO $table_name (order_id,transaction_id,transaction_status) VALUES ('" . $order_id_long . "','" . $invoiceID . "','new')";
-
-            $connection->query($sql);
-
-            $this->_redirect->redirect($this->_response, $invoice->getInvoiceURL());
+            $this->redirect->redirect($this->response, $invoice->getInvoiceURL());
         }
     }
 

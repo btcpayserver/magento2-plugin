@@ -2,9 +2,6 @@
 
 namespace Storefront\BTCPayServer\Model;
 
-use Storefront\BTCPayServer\Api\IpnManagementInterface;
-use Storefront\BTCPayServer\BitPayLib\_Invoice;
-use Storefront\BTCPayServer\BitPayLib\_Item;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\ObjectManager;
 use Magento\Framework\App\ResponseFactory;
@@ -41,6 +38,8 @@ class IpnManagement {
      */
     private $url;
 
+
+
     /**
      * IpnManagement constructor.
      * @param ScopeConfigInterface $scopeConfig
@@ -62,8 +61,8 @@ class IpnManagement {
         $this->transaction = $transaction;
     }
 
-    public function getStoreConfig($path) {
-        $_val = $this->_scopeConfig->getValue($path, ScopeInterface::SCOPE_STORE);
+    public function getStoreConfig($path, $storeId) {
+        $_val = $this->scopeConfig->getValue($path, ScopeInterface::SCOPE_STORE, $storeId);
         return $_val;
 
     }
@@ -72,9 +71,9 @@ class IpnManagement {
         // TODO remove use of ObjectManager
         $objectManager = ObjectManager::getInstance();
 
-        $this->orderRepository->
-        $order = $objectManager->create(OrderInterface::class)->loadByIncrementId($_order_id);
+        // TODO should we load by increment?!? Loading by ID is better as increment is not unique! However, this will be less user friendly for the merchant as he cannot see the order ID in Magento and BTCPay Server
 
+        $order = $objectManager->create(OrderInterface::class)->loadByIncrementId($_order_id);
         return $order;
 
     }
@@ -87,51 +86,61 @@ class IpnManagement {
         $table_name = $resource->getTableName('btcpayserver_transactions');
 
         $postedString = file_get_contents('php://input');
-        $all_data = json_decode($postedString, true);
-        $data = $all_data['data'];
-        $event = $all_data['event'];
+        $data = json_decode($postedString, true);
 
-        $orderid = $data['orderId'];
-        $order_status = $data['status'];
-        $order_invoice = $data['id'];
+        $btcpayInvoiceId = $data['data']['id'];
+        $orderId = $data['data']['orderId'];
+
+        $order = $this->getOrder($orderId);
+
+        // Only use "id" and "orderId" fields from the POSTed data and discard the rest. The posted data can be malicious.
+        unset($data);
+
+        if(!$order || !$order->getId()){
+            return;
+        }
 
         // TODO instead of just updating the transation, let's record all IPN requests! Also create an Admin grid so we can look at them.
 
         // TODO remove ugly SQL
-        $sql = "SELECT * FROM $table_name WHERE order_id = '$orderid' AND transaction_id = '$order_invoice' ";
+        $sql = "SELECT * FROM $table_name WHERE order_id = '$orderId' and transaction_id = '$btcpayInvoiceId' ";
         $result = $connection->query($sql);
         $row = $result->fetch();
         if ($row) {
 
             // Validate
-            $token = $this->getStoreConfig('payment/btcpayserver/token');
-            $host = $this->getStoreConfig('payment/btcpayserver/host');
 
+            $storeId = $order->getStoreId();
+
+            $token = $this->getStoreConfig('payment/btcpayserver/token', $storeId);
+            $host = $this->getStoreConfig('payment/btcpayserver/host', $storeId);
 
             $params = new stdClass();
 
-            $params->invoiceID = $order_invoice;
+            $params->invoiceID = $btcpayInvoiceId;
             //$params->extension_version = $this->getExtensionVersion();
             $item = new Item($token, $host, $params);
             $invoice = new Invoice($item);
 
-            $orderStatus = json_decode($invoice->checkInvoiceStatus($order_invoice), true);
+            $orderStatus = json_decode($invoice->checkInvoiceStatus($btcpayInvoiceId), true);
             $invoice_status = $orderStatus['data']['status'] ?? false;
 
             // TODO fix SQL injection
-            $update_sql = "UPDATE $table_name SET transaction_status = '$invoice_status' WHERE order_id = '$orderid' AND transaction_id = '$order_invoice'";
+            $update_sql = "UPDATE $table_name SET transaction_status = '$invoice_status' WHERE order_id = '$orderid' AND transaction_id = '$btcpayInvoiceId'";
 
             $update_result = $connection->query($update_sql);
 
-            $order = $this->getOrder($orderid);
-            // now update the order
+
+
+            // TODO fill $event in some other way...
+            $event = [];
             switch ($event['name']) {
 
                 case 'invoice_paidInFull':
 
                     if ($invoice_status === 'paid') {
                         // 1) Payments have been made to the invoice for the requested amount but the transaction has not been confirmed yet
-                        $paidNotConfirmedStatus = $this->getStoreConfig('payment/btcpayserver/payment_paid_status');
+                        $paidNotConfirmedStatus = $this->getStoreConfig('payment/btcpayserver/payment_paid_status', $storeId);
 
                         $order->addStatusHistoryComment('Payment underway, but not confirmed yet', $paidNotConfirmedStatus);
                         $order->save();
@@ -145,7 +154,7 @@ class IpnManagement {
 
                         // TODO maybe add the transation ID in the comment or something like that?
 
-                        $confirmedStatus = $this->getStoreConfig('payment/btcpayserver/payment_confirmed_status');
+                        $confirmedStatus = $this->getStoreConfig('payment/btcpayserver/payment_confirmed_status', $storeId);
                         $order->addStatusHistoryComment('Payment confirmed, but not completed yet', $confirmedStatus);
 
 
@@ -160,15 +169,15 @@ class IpnManagement {
                         // 3) Paid, confirmed and settled. Final!
                         // TODO maybe add the transation ID in the comment or something like that?
 
-                        $completedStatus = $this->getStoreConfig('payment/btcpayserver/payment_completed_status');
+                        $completedStatus = $this->getStoreConfig('payment/btcpayserver/payment_completed_status', $storeId);
                         $order->addStatusHistoryComment('Payment completed', $completedStatus);
-                        $invoice = $this->_invoiceService->prepareInvoice($order);
+                        $invoice = $this->invoiceService->prepareInvoice($order);
                         $invoice->register();
 
                         // TODO we really need to save the invoice first as we are saving it again in this transaction? Leaving it out for now.
                         //$invoice->save();
 
-                        $transactionSave = $this->_transaction->addObject($invoice)->addObject($invoice->getOrder());
+                        $transactionSave = $this->transaction->addObject($invoice)->addObject($invoice->getOrder());
                         $transactionSave->save();
 
                         return true;
