@@ -21,19 +21,45 @@ use Magento\Sales\Api\Data\OrderInterface;
 
 class IpnManagement {
 
-    protected $_invoiceService;
-    protected $_transaction;
-    public $orderRepository;
+    private $invoiceService;
+    private $transaction;
+    private $orderRepository;
+    /**
+     * @var ModuleListInterface
+     */
+    private $moduleList;
+    /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
+    /**
+     * @var ResponseFactory
+     */
+    private $responseFactory;
+    /**
+     * @var UrlInterface
+     */
+    private $url;
 
+    /**
+     * IpnManagement constructor.
+     * @param ScopeConfigInterface $scopeConfig
+     * @param ResponseFactory $responseFactory
+     * @param UrlInterface $url
+     * @param ModuleListInterface $moduleList
+     * @param OrderRepository $orderRepository
+     * @param InvoiceService $invoiceService
+     * @param Transaction $transaction
+     */
     public function __construct(ScopeConfigInterface $scopeConfig, ResponseFactory $responseFactory, UrlInterface $url, ModuleListInterface $moduleList, OrderRepository $orderRepository, InvoiceService $invoiceService, Transaction $transaction) {
-        $this->_moduleList = $moduleList;
+        $this->moduleList = $moduleList;
 
-        $this->_scopeConfig = $scopeConfig;
-        $this->_responseFactory = $responseFactory;
-        $this->_url = $url;
+        $this->scopeConfig = $scopeConfig;
+        $this->responseFactory = $responseFactory;
+        $this->url = $url;
         $this->orderRepository = $orderRepository;
-        $this->_invoiceService = $invoiceService;
-        $this->_transaction = $transaction;
+        $this->invoiceService = $invoiceService;
+        $this->transaction = $transaction;
     }
 
     public function getStoreConfig($path) {
@@ -45,6 +71,8 @@ class IpnManagement {
     public function getOrder($_order_id) {
         // TODO remove use of ObjectManager
         $objectManager = ObjectManager::getInstance();
+
+        $this->orderRepository->
         $order = $objectManager->create(OrderInterface::class)->loadByIncrementId($_order_id);
 
         return $order;
