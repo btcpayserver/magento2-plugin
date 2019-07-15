@@ -1,0 +1,25 @@
+{
+  "name": "storefront/module-btcpayserver",
+  "description": "",
+  "type": "magento2-module",
+  "license": "mit",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "email": "wouter.samaey@storefront.be",
+      "name": "Wouter Samaey"
+    }
+  ],
+  "minimum-stability": "dev",
+  "require": {
+    "php": "^7.1.0"
+  },
+  "autoload": {
+    "files": [
+      "registration.php"
+    ],
+    "psr-4": {
+      "Storefront\\BTCPayServer\\": ""
+    }
+  }
+}
