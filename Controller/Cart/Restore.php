@@ -25,7 +25,7 @@ class Restore extends Action {
      * @param LoggerInterface $logger
      * @param PageFactory $resultPageFactory
      */
-    public function __construct(Context $context, LoggerInterface $logger, PageFactory $resultPageFactory#\Magento\Framework\App\Response\RedirectInterface $redirect
+    public function __construct(Context $context, LoggerInterface $logger, PageFactory $resultPageFactory
     ) {
         $this->resultPageFactory = $resultPageFactory;
         $this->logger = $logger;
@@ -54,7 +54,6 @@ class Restore extends Action {
                 $options = $item->getProductOptions();
                 $product = $item->getProduct();
                 if (isset($options['info_buyRequest'])) {
-                    #update the quantity
                     $options['info_buyRequest']['qty'] = $item['qty_ordered'];
 
                     $cart->addProduct($product, $options['info_buyRequest']);

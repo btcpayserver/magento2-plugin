@@ -89,7 +89,7 @@ class Redirect implements ObserverInterface {
         $order_id_long = $order->getIncrementId();
 
         if ($order->getPayment()->getMethodInstance()->getCode() === 'btcpayserver') {
-            #set to pending and override magento coding
+            // Force status
             $order->setState('new', true);
             $order->setStatus('pending', true);
 
@@ -105,7 +105,7 @@ class Redirect implements ObserverInterface {
             $params->price = $order['base_grand_total'];
             $params->currency = $order['base_currency_code']; //set as needed
 
-            #buyer email
+
             $customerSession = $objectManager->create(\Magento\Customer\Model\Session::class);
 
             $buyerInfo = new stdClass();
@@ -121,8 +121,6 @@ class Redirect implements ObserverInterface {
 
             $params->orderId = trim($order_id_long);
 
-            #ipn
-
             if ($customerSession->isLoggedIn()) {
                 // TODO build URL the Magento way
                 $params->redirectURL = $this->getBaseUrl() . 'sales/order/view/order_id/' . $order_id . '/';
@@ -133,10 +131,9 @@ class Redirect implements ObserverInterface {
 
                 // TODO set cookies the Magento way
                 $duration = 30 * 24 * 60 * 60;
-                setcookie('btcpayserver_order_id', $order_id_long, time() + $duration, '/');
-                setcookie('btcpayserver_billing_lastname', $order->getBillingAddress()->getLastName(), time() + $duration, '/');
-                setcookie('btcpayserver_email', $order->getCustomerEmail(), time() + $duration, '/');
-
+                setcookie('oar_order_id', $order_id_long, time() + $duration, '/');
+                setcookie('oar_billing_lastname', $order->getBillingAddress()->getLastName(), time() + $duration, '/');
+                setcookie('oar_email', $order->getCustomerEmail(), time() + $duration, '/');
             }
 
             // TODO build URL the Magento way

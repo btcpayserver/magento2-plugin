@@ -34,30 +34,51 @@
                     <label>Token</label>
                 </field>
 
-                <field id="order_status" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1"
+                <field id="new_status" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="0"
                        showInStore="0">
                     <label>New Order Status</label>
-                    <source_model>Storefront\BTCPayServer\Model\Config\Source\Order\Status\Pendingpayment</source_model>
+                    <source_model>Storefront\BTCPayServer\Model\Config\Source\Order\Status\New</source_model>
                 </field>
 
-                <field id="ipn_mapping" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="payment_paid_status" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="0"
+                       showInStore="0">
+                    <label>Paid Order Status</label>
+                    <comment>A full payment is underway, but not yet confirmed.</comment>
+                    <source_model>Storefront\BTCPayServer\Model\Config\Source\Order\Status\NewStatuses</source_model>
+                </field>
+
+                <field id="payment_confirmed_status" translate="label" type="select" sortOrder="61" showInDefault="1" showInWebsite="0"
+                       showInStore="0">
+                    <label>Payment Confirmed Order Status</label>
+                    <comment>The payment has 1 or more confirmations on the blockchain, but not the required number to be considered complete.</comment>
+                    <source_model>Storefront\BTCPayServer\Model\Config\Source\Order\Status\NewStatuses</source_model>
+                </field>
+
+                <field id="payment_completed_status" translate="label" type="select" sortOrder="62" showInDefault="1" showInWebsite="0"
+                       showInStore="0">
+                    <label>Payment Completed Order Status</label>
+                    <comment>The payment has the required number of confirmations on the blockchain and is considered final.</comment>
+                    <source_model>Storefront\BTCPayServer\Model\Config\Source\Order\Status\ProcessingStatuses</source_model>
+                </field>
+
+                <field id="ipn_mapping" translate="label" type="select" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Status mapping</label>
                     <source_model>Storefront\BTCPayServer\Model\Config\Source\Ipn</source_model>
                 </field>
 
-                <field id="sort_order" translate="label" type="text" sortOrder="70" showInDefault="1" showInWebsite="1"
+                <field id="sort_order" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="1"
                        showInStore="0">
                     <label>Sort Order</label>
                     <frontend_class>validate-number</frontend_class>
                 </field>
 
-                <field id="allowspecific" translate="label" type="select" sortOrder="80" showInDefault="1" showInWebsite="1">
+                <field id="allowspecific" translate="label" type="select" sortOrder="90" showInDefault="1" showInWebsite="1">
                     <label>Payment Applicable From</label>
                     <source_model>Magento\Payment\Model\Config\Source\Allspecificcountries</source_model>
                     <attribute type="shared">1</attribute>
                 </field>
 
-                <field id="specificcountry" translate="label" type="multiselect" sortOrder="90" showInDefault="1" showInWebsite="1">
+                <field id="specificcountry" translate="label" type="multiselect" sortOrder="100" showInDefault="1" showInWebsite="1">
                     <label>Countries Payment Applicable From</label>
                     <source_model>Magento\Paypal\Model\System\Config\Source\BuyerCountry</source_model>
                     <attribute type="shared">1</attribute>

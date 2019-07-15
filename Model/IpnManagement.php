@@ -19,7 +19,7 @@ use stdClass;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Sales\Api\Data\OrderInterface;
 
-class IpnManagement{
+class IpnManagement {
 
     protected $_invoiceService;
     protected $_transaction;
@@ -57,8 +57,9 @@ class IpnManagement{
         $resource = $objectManager->get(ResourceConnection::class);
         $connection = $resource->getConnection();
         $table_name = $resource->getTableName('btcpayserver_transactions');
-        #json ipn
-        $all_data = json_decode(file_get_contents('php://input'), true);
+
+        $postedString = file_get_contents('php://input');
+        $all_data = json_decode($postedString, true);
         $data = $all_data['data'];
         $event = $all_data['event'];
 
@@ -66,17 +67,18 @@ class IpnManagement{
         $order_status = $data['status'];
         $order_invoice = $data['id'];
 
-        #is it in the lookup table
+        // TODO instead of just updating the transation, let's record all IPN requests! Also create an Admin grid so we can look at them.
+
         // TODO remove ugly SQL
         $sql = "SELECT * FROM $table_name WHERE order_id = '$orderid' AND transaction_id = '$order_invoice' ";
         $result = $connection->query($sql);
         $row = $result->fetch();
-        if ($row):
+        if ($row) {
 
-            #verify the ipn
+            // Validate
             $token = $this->getStoreConfig('payment/btcpayserver/token');
             $host = $this->getStoreConfig('payment/btcpayserver/host');
-            $ipn_mapping = $this->getStoreConfig('payment/btcpayserver/ipn_mapping');
+
 
             $params = new stdClass();
 
@@ -97,86 +99,87 @@ class IpnManagement{
             // now update the order
             switch ($event['name']) {
 
-                case 'invoice_completed':
-                    if ($invoice_status == 'complete'):
+                case 'invoice_paidInFull':
 
-                        $order->addStatusHistoryComment('BTCPay Server Invoice <a href = "http://' . $host . '/dashboard/payments/' . $order_invoice . '" target = "_blank">' . $order_invoice . '</a> status has changed to Completed.');
-                        $order->setState(Order::STATE_PROCESSING)->setStatus(Order::STATE_PROCESSING);
+                    if ($invoice_status === 'paid') {
+                        // 1) Payments have been made to the invoice for the requested amount but the transaction has not been confirmed yet
+                        $paidNotConfirmedStatus = $this->getStoreConfig('payment/btcpayserver/payment_paid_status');
+
+                        $order->addStatusHistoryComment('Payment underway, but not confirmed yet', $paidNotConfirmedStatus);
                         $order->save();
-
-                        $this->createMGInvoice($order);
-
                         return true;
-                    endif;
+                    }
                     break;
 
                 case 'invoice_confirmed':
-                    // pending or processing from plugin settings
-                    if ($invoice_status === 'confirmed'):
-                        $order->addStatusHistoryComment('BTCPay Server Invoice <a href = "http://' . $host . '/dashboard/payments/' . $order_invoice . '" target = "_blank">' . $order_invoice . '</a> processing has been completed.');
-                        if ($ipn_mapping != 'processing'):
-                            #$order->setState(Order::STATE_NEW)->setStatus(Order::STATE_NEW);
-                            $order->setState('new', true);
-                            $order->setStatus('pending', true);
-                        else:
-                            $order->setState(Order::STATE_PROCESSING)->setStatus(Order::STATE_PROCESSING);
-                            $this->createMGInvoice($order);
-                        endif;
+                    if ($invoice_status === 'confirmed') {
+                        // 2) Paid and confirmed (happens before completed and transitions to it quickly)
+
+                        // TODO maybe add the transation ID in the comment or something like that?
+
+                        $confirmedStatus = $this->getStoreConfig('payment/btcpayserver/payment_confirmed_status');
+                        $order->addStatusHistoryComment('Payment confirmed, but not completed yet', $confirmedStatus);
+
 
                         $order->save();
                         return true;
-                    endif;
+                    }
                     break;
 
-                case 'invoice_paidInFull':
-                    // STATE_PENDING
-                    if ($invoice_status === 'paid'):
 
-                        $order->addStatusHistoryComment('BTCPay Server Invoice <a href = "http://' . $host. '/dashboard/payments/' . $order_invoice . '" target = "_blank">' . $order_invoice . '</a> is processing.');
-                        $order->setState('new', true);
-                        $order->setStatus('pending', true);
-                        $order->save();
+                case 'invoice_completed':
+                    if ($invoice_status === 'complete') {
+                        // 3) Paid, confirmed and settled. Final!
+                        // TODO maybe add the transation ID in the comment or something like that?
+
+                        $completedStatus = $this->getStoreConfig('payment/btcpayserver/payment_completed_status');
+                        $order->addStatusHistoryComment('Payment completed', $completedStatus);
+                        $invoice = $this->_invoiceService->prepareInvoice($order);
+                        $invoice->register();
+
+                        // TODO we really need to save the invoice first as we are saving it again in this transaction? Leaving it out for now.
+                        //$invoice->save();
+
+                        $transactionSave = $this->_transaction->addObject($invoice)->addObject($invoice->getOrder());
+                        $transactionSave->save();
+
                         return true;
-                    endif;
+                    }
                     break;
+
 
                 case 'invoice_failedToConfirm':
-                    if ($invoice_status === 'invalid'):
-                        $order->addStatusHistoryComment('BTCPay Server Invoice <a href = "http://' . $host . '/dashboard/payments/' . $order_invoice . '" target = "_blank">' . $order_invoice . '</a> has become invalid because of network congestion.  Order will automatically update when the status changes.');
+                    if ($invoice_status === 'invalid') {
+                        $order->addStatusHistoryComment('Failed to confirm the order. The order will automatically update when the status changes.');
                         $order->save();
                         return true;
-                    endif;
+                    }
                     break;
 
                 case 'invoice_expired':
-                    if ($invoice_status === 'expired'):
-                        $order->delete();
+                    if ($invoice_status === 'expired') {
+                        // Invoice expired - let's do nothing.
 
                         return true;
-                    endif;
+                    }
                     break;
 
                 case 'invoice_refundComplete':
-                    #load the order to update
+                    // Full refund
 
-                    $order->addStatusHistoryComment('BTCPay Server Invoice <a href = "http://' . $host . '/dashboard/payments/' . $order_invoice . '" target = "_blank">' . $order_invoice . '</a> has been refunded.');
+                    $order->addStatusHistoryComment('Refund received through BTCPay Server.');
                     $order->setState(Order::STATE_CLOSED)->setStatus(Order::STATE_CLOSED);
 
                     $order->save();
 
                     return true;
                     break;
+
+                // TODO what about partial refunds, partial payments and overpayment?
             }
 
-        endif;
+        }
     }
 
-    public function createMGInvoice($order) {
-        $invoice = $this->_invoiceService->prepareInvoice($order);
-        $invoice->register();
-        $invoice->save();
-        $transactionSave = $this->_transaction->addObject($invoice)->addObject($invoice->getOrder());
-        $transactionSave->save();
-    }
 
 }

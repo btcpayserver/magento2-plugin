@@ -8,13 +8,13 @@ namespace Storefront\BTCPayServer\Model\Config\Source\Order\Status;
 
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Config\Source\Order\Status;
+use Magento\Sales\Model\Order\Config;
 
 /**
  * Order Status source model
  */
-class Pendingpayment extends Status {
-    /**
-     * @var string[]
-     */
-    protected $_stateStatuses = [Order::STATE_NEW];
+class ProcessingStatuses extends AbstractStatuses {
+    protected function getState() {
+        return Order::STATE_PROCESSING;
+    }
 }

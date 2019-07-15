@@ -12,9 +12,7 @@ class InstallSchema implements InstallSchemaInterface {
         $installer = $setup;
         $installer->startSetup();
 
-        // TODO Maybe add a Magento Admin grid so we can see this data?
-
-        //START table setup
+        // TODO Maybe add a Magento Admin grid so we can see the transaction data?
         $table = $installer->getConnection()->newTable($installer->getTable('btcpayserver_transactions'))->addColumn('id', Table::TYPE_INTEGER, null, [
             'identity' => true,
             'nullable' => false,
@@ -25,7 +23,20 @@ class InstallSchema implements InstallSchemaInterface {
             'default' => Table::TIMESTAMP_INIT_UPDATE
         ], 'Date Added');
         $installer->getConnection()->createTable($table);
-//END   table setup
+
+
+        $table = $installer->getConnection()->newTable($installer->getTable('btcpayserver_ipns'))->addColumn('id', Table::TYPE_INTEGER, null, [
+            'identity' => true,
+            'nullable' => false,
+            'primary' => true,
+            'unsigned' => true
+        ], 'ID')->addColumn('order_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Order ID')->addColumn('transaction_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction ID')->addColumn('transaction_status', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction Status')->addColumn('date_added', Table::TYPE_TIMESTAMP, 255, [
+            'nullable' => false,
+            'default' => Table::TIMESTAMP_INIT_UPDATE
+        ], 'Date Added');
+        $installer->getConnection()->createTable($table);
+
+
         $installer->endSetup();
     }
 }
