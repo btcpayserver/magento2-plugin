@@ -12,30 +12,28 @@ class InstallSchema implements InstallSchemaInterface {
         $installer = $setup;
         $installer->startSetup();
 
-        // TODO Maybe add a Magento Admin grid so we can see the transaction data?
-        $table = $installer->getConnection()->newTable($installer->getTable('btcpay_transactions'))->addColumn('id', Table::TYPE_INTEGER, null, [
+        $connection = $installer->getConnection();
+        $table = $connection->newTable($installer->getTable('btcpay_transactions'));
+
+        $table->addColumn('id', Table::TYPE_INTEGER, null, [
             'identity' => true,
             'nullable' => false,
             'primary' => true,
             'unsigned' => true
-        ], 'ID')->addColumn('order_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Order ID')->addColumn('transaction_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction ID')->addColumn('transaction_status', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction Status')->addColumn('created_at', Table::TYPE_TIMESTAMP, 255, [
+        ], 'ID');
+        $table->addColumn('order_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Order ID');
+        $table->addColumn('transaction_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction ID');
+        $table->addColumn('status', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction Status');
+        $table->addColumn('created_at', Table::TYPE_TIMESTAMP, null, [
+            'nullable' => false,
+            'default' => Table::TIMESTAMP_INIT
+        ], 'Created At');
+        $table->addColumn('updated_at', Table::TYPE_TIMESTAMP, null, [
             'nullable' => false,
             'default' => Table::TIMESTAMP_INIT_UPDATE
-        ], 'Date Added');
-        $installer->getConnection()->createTable($table);
+        ], 'Updated At');
 
-
-//        $table = $installer->getConnection()->newTable($installer->getTable('btcpay_ipns'))->addColumn('id', Table::TYPE_INTEGER, null, [
-//            'identity' => true,
-//            'nullable' => false,
-//            'primary' => true,
-//            'unsigned' => true
-//        ], 'ID')->addColumn('order_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Order ID')->addColumn('transaction_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction ID')->addColumn('transaction_status', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction Status')->addColumn('transaction_data', Table::TYPE_TEXT, 4096, ['nullable' => false], 'Transaction Data')->addColumn('created_at', Table::TYPE_TIMESTAMP, 255, [
-//            'nullable' => false,
-//            'default' => Table::TIMESTAMP_INIT_UPDATE
-//        ], 'Date Added');
-//        $installer->getConnection()->createTable($table);
-
+        $connection->createTable($table);
 
         $installer->endSetup();
     }

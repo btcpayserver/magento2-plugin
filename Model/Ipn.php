@@ -29,7 +29,7 @@ class Ipn {
         // Only use the "id" field from the POSTed data and discard the rest. The posted data can be malicious.
         unset($data);
 
-        $this->helper->updateInvoice($btcpayInvoiceId);
+        $this->helper->updateTransaction($btcpayInvoiceId);
     }
 
 

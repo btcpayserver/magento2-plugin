@@ -49,7 +49,7 @@ class Data {
      * @return \Magento\Sales\Model\Order | null
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function updateInvoice($transactionId) {
+    public function updateTransaction($transactionId) {
         $tableName = $this->db->getTableName('btcpay_transactions');
         $select = $this->db->select()->from($tableName)->where('transaction_id = ?', $transactionId)->limit(1);
 
@@ -79,10 +79,9 @@ class Data {
 
             $invoiceStatus = $orderStatus['data']['status'] ?? false;
 
-
+            // TODO refactor to use the Transaction model instead of direct SQL reading
             $where = $this->db->quoteInto('order_id = ?', $orderId) . ' and ' . $this->db->quoteInto('transaction_id = ?', $transactionId);
-            $rowsChanged = $this->db->update($tableName, ['transaction_status' => $invoiceStatus], $where);
-
+            $rowsChanged = $this->db->update($tableName, ['status' => $invoiceStatus], $where);
 
             // TODO fill $event in some other way...
             $event = [];
@@ -90,7 +89,7 @@ class Data {
 
                 case 'invoice_paidInFull':
 
-                    if ($invoiceStatus === 'paid') {
+                    if ($invoiceStatus === \Storefront\BTCPay\Model\Transaction::STATUS_PAID) {
                         // 1) Payments have been made to the invoice for the requested amount but the transaction has not been confirmed yet
                         $paidNotConfirmedStatus = $this->getStoreConfig('payment/btcpay/payment_paid_status', $storeId);
 
@@ -101,7 +100,7 @@ class Data {
                     break;
 
                 case 'invoice_confirmed':
-                    if ($invoiceStatus === 'confirmed') {
+                    if ($invoiceStatus === \Storefront\BTCPay\Model\Transaction::STATUS_CONFIRMED) {
                         // 2) Paid and confirmed (happens before completed and transitions to it quickly)
 
                         // TODO maybe add the transation ID in the comment or something like that?
@@ -116,7 +115,7 @@ class Data {
 
 
                 case 'invoice_completed':
-                    if ($invoiceStatus === 'complete') {
+                    if ($invoiceStatus === \Storefront\BTCPay\Model\Transaction::STATUS_COMPLETE) {
                         // 3) Paid, confirmed and settled. Final!
                         // TODO maybe add the transation ID in the comment or something like that?
 
@@ -137,7 +136,7 @@ class Data {
 
 
                 case 'invoice_failedToConfirm':
-                    if ($invoiceStatus === 'invalid') {
+                    if ($invoiceStatus === \Storefront\BTCPay\Model\Transaction::STATUS_INVALID) {
                         $order->addStatusHistoryComment('Failed to confirm the order. The order will automatically update when the status changes.');
                         $order->save();
                         return true;
@@ -145,7 +144,7 @@ class Data {
                     break;
 
                 case 'invoice_expired':
-                    if ($invoiceStatus === 'expired') {
+                    if ($invoiceStatus === \Storefront\BTCPay\Model\Transaction::STATUS_EXPIRED) {
                         // Invoice expired - let's do nothing.
 
                         return true;
@@ -172,5 +171,18 @@ class Data {
             // No transaction round found
             return null;
         }
+    }
+
+    public function updateIncompleteTransations() {
+
+        // TODO poll BTCPay Server for updates on non-completed invoices (just in case we missed an update pushed to Magento)
+        // TODO refactor to use the Transaction model instead of direct SQL reading
+        $tableName = $this->db->getTableName('btcpay_transactions');
+        $select = $this->db->select()->from($tableName)->where('transaction_statusd != ?', 'completed')->limit(1);
+
+        $result = $this->db->fetchRow($select);
+        $row = $result->fetch();
+
+
     }
 }
