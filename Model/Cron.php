@@ -1,6 +1,6 @@
 <?php
 
-namespace Storefront\BTCPayServer\Model;
+namespace Storefront\BTCPay\Model;
 
 class Cron {
 

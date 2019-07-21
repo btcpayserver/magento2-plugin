@@ -4,7 +4,7 @@
  * See COPYING.txt for license details.
  */
 
-namespace Storefront\BTCPayServer\Model\Config\Source;
+namespace Storefront\BTCPay\Model\Config\Source;
 
 
 use Magento\Framework\Option\ArrayInterface;

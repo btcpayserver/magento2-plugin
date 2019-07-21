@@ -13,7 +13,7 @@ define(
 
         return Component.extend({
             defaults: {
-                template: 'Storefront_BTCPayServer/payment/btcpayserver'
+                template: 'Storefront_BTCPay/payment/btcpay'
             },
 
             /** Returns send check to info */

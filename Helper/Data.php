@@ -6,7 +6,7 @@
  * @author    info@storefront.be
  */
 
-namespace Storefront\BTCPayServer\Helper;
+namespace Storefront\BTCPay\Helper;
 
 
 use Magento\Framework\App\ResourceConnection;
@@ -15,13 +15,11 @@ use Magento\Sales\Model\Order;
 use Magento\Sales\Model\OrderRepository;
 use Magento\Sales\Model\Service\InvoiceService;
 use stdClass;
-use Storefront\BTCPayServer\Model\Invoice;
-use Storefront\BTCPayServer\Model\Item;
+use Storefront\BTCPay\Model\Invoice;
+use Storefront\BTCPay\Model\Item;
 
 
 class Data {
-
-
     private $invoiceService;
     private $transaction;
     private $orderRepository;
@@ -52,7 +50,7 @@ class Data {
      * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function updateInvoice($transactionId) {
-        $tableName = $this->db->getTableName('btcpayserver_transactions');
+        $tableName = $this->db->getTableName('btcpay_transactions');
         $select = $this->db->select()->from($tableName)->where('transaction_id = ?', $transactionId)->limit(1);
 
         $result = $this->db->fetchRow($select);
@@ -64,8 +62,8 @@ class Data {
 
             $storeId = $order->getStoreId();
 
-            $token = $this->getStoreConfig('payment/btcpayserver/token', $storeId);
-            $host = $this->getStoreConfig('payment/btcpayserver/host', $storeId);
+            $token = $this->getStoreConfig('payment/btcpay/token', $storeId);
+            $host = $this->getStoreConfig('payment/btcpay/host', $storeId);
 
             $params = new stdClass();
             $params->invoiceID = $transactionId;
@@ -79,11 +77,11 @@ class Data {
                 throw new \RuntimeException('The supplied order ID ' . $orderId . ' does not match transaction ID ' . $transactionId . '. Cannot process BTCPay Server IPN.');
             }
 
-            $invoice_status = $orderStatus['data']['status'] ?? false;
+            $invoiceStatus = $orderStatus['data']['status'] ?? false;
 
 
             $where = $this->db->quoteInto('order_id = ?', $orderId) . ' and ' . $this->db->quoteInto('transaction_id = ?', $transactionId);
-            $rowsChanged = $this->db->update($tableName, ['transaction_status' => $invoice_status], $where);
+            $rowsChanged = $this->db->update($tableName, ['transaction_status' => $invoiceStatus], $where);
 
 
             // TODO fill $event in some other way...
@@ -92,9 +90,9 @@ class Data {
 
                 case 'invoice_paidInFull':
 
-                    if ($invoice_status === 'paid') {
+                    if ($invoiceStatus === 'paid') {
                         // 1) Payments have been made to the invoice for the requested amount but the transaction has not been confirmed yet
-                        $paidNotConfirmedStatus = $this->getStoreConfig('payment/btcpayserver/payment_paid_status', $storeId);
+                        $paidNotConfirmedStatus = $this->getStoreConfig('payment/btcpay/payment_paid_status', $storeId);
 
                         $order->addStatusHistoryComment('Payment underway, but not confirmed yet', $paidNotConfirmedStatus);
                         $order->save();
@@ -103,12 +101,12 @@ class Data {
                     break;
 
                 case 'invoice_confirmed':
-                    if ($invoice_status === 'confirmed') {
+                    if ($invoiceStatus === 'confirmed') {
                         // 2) Paid and confirmed (happens before completed and transitions to it quickly)
 
                         // TODO maybe add the transation ID in the comment or something like that?
 
-                        $confirmedStatus = $this->getStoreConfig('payment/btcpayserver/payment_confirmed_status', $storeId);
+                        $confirmedStatus = $this->getStoreConfig('payment/btcpay/payment_confirmed_status', $storeId);
                         $order->addStatusHistoryComment('Payment confirmed, but not completed yet', $confirmedStatus);
 
                         $order->save();
@@ -118,11 +116,11 @@ class Data {
 
 
                 case 'invoice_completed':
-                    if ($invoice_status === 'complete') {
+                    if ($invoiceStatus === 'complete') {
                         // 3) Paid, confirmed and settled. Final!
                         // TODO maybe add the transation ID in the comment or something like that?
 
-                        $completedStatus = $this->getStoreConfig('payment/btcpayserver/payment_completed_status', $storeId);
+                        $completedStatus = $this->getStoreConfig('payment/btcpay/payment_completed_status', $storeId);
                         $order->addStatusHistoryComment('Payment completed', $completedStatus);
                         $invoice = $this->invoiceService->prepareInvoice($order);
                         $invoice->register();
@@ -139,7 +137,7 @@ class Data {
 
 
                 case 'invoice_failedToConfirm':
-                    if ($invoice_status === 'invalid') {
+                    if ($invoiceStatus === 'invalid') {
                         $order->addStatusHistoryComment('Failed to confirm the order. The order will automatically update when the status changes.');
                         $order->save();
                         return true;
@@ -147,7 +145,7 @@ class Data {
                     break;
 
                 case 'invoice_expired':
-                    if ($invoice_status === 'expired') {
+                    if ($invoiceStatus === 'expired') {
                         // Invoice expired - let's do nothing.
 
                         return true;

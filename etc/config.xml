@@ -8,16 +8,16 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../Store/etc/config.xsd">
     <default>
         <payment>
-            <btcpayserver>
+            <btcpay>
                 <active>1</active>
                 <title>BTCPay Server</title>
                 <order_status>pending</order_status>
                 <payment_confirmed_status></payment_confirmed_status>
                 <payment_completed_status></payment_completed_status>
                 <payment_action>true</payment_action>
-                <model>Storefront\BTCPayServer\Model\BTCPayServer</model>
+                <model>Storefront\BTCPay\Model\BTCPay</model>
                 <group>offline</group>
-            </btcpayserver>
+            </btcpay>
         </payment>
     </default>
 </config>

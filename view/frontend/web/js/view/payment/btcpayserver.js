@@ -15,8 +15,8 @@ define(
     ) {
         'use strict';
         rendererList.push({
-            type: 'btcpayserver',
-            component: 'Storefront_BTCPayServer/js/view/payment/method-renderer/btcpayserver-method'
+            type: 'btcpay',
+            component: 'Storefront_BTCPay/js/view/payment/method-renderer/btcpay-method'
         });
         /** Add view logic here if needed */
         return Component.extend({});

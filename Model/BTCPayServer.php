@@ -4,7 +4,7 @@
  * See COPYING.txt for license details.
  */
 
-namespace Storefront\BTCPayServer\Model;
+namespace Storefront\BTCPay\Model;
 
 
 use Magento\Payment\Model\Method\AbstractMethod;
@@ -12,14 +12,14 @@ use Magento\Payment\Model\Method\AbstractMethod;
 /**
  * Pay In Store payment method model
  */
-class BTCPayServer extends AbstractMethod {
+class BTCPay extends AbstractMethod {
 
     /**
      * Payment code
      *
      * @var string
      */
-    protected $_code = 'btcpayserver';
+    protected $_code = 'btcpay';
 
     /**
      * Availability option

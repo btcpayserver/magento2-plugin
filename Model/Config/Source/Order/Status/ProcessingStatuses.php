@@ -4,7 +4,7 @@
  * See COPYING.txt for license details.
  */
 
-namespace Storefront\BTCPayServer\Model\Config\Source\Order\Status;
+namespace Storefront\BTCPay\Model\Config\Source\Order\Status;
 
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Config\Source\Order\Status;

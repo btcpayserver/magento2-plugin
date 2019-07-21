@@ -13,7 +13,7 @@
         </group>
     </groups>
     <methods>
-        <method name="btcpayserver">
+        <method name="btcpay">
             <allow_multiple_address>1</allow_multiple_address>
         </method>
 

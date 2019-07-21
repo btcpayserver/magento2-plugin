@@ -1,6 +1,6 @@
 <?php
 
-namespace Storefront\BTCPayServer\Observer;
+namespace Storefront\BTCPay\Observer;
 
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\ActionFlag;
@@ -18,8 +18,8 @@ use stdClass;
 use Magento\Sales\Api\Data\OrderInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\ResourceConnection;
-use Storefront\BTCPayServer\Model\Invoice;
-use Storefront\BTCPayServer\Model\Item;
+use Storefront\BTCPay\Model\Invoice;
+use Storefront\BTCPay\Model\Item;
 use Magento\Customer\Model\Session as CustomerSession;
 
 class Redirect implements ObserverInterface {
@@ -85,15 +85,15 @@ class Redirect implements ObserverInterface {
         $order = $this->getOrder($orderId);
         $orderIncrementId = $order->getIncrementId();
 
-        if ($order->getPayment()->getMethodInstance()->getCode() === 'btcpayserver') {
+        if ($order->getPayment()->getMethodInstance()->getCode() === 'btcpay') {
             // Force status
             $order->setState('new', true);
             $order->setStatus('pending', true);
 
             $order->save();
 
-            $token = $this->getStoreConfig('payment/btcpayserver/token', $order->getStoreId());
-            $host = $this->getStoreConfig('payment/btcpayserver/host', $order->getStoreId());
+            $token = $this->getStoreConfig('payment/btcpay/token', $order->getStoreId());
+            $host = $this->getStoreConfig('payment/btcpay/host', $order->getStoreId());
 
 
             //create an item, should be passed as an object'
@@ -130,12 +130,12 @@ class Redirect implements ObserverInterface {
             }
 
             // TODO build URL to the REST API the Magento way
-            $params->notificationURL = $this->getBaseUrl() . 'rest/V1/btcpayserver/ipn';
+            $params->notificationURL = $this->getBaseUrl() . 'rest/V1/btcpay/ipn';
             $params->extendedNotifications = true;
             $params->acceptanceWindow = 1200000;
 
 
-            $params->cartFix = $this->url->getUrl('btcpayserver/cart/restore', ['order_id' => $orderId]);
+            $params->cartFix = $this->url->getUrl('btcpay/cart/restore', ['order_id' => $orderId]);
             $item = new Item($token, $host, $params);
             $invoice = new Invoice($item);
 
@@ -147,7 +147,7 @@ class Redirect implements ObserverInterface {
             $invoiceID = $invoiceData['data']['id'] ?? null;
 
             if (!$invoiceID) {
-                $table_name = $this->db->getTableName('btcpayserver_transactions');
+                $table_name = $this->db->getTableName('btcpay_transactions');
                 $this->db->insert($table_name, [
                     'order_id' => $orderId,
                     'transaction_id' => $invoiceID,

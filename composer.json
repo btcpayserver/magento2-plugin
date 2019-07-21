@@ -1,5 +1,5 @@
 {
-  "name": "storefront/module-btcpayserver",
+  "name": "storefront/module-btcpay",
   "description": "",
   "type": "magento2-module",
   "license": "mit",
@@ -19,7 +19,7 @@
       "registration.php"
     ],
     "psr-4": {
-      "Storefront\\BTCPayServer\\": ""
+      "Storefront\\BTCPay\\": ""
     }
   }
 }

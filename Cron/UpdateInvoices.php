@@ -8,7 +8,7 @@
 
 namespace Storefront\JobQueue\Cron;
 
-use Storefront\BTCPayServer\Helper\Data;
+use Storefront\BTCPay\Helper\Data;
 
 class UpdateInvoices {
 
@@ -22,6 +22,15 @@ class UpdateInvoices {
     }
 
     public function execute() {
+
+        // TODO poll BTCPay Server for updates on non-completed invoices (just in case we missed an update pushed to Magento)
+
+        $tableName = $this->db->getTableName('btcpay_transactions');
+        $select = $this->db->select()->from($tableName)->where('transaction_statusd != ?', 'completed')->limit(1);
+
+        $result = $this->db->fetchRow($select);
+        $row = $result->fetch();
+
 
         $this->helper->updateInvoice();
 

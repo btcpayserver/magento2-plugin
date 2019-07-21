@@ -22,11 +22,11 @@
                                                         <item name="renders" xsi:type="array">
                                                             <item name="children" xsi:type="array">
                                                                 <!-- merge payment method renders here -->
-                                                                <item name="btcpayserver" xsi:type="array">
-                                                                    <item name="component" xsi:type="string">Storefront_BTCPayServer/js/view/payment/btcpayserver</item>
+                                                                <item name="btcpay" xsi:type="array">
+                                                                    <item name="component" xsi:type="string">Storefront_BTCPay/js/view/payment/btcpay</item>
                                                                     <item name="methods" xsi:type="array">
 
-                                                                        <item name="btcpayserver" xsi:type="array">
+                                                                        <item name="btcpay" xsi:type="array">
                                                                             <item name="isBillingAddressRequired" xsi:type="boolean">true</item>
                                                                         </item>
                                                                     </item>

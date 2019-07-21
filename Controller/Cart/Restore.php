@@ -1,6 +1,6 @@
 <?php
 
-namespace Storefront\BTCPayServer\Controller\Cart;
+namespace Storefront\BTCPay\Controller\Cart;
 
 use Exception;
 use Magento\Framework\App\Action\Action;

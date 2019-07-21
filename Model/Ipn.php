@@ -1,12 +1,12 @@
 <?php
 
-namespace Storefront\BTCPayServer\Model;
+namespace Storefront\BTCPay\Model;
 
 use Magento\Store\Model\ScopeInterface;
 
 class Ipn {
 
-    public function __construct(\Storefront\BTCPayServer\Helper\Data $helper) {
+    public function __construct(\Storefront\BTCPay\Helper\Data $helper) {
         $this->helper = $helper;
     }
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Storefront\BTCPayServer\Setup;
+namespace Storefront\BTCPay\Setup;
 
 use Magento\Framework\DB\Ddl\Table;
 use Magento\Framework\Setup\InstallSchemaInterface;
@@ -13,7 +13,7 @@ class InstallSchema implements InstallSchemaInterface {
         $installer->startSetup();
 
         // TODO Maybe add a Magento Admin grid so we can see the transaction data?
-        $table = $installer->getConnection()->newTable($installer->getTable('btcpayserver_transactions'))->addColumn('id', Table::TYPE_INTEGER, null, [
+        $table = $installer->getConnection()->newTable($installer->getTable('btcpay_transactions'))->addColumn('id', Table::TYPE_INTEGER, null, [
             'identity' => true,
             'nullable' => false,
             'primary' => true,
@@ -25,7 +25,7 @@ class InstallSchema implements InstallSchemaInterface {
         $installer->getConnection()->createTable($table);
 
 
-//        $table = $installer->getConnection()->newTable($installer->getTable('btcpayserver_ipns'))->addColumn('id', Table::TYPE_INTEGER, null, [
+//        $table = $installer->getConnection()->newTable($installer->getTable('btcpay_ipns'))->addColumn('id', Table::TYPE_INTEGER, null, [
 //            'identity' => true,
 //            'nullable' => false,
 //            'primary' => true,
