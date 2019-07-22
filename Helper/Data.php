@@ -10,10 +10,13 @@ namespace Storefront\BTCPay\Helper;
 
 
 use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Transaction;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\OrderRepository;
 use Magento\Sales\Model\Service\InvoiceService;
+use RuntimeException;
 use stdClass;
 use Storefront\BTCPay\Model\Invoice;
 use Storefront\BTCPay\Model\Item;
@@ -25,7 +28,7 @@ class Data {
     private $orderRepository;
 
     /**
-     * @var \Magento\Framework\DB\Adapter\AdapterInterface
+     * @var AdapterInterface
      */
     private $db;
 
@@ -45,11 +48,13 @@ class Data {
 
 
     /**
-     * @param $transactionId
-     * @return \Magento\Sales\Model\Order | null
-     * @throws \Magento\Framework\Exception\LocalizedException
+     * @param int $transactionId
+     * @return Order|null
+     * @throws LocalizedException
+     * @throws \Magento\Framework\Exception\InputException
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function updateTransaction($transactionId) {
+    public function updateTransaction(int $transactionId) : ?Order {
         $tableName = $this->db->getTableName('btcpay_transactions');
         $select = $this->db->select()->from($tableName)->where('transaction_id = ?', $transactionId)->limit(1);
 
@@ -74,7 +79,7 @@ class Data {
             $orderStatus = json_decode($invoice->checkInvoiceStatus($transactionId), true);
 
             if ($orderId !== $orderStatus['orderID']) {
-                throw new \RuntimeException('The supplied order ID ' . $orderId . ' does not match transaction ID ' . $transactionId . '. Cannot process BTCPay Server IPN.');
+                throw new RuntimeException('The supplied order ID ' . $orderId . ' does not match transaction ID ' . $transactionId . '. Cannot process BTCPay Server IPN.');
             }
 
             $invoiceStatus = $orderStatus['data']['status'] ?? false;
@@ -95,7 +100,6 @@ class Data {
 
                         $order->addStatusHistoryComment('Payment underway, but not confirmed yet', $paidNotConfirmedStatus);
                         $order->save();
-                        return true;
                     }
                     break;
 
@@ -109,7 +113,6 @@ class Data {
                         $order->addStatusHistoryComment('Payment confirmed, but not completed yet', $confirmedStatus);
 
                         $order->save();
-                        return true;
                     }
                     break;
 
@@ -130,7 +133,6 @@ class Data {
                         $transactionSave = $this->transaction->addObject($invoice)->addObject($invoice->getOrder());
                         $transactionSave->save();
 
-                        return true;
                     }
                     break;
 
@@ -139,15 +141,12 @@ class Data {
                     if ($invoiceStatus === \Storefront\BTCPay\Model\Transaction::STATUS_INVALID) {
                         $order->addStatusHistoryComment('Failed to confirm the order. The order will automatically update when the status changes.');
                         $order->save();
-                        return true;
                     }
                     break;
 
                 case 'invoice_expired':
                     if ($invoiceStatus === \Storefront\BTCPay\Model\Transaction::STATUS_EXPIRED) {
                         // Invoice expired - let's do nothing.
-
-                        return true;
                     }
                     break;
 
@@ -159,7 +158,6 @@ class Data {
 
                     $order->save();
 
-                    return true;
                     break;
 
                 // TODO what about partial refunds, partial payments and overpayment?

@@ -17,14 +17,14 @@ class Ipn {
     }
 
 
-    public function processIpn() {
+    public function process() {
         $postedString = file_get_contents('php://input');
         if (!$postedString) {
             throw new \RuntimeException('No data posted. Cannot process BTCPay Server IPN.');
         }
         $data = json_decode($postedString, true);
 
-        $btcpayInvoiceId = $data['data']['id'];
+        $btcpayInvoiceId = $data['data']['id'] ?? null;
 
         // Only use the "id" field from the POSTed data and discard the rest. The posted data can be malicious.
         unset($data);
