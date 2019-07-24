@@ -108,17 +108,16 @@ class Redirect implements ObserverInterface {
             if($newStatus) {
                 $order->setStatus($newStatus);
             }else{
-                $order->setStatus('new');
+                $order->setStatus('new'); // TODO can we avoid hard coded status here?
             }
 
             $order->save();
-
 
             //create an item, should be passed as an object'
             $params = new stdClass();
             //$params->extension_version = $this->getExtensionVersion();
             $params->price = $order->getGrandTotal();
-            $params->currency = $order->getCurrencyCode();
+            $params->currency = $order->getOrderCurrencyCode();
 
             $buyerInfo = new stdClass();
 

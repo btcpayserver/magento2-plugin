@@ -16,5 +16,7 @@
         </arguments>
     </type>
 
+    <preference for="Storefront\BTCPay\Api\IpnInterface" type="\Storefront\BTCPay\Api\Ipn" />
+
 
 </config>

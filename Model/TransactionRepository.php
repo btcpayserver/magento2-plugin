@@ -138,7 +138,7 @@ class TransactionRepository implements TransactionRepositoryInterface
         $transaction = $this->transactionFactory->create();
         $this->resource->load($transaction, $transactionId);
         if (!$transaction->getId()) {
-            throw new NoSuchEntityException(__('BTC Pay Transaction with id "%1" does not exist.', $transactionId));
+            throw new NoSuchEntityException(__('BTCPay transaction with id "%1" does not exist.', $transactionId));
         }
         return $transaction->getDataModel();
     }
@@ -183,7 +183,7 @@ class TransactionRepository implements TransactionRepositoryInterface
             $this->resource->delete($transactionModel);
         } catch (\Exception $exception) {
             throw new CouldNotDeleteException(__(
-                'Could not delete the BTC Pay Transaction: %1',
+                'Could not delete the BTCPay transaction ID: %1',
                 $exception->getMessage()
             ));
         }

@@ -48,7 +48,7 @@ abstract class Transaction extends \Magento\Backend\App\Action
     public function initPage($resultPage)
     {
         $resultPage->setActiveMenu(self::ADMIN_RESOURCE)
-            ->addBreadcrumb(__('BTC Pay Transactions'), __('BTC Pay Transactions'));
+            ->addBreadcrumb(__('BTCPay Transactions'), __('BTCPay Transactions'));
         return $resultPage;
     }
 }

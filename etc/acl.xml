@@ -3,7 +3,7 @@
 	<acl>
 		<resources>
 			<resource id="Magento_Backend::admin">
-				<resource id="Storefront_BTCPay::transaction" sortOrder="10" title="BTC Pay Transactions" />
+				<resource id="Storefront_BTCPay::transaction" sortOrder="10" title="BTCPay Transactions" />
 			</resource>
 		</resources>
 	</acl>

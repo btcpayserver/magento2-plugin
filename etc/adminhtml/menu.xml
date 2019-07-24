@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
 	<menu>
-        <add action="btcpay/transaction/index" id="Storefront_BTCPay::btcpay_transaction" module="Storefront_BTCPay" parent="Magento_Sales::sales_operation" resource="Magento_Backend::content" sortOrder="80" title="BTC Pay Transactions"/>
+        <add action="btcpay/transaction/index" id="Storefront_BTCPay::btcpay_transaction" module="Storefront_BTCPay" parent="Magento_Sales::sales_operation" resource="Magento_Backend::content" sortOrder="80" title="BTCPay Transactions"/>
 	</menu>
 </config>

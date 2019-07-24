@@ -36,6 +36,9 @@ You will need to get a pairing code from BTCPay Server and enter that.
 ## Which payment methods are supported?
 This depends on your configuration of BTCPay Server. All payment methods you have activated on BTCPay Server, will be available to the customer.
 
+## What isn't supported?
+- Only 1 domain name can be configured for BTCPay Server, so you cannot have multiple BTCPay Servers. The one is used for the whole Magento installation.
+
 ## Who has created this module?
 This module was created by Storefront, a small Magento integrator from Belgium with over 10 years experience. Visit our website at www.storefront.be to learn more about us.
 
@@ -59,6 +62,7 @@ bin/magento btcpay:transaction:update
 ## What is the future roadmap?
 - As this is a first release, we want to learn more from actual day-to-day use and work on stability first.
 - We hope to bring you easier automated testing, but for this we need changes in BTCPay Server too: https://github.com/btcpayserver/btcpayserver/issues/917
+- Support for configuring multiple BTCPay Servers, so you can have separate installations for different websites/stores (low priority).
 - Nothing else is required really, as this module does what it needs to do in a robust and dependable way.
 
 ## What if I need help?

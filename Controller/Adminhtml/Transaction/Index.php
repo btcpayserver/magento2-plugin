@@ -48,7 +48,7 @@ class Index extends \Magento\Backend\App\Action
     public function execute()
     {
         $resultPage = $this->resultPageFactory->create();
-            $resultPage->getConfig()->getTitle()->prepend(__('BTC Pay Transactions'));
+            $resultPage->getConfig()->getTitle()->prepend(__('BTCPay Transactions'));
             return $resultPage;
     }
 }

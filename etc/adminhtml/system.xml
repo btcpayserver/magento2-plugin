@@ -24,7 +24,7 @@
                 </field>
 
                 <field id="host" translate="label" type="text" sortOrder="30" showInDefault="1"
-                       showInWebsite="1" showInStore="1">
+                       showInWebsite="0" showInStore="0">
                     <label>Domain</label>
                     <comment>Your BTCPay Server domain. Don't put "https://", just the domain. Example: mybtcpay.com</comment>
                 </field>
