@@ -10,7 +10,7 @@
         <payment>
             <btcpay>
                 <active>1</active>
-                <title>BTCPay</title>
+                <title>Pay with Bitcoin</title>
                 <order_status>pending</order_status>
                 <payment_confirmed_status></payment_confirmed_status>
                 <payment_completed_status></payment_completed_status>

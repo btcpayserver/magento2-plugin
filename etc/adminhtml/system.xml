@@ -10,7 +10,7 @@
         <section id="payment">
             <group id="btcpay" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1"
                    showInStore="1">
-                <label>BTCPay Server</label>
+                <label>BTCPay</label>
 
                 <field id="active" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1"
                        showInStore="0">
@@ -26,39 +26,72 @@
                 <field id="host" translate="label" type="text" sortOrder="30" showInDefault="1"
                        showInWebsite="1" showInStore="1">
                     <label>Domain</label>
-                    <comment>Your BTCPay Server domain. Example: mybtcpay.com</comment>
+                    <comment>Your BTCPay Server domain. Don't put "https://", just the domain. Example: mybtcpay.com</comment>
                 </field>
 
                 <field id="token" translate="label" type="text" sortOrder="40" showInDefault="1"
                        showInWebsite="1" showInStore="1">
-                    <label>Token</label>
+                    <label>BTCPay Access Token</label>
+                    <comment>
+                        <![CDATA[
+                        To get this token:
+                        <ol class="note">
+                        <li>Log in to BTCPay Server</li>
+                        <li>Go to "Stores"</li>
+                        <li>Go to "Access Tokens"</li>
+                        <li>Click "Create a new token"</li>
+                        <li>Give the connection a label, i.e. "Magento 2 payment"</li>
+                        <li>Leave the "PublicKey" field empty</li>
+                        <li>Approve the pairing</li>
+                        <li>You will see a green succes message that reads: "Server initiated pairing code: xxx"</li>
+                        <li>Put this code here</li>
+                        </ol>
+                        ]]>
+                    </comment>
                 </field>
 
                 <field id="new_status" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="0"
                        showInStore="0">
                     <label>New Order Status</label>
-                    <comment>Order was just created. Not paid yet. Choose a status that falls under the "new" state.</comment>
+                    <comment>
+                        <![CDATA[
+                        Optional. If you use custom order statuses, select the status you want to use.
+                        <br />The order was just created. Not paid yet. Choose a status that falls under the "new" state.
+                        ]]>
+                    </comment>
                     <source_model>Storefront\BTCPay\Model\Config\Source\Order\Status\NewStatuses</source_model>
                 </field>
 
                 <field id="payment_paid_status" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="0"
                        showInStore="0">
                     <label>Paid Order Status</label>
-                    <comment>A full payment is underway, but not yet confirmed. Choose a status that falls under the "new" state.</comment>
+                    <comment><![CDATA[
+                        Optional. If you use custom order statuses, select the status you want to use.
+                        <br />A full payment is underway, but not yet confirmed. Choose a status that falls under the "new" state.
+                        ]]>
+                    </comment>
                     <source_model>Storefront\BTCPay\Model\Config\Source\Order\Status\NewStatuses</source_model>
                 </field>
 
                 <field id="payment_confirmed_status" translate="label" type="select" sortOrder="61" showInDefault="1" showInWebsite="0"
                        showInStore="0">
                     <label>Confirmed Order Status</label>
-                    <comment>The payment has 1 or more confirmations on the blockchain, but not the required number to be considered complete. Choose a status that falls under the "new" state.</comment>
+                    <comment><![CDATA[
+                        Optional. If you use custom order statuses, select the status you want to use.
+                        <br />The payment has 1 or more confirmations on the blockchain, but not the required number to be considered complete. Choose a status that falls under the "new" state.
+                        ]]>
+                    </comment>
                     <source_model>Storefront\BTCPay\Model\Config\Source\Order\Status\NewStatuses</source_model>
                 </field>
 
                 <field id="payment_completed_status" translate="label" type="select" sortOrder="62" showInDefault="1" showInWebsite="0"
                        showInStore="0">
                     <label>Completed Order Status</label>
-                    <comment>The payment has the required number of confirmations on the blockchain and is considered final. Choose a status that falls under the "processing" state.</comment>
+                    <comment><![CDATA[
+                        Optional. If you use custom order statuses, select the status you want to use.
+                        <br />The payment has the required number of confirmations on the blockchain and is considered final. Choose a status that falls under the "processing" state.
+                        ]]>
+                    </comment>
                     <source_model>Storefront\BTCPay\Model\Config\Source\Order\Status\ProcessingStatuses</source_model>
                 </field>
 

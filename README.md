@@ -12,7 +12,7 @@ This module is also designed to be robust, low-maintenance and a solid foundatio
 Just like any other Magento 2 module. Nothing special.
 
 ## How to configure
-After installation, a new Payment Method will be visible in Stores > Configuration > Payment Methods. Configure the fields there.
+After installation, a new Payment Method will be visible in Stores > Configuration > Sales > Payment Methods. Configure the fields there.
 
 You will need to get a pairing code from BTCPay Server and enter that.
 
@@ -40,11 +40,6 @@ This module does NOT contain any advertising and is 100% open source and free to
 - We now have a module dedicated to BTCPay, so both BTCPay Server and this module can innovate freely without having to consider BitPay compatibility
 - Higher code quality means less maintenance and easier compatibility with future Magento versions
 
-## Roadmap
-- As this is a first release, we want to learn more from actual day-to-day use and work on stability first.
-- We hope to bring you easier automated testing, but for this we need changes in BTCPay Server too: https://github.com/btcpayserver/btcpayserver/issues/917
-- Nothing else is required really, as this module does what it needs to do in a robust and dependable way.
-
 ## What can I do if my BTCPay Server or Magento was offline for some time and transaction updates may not have synchronized?
 Magento polls BTCPay Serer every 5 minutes for updates to non-completed transactions, so basically you don't need to do anything.
 If you don't want to wait 5 minutes or prefer to see what is happening, we have prepared a console command to run the transaction sync manually:
@@ -53,6 +48,10 @@ If you don't want to wait 5 minutes or prefer to see what is happening, we have 
 bin/magento btcpay:transaction:update
 ```
 
+## What is the future roadmap?
+- As this is a first release, we want to learn more from actual day-to-day use and work on stability first.
+- We hope to bring you easier automated testing, but for this we need changes in BTCPay Server too: https://github.com/btcpayserver/btcpayserver/issues/917
+- Nothing else is required really, as this module does what it needs to do in a robust and dependable way.
 
 ## What if I need help?
 Just like with any other open source software, you can get help anywhere from the community, or just open an issue here on Github.
