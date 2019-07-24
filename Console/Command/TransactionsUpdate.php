@@ -51,7 +51,7 @@ class TransactionsUpdate extends Command {
      * {@inheritdoc}
      */
     protected function configure() {
-        $this->setName('btcpay:transactions:update');
+        $this->setName('btcpay:transaction:update');
         $this->setDescription('Poll your BTCPay Server for the latest transaction updates (in case you missed any)');
 
         parent::configure();
