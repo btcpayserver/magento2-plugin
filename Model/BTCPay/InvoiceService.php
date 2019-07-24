@@ -12,8 +12,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use stdClass;
 use Storefront\BTCPay\Helper\Data;
 
-class InvoiceService
-{
+class InvoiceService {
 
     /**
      * @var ScopeConfigInterface
@@ -48,8 +47,7 @@ class InvoiceService
      */
     private $configResource;
 
-    public function __construct(ResourceConnection $resource, \Magento\Framework\App\Config\ConfigResource\ConfigInterface $configResource, Data $helper, StoreManagerInterface $storeManager, UrlInterface $url, \Magento\Framework\HTTP\ZendClientFactory $httpClientFactory, ScopeConfigInterface $scopeConfig)
-    {
+    public function __construct(ResourceConnection $resource, \Magento\Framework\App\Config\ConfigResource\ConfigInterface $configResource, Data $helper, StoreManagerInterface $storeManager, UrlInterface $url, \Magento\Framework\HTTP\ZendClientFactory $httpClientFactory, ScopeConfigInterface $scopeConfig) {
         $this->httpClientFactory = $httpClientFactory;
         $this->scopeConfig = $scopeConfig;
         $this->url = $url;
@@ -59,8 +57,7 @@ class InvoiceService
         $this->configResource = $configResource;
     }
 
-    public function checkInvoiceStatus($invoiceId, $storeId)
-    {
+    public function checkInvoiceStatus($invoiceId, $storeId) {
         // TODO replace with Zend HTTP Client
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->getInvoicesEndpoint($storeId) . '/' . $invoiceId);
@@ -71,8 +68,7 @@ class InvoiceService
         return $result;
     }
 
-    public function pair($pairingCode)
-    {
+    public function pair($storeId) {
 
         /**
          * Create the client, there's a lot to it and there are some easier ways, I am
@@ -87,6 +83,9 @@ class InvoiceService
          * AdapterInterface
          */
         $adapter = new \BTCPayServer\Client\Adapter\CurlAdapter();
+
+        $privateKey = $this->helper->getPrivateKey();
+        $publicKey = $this->helper->getPublicKey();
 
         /**
          * Now all the objects are created and we can inject them into the client
@@ -108,6 +107,8 @@ class InvoiceService
         $sin = \BTCPayServer\SinKey::create()->setPublicKey($publicKey)->generate();
         /**** end ****/
 
+        $pairingCode = $this->getPairingCode($storeId);
+
         $token = $client->createToken([
             'pairingCode' => $pairingCode,
             'label' => 'Magento',
@@ -116,10 +117,11 @@ class InvoiceService
 
         $this->configResource->saveConfig('payment/btcpay/pairing_code', $pairingCode);
         $this->configResource->saveConfig('payment/btcpay/token', $token->getToken());
+
+        return $token->getToken();
     }
 
-    public function createInvoice(\Magento\Sales\Model\Order $order)
-    {
+    public function createInvoice(\Magento\Sales\Model\Order $order) {
         $storeId = $order->getStoreId();
         $orderId = $order->getId();
 
@@ -160,8 +162,13 @@ class InvoiceService
         $sin = \BTCPayServer\SinKey::create()->setPublicKey($publicKey)->generate();
         /**** end ****/
 
+        $tokenString = $this->getToken($storeId);
+
+        if (!$tokenString) {
+            $tokenString = $this->pair($storeId);
+        }
         $token = new Token();
-        $token->setToken($this->getToken($storeId));
+        $token->setToken($tokenString);
 
 //            /**
 //             * The code will throw an exception if anything goes wrong, if you did not
@@ -232,8 +239,8 @@ class InvoiceService
         // Configure the rest of the invoice
         $ipnUrl = $this->storeManager->getStore()->getBaseUrl() . 'rest/V1/btcpay/ipn';
 
-        $invoice->setOrderId($order->getIncrementId())// You will receive IPN's at this URL, should be HTTPS for security purposes!
-        ->setNotificationUrl($ipnUrl);
+        $invoice->setOrderId($order->getIncrementId());
+        $invoice->setNotificationUrl($ipnUrl);
 
         /**
          * Updates invoice with new information such as the invoice id and the URL where
@@ -356,8 +363,7 @@ class InvoiceService
 //        return $data['data']['url'] ?? false;
 //    }
 
-    public function updateBuyersEmail($invoice_result, $buyers_email)
-    {
+    public function updateBuyersEmail($invoice_result, $buyers_email) {
         $invoice_result = json_decode($invoice_result, false);
 
         $token = $this->getPairingCode();
@@ -379,8 +385,7 @@ class InvoiceService
         return $result;
     }
 
-    public function updateBuyerCurrency($invoice_result, $buyer_currency)
-    {
+    public function updateBuyerCurrency($invoice_result, $buyer_currency) {
         $invoice_result = json_decode($invoice_result);
 
         $update_fields = new stdClass();
@@ -403,37 +408,31 @@ class InvoiceService
     /**
      * @return string
      */
-    public function getBuyerTransactionEndpoint()
-    {
+    public function getBuyerTransactionEndpoint() {
         return $this->host . '/invoiceData/setBuyerSelectedTransactionCurrency';
     }
 
-    public function getStoreConfig($path, $storeId)
-    {
+    public function getStoreConfig($path, $storeId) {
         $r = $this->scopeConfig->getValue($path, ScopeInterface::SCOPE_STORE, $storeId);
         return $r;
     }
 
-    private function getPairingCode($storeId)
-    {
+    private function getPairingCode($storeId) {
         $r = $this->getStoreConfig('payment/btcpay/pairing_code', $storeId);
         return $r;
     }
 
-    private function getToken($storeId)
-    {
+    private function getToken($storeId) {
         $r = $this->getStoreConfig('payment/btcpay/token', $storeId);
         return $r;
     }
 
-    private function getHost($storeId)
-    {
+    private function getHost($storeId) {
         $r = $this->getStoreConfig('payment/btcpay/host', $storeId);
         return $r;
     }
 
-    private function getInvoicesEndpoint(int $storeId)
-    {
+    private function getInvoicesEndpoint(int $storeId) {
         $host = $this->getHost($storeId);
         $r = 'https://' . $host . '/invoices';
         return $r;

@@ -36,8 +36,8 @@ class EncryptedConfigStorage implements StorageInterface {
         $this->configResource = $configResource;
     }
 
-    private function getConfigKey($id){
-        return 'btcpay/keys/' .$id;
+    private function getConfigKey($id) {
+        return 'btcpay/keys/' . $id;
     }
 
     /**
@@ -73,13 +73,12 @@ class EncryptedConfigStorage implements StorageInterface {
         $dataCollection = $this->configValueFactory->create()->getCollection();
         $dataCollection->addFieldToFilter('path', ['eq' => $path]);
 
-        $config = [];
-
-        foreach ($dataCollection as $row) {
-            $config[$row->getPath()] = $row->getValue();
+        $row = $dataCollection->getFirstItem();
+        if ($row->getId()) {
+            return $row->getValue();
+        } else {
+            return false;
         }
-
-        return $config;
     }
 
 
