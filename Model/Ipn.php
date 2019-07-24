@@ -10,6 +10,11 @@ class Ipn {
         $this->helper = $helper;
     }
 
+    /**
+     * @param $path
+     * @param $storeId
+     * @return mixed
+     */
     public function getStoreConfig($path, $storeId) {
         $_val = $this->scopeConfig->getValue($path, ScopeInterface::SCOPE_STORE, $storeId);
         return $_val;
@@ -17,6 +22,12 @@ class Ipn {
     }
 
 
+    /**
+     * @throws \Magento\Framework\Exception\InputException
+     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @return void
+     */
     public function process() {
         $postedString = file_get_contents('php://input');
         if (!$postedString) {
