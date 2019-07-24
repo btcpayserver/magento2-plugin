@@ -4,6 +4,14 @@
 - Magento 2.3 installation (tested on Community Edition 2.3.2 with PHP 7.2)
 - Magento < 2.3 should also work, but is untested.
 
+## Features
+- Allows you to pay with BTCPay Server in Magento 2 stores
+- Magento receives transaction updates and updates the order statuses 
+- Custom order statuses in Magento are supported
+- View BTC Pay transactions created in Magento Admin
+- Magento also polls for transaction updates as a safety net for when real-time updates didn't reach Magento
+- Multi-website and multi-store compatible
+
 ## Goal
 The goal of this module is to allow Bitcoin, Lightcoin and other crypto payments in Magento 2 without any other 3rd party.
 This module is also designed to be robust, low-maintenance and a solid foundation for future customization, should your business need it.

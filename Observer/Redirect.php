@@ -11,6 +11,9 @@ use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
+use Magento\Framework\Session\SessionManagerInterface;
+use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
+use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\UrlInterface;
 use Magento\Sales\Model\OrderRepository;
 use Magento\Store\Model\ScopeInterface;
@@ -44,18 +47,32 @@ class Redirect implements ObserverInterface {
      * @var AdapterInterface
      */
     private $db;
+    /**
+     * @var CookieManagerInterface
+     */
+    private $cookieManager;
+    /**
+     * @var CookieMetadataFactory
+     */
+    private $cookieMetadataFactory;
+    /**
+     * @var SessionManagerInterface
+     */
+    private $sessionManager;
 
-    public function __construct(ScopeConfigInterface $scopeConfig, ResourceConnection $resource, UrlInterface $url, StoreManagerInterface $storeManager, ActionFlag $actionFlag, RedirectInterface $redirect, ResponseInterface $response, OrderRepository $orderRepository, CustomerSession $customerSession) {
+    public function __construct(ScopeConfigInterface $scopeConfig, ResourceConnection $resource, UrlInterface $url, StoreManagerInterface $storeManager, RedirectInterface $redirect, ResponseInterface $response, OrderRepository $orderRepository, CustomerSession $customerSession, CookieManagerInterface $cookieManager, CookieMetadataFactory $cookieMetadataFactory, SessionManagerInterface $sessionManager) {
 
         $this->scopeConfig = $scopeConfig;
         $this->url = $url;
-        $this->actionFlag = $actionFlag;
         $this->redirect = $redirect;
         $this->response = $response;
         $this->orderRepository = $orderRepository;
         $this->storeManager = $storeManager;
         $this->customerSession = $customerSession;
         $this->db = $resource->getConnection();
+        $this->cookieMetadataFactory = $cookieMetadataFactory;
+        $this->cookieManager = $cookieManager;
+        $this->sessionManager = $sessionManager;
     }
 
     public function getStoreConfig($path, $storeId) {
@@ -63,57 +80,66 @@ class Redirect implements ObserverInterface {
         return $r;
     }
 
-    public function getOrder($orderId) {
-        // TODO remove use of ObjectManager
-        // TODO is this the order ID or the increment id ?
-        $objectManager = ObjectManager::getInstance();
-        $order = $objectManager->create(OrderInterface::class)->load($orderId);
-        return $order;
+    private function setCookie($name, $value, $duration) {
+        $path = $this->sessionManager->getCookiePath();
+        $domain = $this->sessionManager->getCookieDomain();
 
+        $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()->setDuration($duration)->setPath($path)->setDomain($domain);
+
+        $this->cookieManager->setPublicCookie($name, $value, $metadata);
     }
 
-    public function getBaseUrl() {
-        return $this->storeManager->getStore()->getBaseUrl();
-
-    }
 
     public function execute(Observer $observer) {
-        $this->actionFlag->set('', Action::FLAG_NO_DISPATCH, true);
-
-        $order_ids = $observer->getEvent()->getOrderIds();
-        $orderId = $order_ids[0];
-        $order = $this->getOrder($orderId);
+        $orderIds = $observer->getEvent()->getOrderIds();
+        $orderId = $orderIds[0];
+        $order = $this->orderRepository->get($orderId);
         $orderIncrementId = $order->getIncrementId();
 
-        if ($order->getPayment()->getMethodInstance()->getCode() === 'btcpay') {
-            // Force status
-            $order->setState('new', true);
-            $order->setStatus('pending', true);
+        if ($order->getPayment()->getMethodInstance()->getCode() === \Storefront\BTCPay\Model\BTCPay::PAYMENT_METHOD_CODE) {
+
+            $storeId = $order->getStoreId();
+
+            $token = $this->getStoreConfig('payment/btcpay/token', $storeId);
+            $host = $this->getStoreConfig('payment/btcpay/host', $storeId);
+            $newStatus = $this->getStoreConfig('payment/btcpay/new_status', $storeId);
+
+            $order->setState('new');
+            if($newStatus) {
+                $order->setStatus($newStatus);
+            }else{
+                $order->setStatus('new');
+            }
 
             $order->save();
-
-            $token = $this->getStoreConfig('payment/btcpay/token', $order->getStoreId());
-            $host = $this->getStoreConfig('payment/btcpay/host', $order->getStoreId());
 
 
             //create an item, should be passed as an object'
             $params = new stdClass();
             //$params->extension_version = $this->getExtensionVersion();
-            $params->price = $order['base_grand_total'];
-            $params->currency = $order['base_currency_code']; //set as needed
-
+            $params->price = $order->getGrandTotal();
+            $params->currency = $order->getCurrencyCode();
 
             $buyerInfo = new stdClass();
-            if ($this->customerSession->isLoggedIn()) {
-                $buyerInfo->name = $this->customerSession->getCustomer()->getName();
-                $buyerInfo->email = $this->customerSession->getCustomer()->getEmail();
 
-            } else {
-                $buyerInfo->name = $order->getBillingAddress()->getFirstName() . ' ' . $order->getBillingAddress()->getLastName();
-                $buyerInfo->email = $order->getCustomerEmail();
+            $nameParts = [];
+            $billingAddress = $order->getBillingAddress();
+
+            if ($billingAddress->getFirstname()) {
+                $nameParts[] = $billingAddress->getFirstname();
             }
+            if ($billingAddress->getMiddlename()) {
+                $nameParts[] = $billingAddress->getMiddlename();
+            }
+            if ($billingAddress->getLastname()) {
+                $nameParts[] = $billingAddress->getLastname();
+            }
+
+            $buyerInfo->name = implode(' ', $nameParts);
+            $buyerInfo->email = $order->getCustomerEmail();
+
             $params->buyer = $buyerInfo;
-            $params->orderId = trim($orderIncrementId);
+            $params->orderId = $orderIncrementId;
 
             if ($this->customerSession->isLoggedIn()) {
                 $params->redirectURL = $this->url->getUrl('sales/order/view/', ['order_id' => $orderId]);
@@ -122,15 +148,14 @@ class Redirect implements ObserverInterface {
                 // Send the guest back to the order/returns page to lookup
                 $params->redirectURL = $this->url->getUrl('sales/guest/form');
 
-                // TODO set cookies the Magento way
                 $duration = 30 * 24 * 60 * 60;
-                setcookie('oar_order_id', $orderIncrementId, time() + $duration, '/');
-                setcookie('oar_billing_lastname', $order->getBillingAddress()->getLastName(), time() + $duration, '/');
-                setcookie('oar_email', $order->getCustomerEmail(), time() + $duration, '/');
+                $this->setCookie('oar_order_id', $orderIncrementId, $duration);
+                $this->setCookie('oar_billing_lastname', $order->getBillingAddress()->getLastName(),  $duration);
+                $this->setCookie('oar_email', $order->getCustomerEmail(), $duration);
             }
 
             // TODO build URL to the REST API the Magento way
-            $params->notificationURL = $this->getBaseUrl() . 'rest/V1/btcpay/ipn';
+            $params->notificationURL = $this->storeManager->getStore()->getBaseUrl() . 'rest/V1/btcpay/ipn';
             $params->extendedNotifications = true;
             $params->acceptanceWindow = 1200000;
 

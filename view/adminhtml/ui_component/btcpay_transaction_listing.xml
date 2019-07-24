@@ -10,29 +10,22 @@
 		<deps>
 			<dep>btcpay_transaction_listing.btcpay_transaction_listing_data_source</dep>
 		</deps>
-		<buttons>
-			<button name="add">
-				<url path="*/*/new"/>
-				<class>primary</class>
-				<label translate="true">Add new Transaction</label>
-			</button>
-		</buttons>
 	</settings>
 	<dataSource component="Magento_Ui/js/grid/provider" name="btcpay_transaction_listing_data_source">
 		<settings>
 			<updateUrl path="mui/index/render"/>
 		</settings>
-		<aclResource>Storefront_BTCPay::Transaction</aclResource>
+		<aclResource>Storefront_BTCPay::transaction</aclResource>
 		<dataProvider class="Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider" name="btcpay_transaction_listing_data_source">
 			<settings>
 				<requestFieldName>id</requestFieldName>
-				<primaryFieldName>transaction_id</primaryFieldName>
+				<primaryFieldName>id</primaryFieldName>
 			</settings>
 		</dataProvider>
 	</dataSource>
 	<listingToolbar name="listing_top">
 		<settings>
-			<sticky>true</sticky>
+			<sticky>false</sticky>
 		</settings>
 		<bookmark name="bookmarks"/>
 		<columnsControls name="columns_controls"/>
@@ -44,7 +37,7 @@
 			<editorConfig>
 				<param name="selectProvider" xsi:type="string">btcpay_transaction_listing.btcpay_transaction_listing.btcpay_transaction_columns.ids</param>
 				<param name="enabled" xsi:type="boolean">true</param>
-				<param name="indexField" xsi:type="string">transaction_id</param>
+				<param name="indexField" xsi:type="string">id</param>
 				<param name="clientConfig" xsi:type="array">
 					<item name="saveUrl" path="storefront_btcpay/Transaction/inlineEdit" xsi:type="url"/>
 					<item name="validateBeforeSave" xsi:type="boolean">false</item>
@@ -63,20 +56,20 @@
 		</settings>
 		<selectionsColumn name="ids">
 			<settings>
-				<indexField>transaction_id</indexField>
+				<indexField>id</indexField>
 			</settings>
 		</selectionsColumn>
 		<column name="transaction_id">
 			<settings>
 				<filter>text</filter>
 				<sorting>asc</sorting>
-				<label translate="true">ID</label>
+				<label translate="true">Transaction ID</label>
 			</settings>
 		</column>
 		<column name="transaction_status">
 			<settings>
 				<filter>text</filter>
-				<label translate="true">transaction_status</label>
+				<label translate="true">Transaction Status</label>
 				<editor>
 					<editorType>text</editorType>
 					<validation>
@@ -87,7 +80,7 @@
 		</column>
 		<actionsColumn class="Storefront\BTCPay\Ui\Component\Listing\Column\TransactionActions" name="actions">
 			<settings>
-				<indexField>transaction_id</indexField>
+				<indexField>id</indexField>
 				<resizeEnabled>false</resizeEnabled>
 				<resizeDefaultWidth>107</resizeDefaultWidth>
 			</settings>

@@ -14,12 +14,22 @@ use Magento\Payment\Model\Method\AbstractMethod;
  */
 class BTCPay extends AbstractMethod {
 
+
+    const PAYMENT_METHOD_CODE = 'btcpay';
+
     /**
      * Payment code
      *
      * @var string
      */
-    protected $_code = 'btcpay';
+    protected $_code = self::PAYMENT_METHOD_CODE;
+
+    /**
+     * Payment Method feature
+     *
+     * @var bool
+     */
+    protected $_isGateway = true;
 
     /**
      * Availability option
@@ -34,8 +44,8 @@ class BTCPay extends AbstractMethod {
         if ($r) {
             $token = $this->getConfigData('token');
 
-            if ($token === '' || strlen($token) !== 44) {
-                // Hide the payment method
+            if (!$token) {
+                // Hide the payment method, no token entered
                 $r = false;
             }
         }
