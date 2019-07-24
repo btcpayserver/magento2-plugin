@@ -6,8 +6,22 @@ use Magento\Framework\DB\Ddl\Table;
 use Magento\Framework\Setup\InstallSchemaInterface;
 use Magento\Framework\Setup\ModuleContextInterface;
 use Magento\Framework\Setup\SchemaSetupInterface;
+use Storefront\BTCPay\Helper\Data;
+use Storefront\BTCPay\Storage\EncryptedConfigStorage;
 
 class InstallSchema implements InstallSchemaInterface {
+
+
+    /**
+     * @var Data
+     */
+    private $helper;
+
+    public function __construct(Data $helper) {
+        $this->helper = $helper;
+    }
+
+
     public function install(SchemaSetupInterface $setup, ModuleContextInterface $context) {
         $installer = $setup;
         $installer->startSetup();
@@ -35,6 +49,13 @@ class InstallSchema implements InstallSchemaInterface {
 
         $connection->createTable($table);
 
+
+        // Generate the keys
+        $this->helper->generateKeys();
+
+
         $installer->endSetup();
     }
+
+
 }

@@ -16,13 +16,18 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\OrderRepository;
+use Magento\Sales\Model\Service\InvoiceService;
 use RuntimeException;
 use stdClass;
-use Storefront\BTCPay\Model\BTCPay\InvoiceService;
 use Storefront\BTCPay\Model\Invoice;
 use Storefront\BTCPay\Model\Item;
+use Storefront\BTCPay\Storage\EncryptedConfigStorage;
 
 class Data {
+
+    CONST KEY_PUBLIC = 'btcpay.pub';
+    CONST KEY_PRIVATE = 'btcpay.priv';
+
     private $invoiceService;
     private $transaction;
     private $orderRepository;
@@ -33,16 +38,23 @@ class Data {
     private $db;
 
     /**
+     * @var EncryptedConfigStorage
+     */
+    private $encryptedConfigStorage;
+
+
+    /**
      * @param OrderRepository $orderRepository
      * @param InvoiceService $invoiceService
      * @param Transaction $transaction
      * @param ResourceConnection $resourceConnection
      */
-    public function __construct(OrderRepository $orderRepository, InvoiceService $invoiceService, Transaction $transaction, ResourceConnection $resourceConnection) {
+    public function __construct(EncryptedConfigStorage $encryptedConfigStorage, OrderRepository $orderRepository, InvoiceService $invoiceService, Transaction $transaction, ResourceConnection $resourceConnection) {
         $this->orderRepository = $orderRepository;
         $this->invoiceService = $invoiceService;
         $this->transaction = $transaction;
         $this->db = $resourceConnection->getConnection();
+        $this->encryptedConfigStorage = $encryptedConfigStorage;
     }
 
     /**
@@ -174,5 +186,55 @@ class Data {
 
         $result = $this->db->fetchRow($select);
         $row = $result->fetch();
+    }
+
+    public function generateKeys() {
+        /**
+         * Start by creating a PrivateKey object
+         */
+        $privateKey = new \BTCPayServer\PrivateKey(self::KEY_PRIVATE);
+
+        // Generate a random number
+        $privateKey->generate();
+
+
+        // Once we have a private key, a public key is created from it.
+        $publicKey = new \BTCPayServer\PublicKey(self::KEY_PUBLIC);
+
+        // Inject the private key into the public key
+        $publicKey->setPrivateKey($privateKey);
+
+        // Generate the public key
+        $publicKey->generate();
+
+
+        /**
+         * Now that you have a private and public key generated, you will need to store
+         * them somewhere. Please be aware that you MUST store the private key with some type
+         * of security. If the private key is comprimised you will need to repeat this
+         * process.
+         */
+
+        /**
+         * It's recommended that you use the EncryptedFilesystemStorage engine to persist your
+         * keys. You can, of course, create your own as long as it implements the StorageInterface
+         */
+
+        $this->encryptedConfigStorage->persist($privateKey);
+        $this->encryptedConfigStorage->persist($publicKey);
+    }
+
+    /**
+     * @return \BTCPayServer\Storage\KeyInterface
+     */
+    public function getPrivateKey() {
+        return $this->encryptedConfigStorage->load(self::KEY_PRIVATE);
+    }
+
+    /**
+     * @return \BTCPayServer\Storage\KeyInterface
+     */
+    public function getPublicKey() {
+        return $this->encryptedConfigStorage->load(self::KEY_PUBLIC);
     }
 }

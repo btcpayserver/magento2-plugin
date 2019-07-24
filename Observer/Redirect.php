@@ -78,6 +78,17 @@ class Redirect implements ObserverInterface {
 
         if ($order->getPayment()->getMethodInstance()->getCode() === \Storefront\BTCPay\Model\BTCPay::PAYMENT_METHOD_CODE) {
 
+            $newStatus = $this->getStoreConfig('payment/btcpay/new_status', $order->getStoreId());
+
+            $order->setState('new');
+            if ($newStatus) {
+                $order->setStatus($newStatus);
+            } else {
+                $order->setStatus('new'); // TODO can we avoid hard coded status here?
+            }
+
+            $order->save();
+
             $btcpayInvoice = $this->invoiceService->createInvoice($order);
 
             $invoiceId = $btcpayInvoice->getId();

@@ -29,9 +29,9 @@
                     <comment>Your BTCPay Server domain. Don't put "https://", just the domain. Example: mybtcpay.com</comment>
                 </field>
 
-                <field id="token" translate="label" type="text" sortOrder="40" showInDefault="1"
-                       showInWebsite="1" showInStore="1">
-                    <label>BTCPay Access Token</label>
+                <field id="pairing_code" translate="label" type="text" sortOrder="40" showInDefault="1"
+                       showInWebsite="0" showInStore="0">
+                    <label>Pairing Code</label>
                     <comment>
                         <![CDATA[
                         To get this token:
