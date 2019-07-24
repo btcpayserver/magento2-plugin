@@ -3,6 +3,7 @@
 ## Requirements
 - Magento 2.3 installation (tested on Community Edition 2.3.2 with PHP 7.2)
 - Magento < 2.3 should also work, but is untested.
+- Your BTCPay server must be setup with HTTPS
 
 ## Features
 - Allows you to pay with BTCPay Server in Magento 2 stores
@@ -38,6 +39,7 @@ This depends on your configuration of BTCPay Server. All payment methods you hav
 
 ## What isn't supported?
 - Only 1 domain name can be configured for BTCPay Server, so you cannot have multiple BTCPay Servers. The one is used for the whole Magento installation.
+- Connecting to BTCPay server over HTTP is not possible. Only HTTPS.
 
 ## Who has created this module?
 This module was created by Storefront, a small Magento integrator from Belgium with over 10 years experience. Visit our website at www.storefront.be to learn more about us.

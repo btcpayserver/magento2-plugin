@@ -16,9 +16,9 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\OrderRepository;
-use Magento\Sales\Model\Service\InvoiceService;
 use RuntimeException;
 use stdClass;
+use Storefront\BTCPay\Model\BTCPay\InvoiceService;
 use Storefront\BTCPay\Model\Invoice;
 use Storefront\BTCPay\Model\Item;
 
