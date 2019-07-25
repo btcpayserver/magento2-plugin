@@ -11,8 +11,12 @@ use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use stdClass;
 use Storefront\BTCPay\Helper\Data;
+use Storefront\BTCPay\Storage\EncryptedConfigStorage;
 
 class InvoiceService {
+
+    CONST KEY_PUBLIC = 'btcpay.pub';
+    CONST KEY_PRIVATE = 'btcpay.priv';
 
     /**
      * @var ScopeConfigInterface
@@ -46,15 +50,19 @@ class InvoiceService {
      * @var \Magento\Framework\App\Config\ConfigResource\ConfigInterface
      */
     private $configResource;
+    /**
+     * @var EncryptedConfigStorage
+     */
+    private $encryptedConfigStorage;
 
-    public function __construct(ResourceConnection $resource, \Magento\Framework\App\Config\ConfigResource\ConfigInterface $configResource, Data $helper, StoreManagerInterface $storeManager, UrlInterface $url, \Magento\Framework\HTTP\ZendClientFactory $httpClientFactory, ScopeConfigInterface $scopeConfig) {
+    public function __construct(ResourceConnection $resource, EncryptedConfigStorage $encryptedConfigStorage, \Magento\Framework\App\Config\ConfigResource\ConfigInterface $configResource, StoreManagerInterface $storeManager, UrlInterface $url, \Magento\Framework\HTTP\ZendClientFactory $httpClientFactory, ScopeConfigInterface $scopeConfig) {
         $this->httpClientFactory = $httpClientFactory;
         $this->scopeConfig = $scopeConfig;
         $this->url = $url;
         $this->storeManager = $storeManager;
         $this->db = $resource->getConnection();
-        $this->helper = $helper;
         $this->configResource = $configResource;
+        $this->encryptedConfigStorage = $encryptedConfigStorage;
     }
 
     public function checkInvoiceStatus($invoiceId, $storeId) {
@@ -68,37 +76,70 @@ class InvoiceService {
         return $result;
     }
 
-    public function pair($storeId) {
-
-        /**
-         * Create the client, there's a lot to it and there are some easier ways, I am
-         * showing the long form here to show how various things are injected into the
-         * client.
-         */
+    /**
+     * @param $storeId
+     * @return \BTCPayServer\Client\Client
+     */
+    private function getClient($storeId, $loadToken = true) {
         $client = new \BTCPayServer\Client\Client();
 
-        /**
-         * The adapter is what will make the calls to BTCPayServer and return the response
-         * from BTCPayServer. This can be updated or changed as long as it implements the
-         * AdapterInterface
-         */
         $adapter = new \BTCPayServer\Client\Adapter\CurlAdapter();
 
-        $privateKey = $this->helper->getPrivateKey();
-        $publicKey = $this->helper->getPublicKey();
+        $privateKey = $this->getPrivateKey();
+        $publicKey = $this->getPublicKey();
 
-        /**
-         * Now all the objects are created and we can inject them into the client
-         */
         $client->setPrivateKey($privateKey);
         $client->setPublicKey($publicKey);
 
-        /**
-         * Add your btcpayserver url
-         */
+        // your BTCPay Server url
+        // Note: hard coded to HTTPS!
         $client->setUri('https://' . $this->getHost($storeId) . '/');
 
         $client->setAdapter($adapter);
+
+        if ($loadToken) {
+            $token = $this->getTokenOrRegenerate($storeId);
+            $client->setToken($token);
+        }
+
+        return $client;
+    }
+
+    /**
+     * @param $storeId
+     * @return Token
+     * @throws \BTCPayServer\Client\BTCPayServerException
+     */
+    public function pair($storeId, $pairingCode = null) {
+
+        if ($pairingCode === null) {
+            $pairingCode = $this->getPairingCode($storeId);
+        } else {
+            $this->setPairingCode($pairingCode);
+        }
+
+        /**
+         * Start by creating a PrivateKey object
+         */
+        $privateKey = new \BTCPayServer\PrivateKey(self::KEY_PRIVATE);
+
+        // Generate a random number
+        $privateKey->generate();
+
+        // Once we have a private key, a public key is created from it.
+        $publicKey = new \BTCPayServer\PublicKey(self::KEY_PUBLIC);
+
+        // Inject the private key into the public key
+        $publicKey->setPrivateKey($privateKey);
+
+        // Generate the public key
+        $publicKey->generate();
+
+        $this->encryptedConfigStorage->persist($privateKey);
+        $this->encryptedConfigStorage->persist($publicKey);
+
+        $client = $this->getClient($storeId, false);
+
 
         /**
          * Currently this part is required, however future versions of the PHP SDK will
@@ -107,68 +148,34 @@ class InvoiceService {
         $sin = \BTCPayServer\SinKey::create()->setPublicKey($publicKey)->generate();
         /**** end ****/
 
-        $pairingCode = $this->getPairingCode($storeId);
+        $baseUrl = $this->getStoreConfig('web/unsecure/base_url', $storeId);
+        $baseUrl = str_replace('http://', '', $baseUrl);
+        $baseUrl = str_replace('https://', '', $baseUrl);
+        $baseUrl = trim($baseUrl, ' /');
 
         $token = $client->createToken([
             'pairingCode' => $pairingCode,
-            'label' => 'Magento',
+            'label' => $baseUrl . ' (Magento 2 Storefront_BTCPay, ' . date('Y-m-d H:i:s') . ')',
             'id' => (string)$sin,
         ]);
 
         $this->configResource->saveConfig('payment/btcpay/pairing_code', $pairingCode);
         $this->configResource->saveConfig('payment/btcpay/token', $token->getToken());
 
-        return $token->getToken();
+
+        // TODO test the new token somehow?
+
+        return $token;
     }
 
     public function createInvoice(\Magento\Sales\Model\Order $order) {
         $storeId = $order->getStoreId();
         $orderId = $order->getId();
 
-        $privateKey = $this->helper->getPrivateKey();
-        $publicKey = $this->helper->getPublicKey();
+        $publicKey = $this->getPublicKey();
 
-        /**
-         * Create the client, there's a lot to it and there are some easier ways, I am
-         * showing the long form here to show how various things are injected into the
-         * client.
-         */
-        $client = new \BTCPayServer\Client\Client();
+        $client = $this->getClient($storeId);
 
-        /**
-         * The adapter is what will make the calls to BTCPayServer and return the response
-         * from BTCPayServer. This can be updated or changed as long as it implements the
-         * AdapterInterface
-         */
-        $adapter = new \BTCPayServer\Client\Adapter\CurlAdapter();
-
-        /**
-         * Now all the objects are created and we can inject them into the client
-         */
-        $client->setPrivateKey($privateKey);
-        $client->setPublicKey($publicKey);
-
-        /**
-         * Add your btcpayserver url
-         */
-        $client->setUri('https://' . $this->getHost($storeId) . '/');
-
-        $client->setAdapter($adapter);
-
-        /**
-         * Currently this part is required, however future versions of the PHP SDK will
-         * be refactor and this part may become obsolete.
-         */
-        $sin = \BTCPayServer\SinKey::create()->setPublicKey($publicKey)->generate();
-        /**** end ****/
-
-        $tokenString = $this->getToken($storeId);
-
-        if (!$tokenString) {
-            $tokenString = $this->pair($storeId);
-        }
-        $token = new Token();
-        $token->setToken($tokenString);
 
 //            /**
 //             * The code will throw an exception if anything goes wrong, if you did not
@@ -408,23 +415,34 @@ class InvoiceService {
     /**
      * @return string
      */
-    public function getBuyerTransactionEndpoint() {
+    public function getBuyerTransactionEndpoint(): string {
         return $this->host . '/invoiceData/setBuyerSelectedTransactionCurrency';
     }
 
-    public function getStoreConfig($path, $storeId) {
+    public function getStoreConfig($path, $storeId): ?string {
         $r = $this->scopeConfig->getValue($path, ScopeInterface::SCOPE_STORE, $storeId);
         return $r;
     }
 
-    private function getPairingCode($storeId) {
+    private function getPairingCode(int $storeId): ?string {
         $r = $this->getStoreConfig('payment/btcpay/pairing_code', $storeId);
         return $r;
     }
 
-    private function getToken($storeId) {
-        $r = $this->getStoreConfig('payment/btcpay/token', $storeId);
-        return $r;
+    /**
+     * @param $storeId
+     * @return Token
+     */
+    private function getTokenOrRegenerate(int $storeId): Token {
+        $tokenString = $this->getStoreConfig('payment/btcpay/token', $storeId);
+
+        if (!$tokenString) {
+            $tokenString = $this->pair($storeId);
+        }
+        $token = new Token();
+        $token->setToken($tokenString);
+
+        return $token;
     }
 
     private function getHost($storeId) {
@@ -436,5 +454,30 @@ class InvoiceService {
         $host = $this->getHost($storeId);
         $r = 'https://' . $host . '/invoices';
         return $r;
+    }
+
+    /**
+     * @param $pairingCode
+     * @return bool
+     */
+    public function setPairingCode($pairingCode) {
+        // TODO if we want to make this module multi-BTCPay server, this would need to be store view scoped
+        $this->configResource->saveConfig('payment/btcpay/pairing_code', $pairingCode);
+        // TODO flush the cache after this
+        return true;
+    }
+
+    /**
+     * @return \BTCPayServer\Storage\KeyInterface
+     */
+    public function getPrivateKey() {
+        return $this->encryptedConfigStorage->load(\Storefront\BTCPay\Model\BTCPay\InvoiceService::KEY_PRIVATE);
+    }
+
+    /**
+     * @return \BTCPayServer\Storage\KeyInterface
+     */
+    public function getPublicKey() {
+        return $this->encryptedConfigStorage->load(\Storefront\BTCPay\Model\BTCPay\InvoiceService::KEY_PUBLIC);
     }
 }

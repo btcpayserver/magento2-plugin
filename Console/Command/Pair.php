@@ -22,37 +22,47 @@
 namespace Storefront\BTCPay\Console\Command;
 
 use Storefront\BTCPay\Helper\Data;
+use Storefront\BTCPay\Model\BTCPay\InvoiceService;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class RegenerateKeys extends Command {
+class Pair extends Command {
 
 
     /**
      * @var Data
      */
     private $helper;
+    /**
+     * @var InvoiceService
+     */
+    private $invoiceService;
 
-    public function __construct(Data $helper, string $name = null) {
+
+    public function __construct(Data $helper, InvoiceService $invoiceService, string $name = null) {
         parent::__construct($name);
         $this->helper = $helper;
+        $this->invoiceService = $invoiceService;
     }
 
     /**
      * {@inheritdoc}
      */
     protected function execute(InputInterface $input, OutputInterface $output) {
-        $this->helper->generateKeys();
-        $output->writeln('New keys generated. Reset your access token to re-establish the connection.');
+        $pairingCode = $input->getArgument('pairing_code');
+        $this->invoiceService->pair(0, $pairingCode);
+        $output->writeln('Successfully paired and new keys generated.');
     }
 
     /**
      * {@inheritdoc}
      */
     protected function configure() {
-        $this->setName('btcpay:keys:regenerate');
-        $this->setDescription('Regenerate your private and public keys for communication with BTCPay Server. After this reset, you have to enter a new Access Token to make the connection work again.');
+        $this->setName('btcpay:pair');
+        $this->setDescription('Connect Magento and BTCPay Server using a pairing code. This will also generate new private and public keys for communication with BTCPay Server.');
+        $this->addArgument('pairing_code', InputArgument::REQUIRED, 'The pairing code you got from BTCPay Server > Store > Access Tokens.');
         parent::configure();
     }
 }

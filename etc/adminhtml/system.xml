@@ -40,11 +40,12 @@
                         <li>Go to "Stores"</li>
                         <li>Go to "Access Tokens"</li>
                         <li>Click "Create a new token"</li>
-                        <li>Give the connection a label, i.e. "Magento 2 payment"</li>
-                        <li>Leave the "PublicKey" field empty</li>
-                        <li>Approve the pairing</li>
+                        <li>Don't enter anything (leave the fields "Label" and "PublicKey" empty)</li>
+                        <li>Click "Request pairing"</li>
+                        <li>On the next step you'll see that the Label is empty and SIN says "Server-Initiated Pairing". This is fine.
+                        <li>Make sure the correct store is selected in the dropdown and click "Approve".</li>
                         <li>You will see a green succes message that reads: "Server initiated pairing code: xxx"</li>
-                        <li>Put this code here</li>
+                        <li>Put this code here or you can configure Magento from the command line by running bin/magento btcpay:pair <your pairing code></li>
                         </ol>
                         ]]>
                     </comment>
