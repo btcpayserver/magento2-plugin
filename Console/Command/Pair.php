@@ -43,7 +43,6 @@ class Pair extends Command {
 
     public function __construct(Data $helper, InvoiceService $invoiceService, string $name = null) {
         parent::__construct($name);
-        $this->helper = $helper;
         $this->invoiceService = $invoiceService;
     }
 
