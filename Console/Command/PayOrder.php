@@ -54,8 +54,8 @@ class PayOrder extends Command {
     protected function execute(InputInterface $input, OutputInterface $output) {
         $orderId = $input->getArgument('orderId');
         $order = $this->orderRepository->get($orderId);
-        $url = $this->invoiceService->createInvoice($order);
-        $output->writeln(__('You can pay order %1 by visiting URL %2.', $order->getIncrementId(), $url));
+        $invoice = $this->invoiceService->createInvoice($order);
+        $output->writeln(__('You can pay order %1 by visiting URL %2.', $order->getIncrementId(), $invoice->getUrl()));
     }
 
     /**
