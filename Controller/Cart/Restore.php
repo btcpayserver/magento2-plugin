@@ -39,7 +39,8 @@ class Restore extends Action {
      */
     public function execute() {
         $order_id = $this->getRequest()->getParam('order_id');
-        // TODO remove Objectmanager
+        // TODO is this the order ID or the increment ID?
+        // TODO remove ObjectManager
         $_objectManager = ObjectManager::getInstance();
 
         $order = $this->_objectManager->create(Order::class);

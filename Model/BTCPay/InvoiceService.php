@@ -238,6 +238,15 @@ class InvoiceService {
         // When using extended notifications, the JSON is different and we get a lot more (too many even) notifications. Not needed.
         $btcpayInvoice->setExtendedNotifications(false);
 
+        $orderHash = $this->getOrderHash($order);
+        $returnUrl = $order->getStore()->getUrl('btcpay/checkout/returnafterpayment', [
+            'orderId' => $order->getId(),
+            'hash' => $orderHash,
+            'invoiceId' => $btcpayInvoice->getId(),
+            '_secure' => true
+        ]);
+        $btcpayInvoice->setRedirectUrl($returnUrl);
+
         $client->createInvoice($btcpayInvoice);
 
         $tableName = $this->db->getTableName('btcpay_transactions');
@@ -370,5 +379,16 @@ class InvoiceService {
     private function getPort($storeId) {
         // TODO port is hard coded for now
         return 443;
+    }
+
+    /**
+     * Create a unique hash for an order
+     * @param \Magento\Sales\Model\Order $order
+     * @return string
+     */
+    public function getOrderHash(\Magento\Sales\Model\Order $order) {
+        $preHash = $order->getId() . '-' . $order->getIncrementId() . '-' . $order->getSecret() . '-' . $order->getCreatedAt();
+        $r = sha1($preHash);
+        return $r;
     }
 }
