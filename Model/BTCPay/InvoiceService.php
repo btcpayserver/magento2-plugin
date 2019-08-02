@@ -238,12 +238,6 @@ class InvoiceService {
         // When using extended notifications, the JSON is different and we get a lot more (too many even) notifications. Not needed.
         $btcpayInvoice->setExtendedNotifications(false);
 
-        /**
-         * Updates invoice with new information such as the invoice id and the URL where
-         * a customer can view the invoice.
-         */
-
-        echo 'Creating invoice at BTCPayServer now.' . PHP_EOL;
         $client->createInvoice($btcpayInvoice);
 
         $tableName = $this->db->getTableName('btcpay_transactions');
