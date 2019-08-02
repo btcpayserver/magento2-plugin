@@ -232,9 +232,11 @@ class InvoiceService {
         $btcpayInvoice->setOrderId($order->getIncrementId());
         $btcpayInvoice->setNotificationUrl($ipnUrl);
 
-        // TODO what does this notify field to exactly? BTCPay never emails customers directly.
+        // If we use this, the IPN notifications will be emailed to this address.
         //$invoice->setNotificationEmail();
-        $btcpayInvoice->setExtendedNotifications(true);
+
+        // When using extended notifications, the JSON is different and we get a lot more (too many even) notifications. Not needed.
+        $btcpayInvoice->setExtendedNotifications(false);
 
         /**
          * Updates invoice with new information such as the invoice id and the URL where
