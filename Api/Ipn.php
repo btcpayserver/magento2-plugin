@@ -42,7 +42,7 @@ class Ipn implements IpnInterface
         unset($data);
 
         if ($btcpayInvoiceId && is_numeric($btcpayInvoiceId)) {
-            $this->helper->updateTransaction($btcpayInvoiceId);
+            $this->helper->updateInvoice($btcpayInvoiceId);
             return true;
         } else {
             throw new RuntimeException('Invalid data POSTed');

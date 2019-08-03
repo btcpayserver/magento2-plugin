@@ -3,7 +3,7 @@
 
     <virtualType name="Storefront\BTCPay\Model\ResourceModel\Transaction\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
-            <argument name="mainTable" xsi:type="string">btcpay_transactions</argument>
+            <argument name="mainTable" xsi:type="string">btcpay_invoices</argument>
             <argument name="resourceModel" xsi:type="string">Storefront\BTCPay\Model\ResourceModel\Transaction\Collection</argument>
         </arguments>
     </virtualType>

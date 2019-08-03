@@ -1,29 +1,28 @@
 <?php
 
-namespace Storefront\BTCPay\Observer;
+namespace Storefront\BTCPay\Controller\Redirect;
 
-use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Checkout\Model\Session;
+use Magento\Customer\Model\Session as CustomerSession;
+use Magento\Framework\App\Action\Action;
+use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\Response\RedirectInterface;
 use Magento\Framework\App\ResponseInterface;
-use Magento\Framework\DB\Adapter\AdapterInterface;
+use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\Event\Observer;
-use Magento\Framework\Event\ObserverInterface;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Session\SessionManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\UrlInterface;
+use Magento\Framework\View\Result\PageFactory;
+use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\OrderRepository;
-use Magento\Store\Model\StoreManagerInterface;
-use Magento\Framework\App\ResourceConnection;
-use Storefront\BTCPay\Model\BTCPay\Item;
-use Magento\Customer\Model\Session as CustomerSession;
+use Psr\Log\LoggerInterface;
+use Storefront\BTCPay\Model\BTCPay\InvoiceService;
 
-class Redirect implements ObserverInterface {
-
-    private $redirect;
-    private $response;
-    private $orderRepository;
+class ForwardToPayment extends Action {
 
     /**
      * @var CustomerSession
@@ -47,19 +46,28 @@ class Redirect implements ObserverInterface {
      * @var \Storefront\BTCPay\Model\BTCPay\InvoiceService
      */
     private $invoiceService;
+    /**
+     * @var Session
+     */
+    private $checkoutSession;
 
-    public function __construct(RedirectInterface $redirect, RequestInterface $request, ResponseInterface $response, OrderRepository $orderRepository, CustomerSession $customerSession, CookieManagerInterface $cookieManager, CookieMetadataFactory $cookieMetadataFactory, SessionManagerInterface $sessionManager, \Storefront\BTCPay\Model\BTCPay\InvoiceService $invoiceService) {
 
-        $this->redirect = $redirect;
-        $this->response = $response;
-        $this->orderRepository = $orderRepository;
-        $this->customerSession = $customerSession;
+    public function __construct(Context $context, Session $checkoutSession, CookieManagerInterface $cookieManager, CookieMetadataFactory $cookieMetadataFactory, SessionManagerInterface $sessionManager, \Storefront\BTCPay\Model\BTCPay\InvoiceService $invoiceService, CustomerSession $customerSession) {
+        parent::__construct($context);
+        $this->checkoutSession = $checkoutSession;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->cookieManager = $cookieManager;
         $this->sessionManager = $sessionManager;
         $this->invoiceService = $invoiceService;
-        $this->request = $request;
+        $this->customerSession = $customerSession;
     }
+
+//    public function __construct(RedirectInterface $redirect, ResponseInterface $response, OrderRepository $orderRepository, , ) {
+//
+//        $this->redirect = $redirect;
+//        $this->response = $response;
+//        $this->orderRepository = $orderRepository;
+//    }
 
 
     private function setCookie($name, $value, $duration) {
@@ -72,28 +80,12 @@ class Redirect implements ObserverInterface {
     }
 
 
-    public function execute(Observer $observer) {
-        $orderIds = $observer->getEvent()->getOrderIds();
-        $orderId = $orderIds[0];
-        $order = $this->orderRepository->get($orderId);
+    public function execute() {
+        $order = $this->checkoutSession->getLastRealOrder();
+        $resultRedirect = $this->resultRedirectFactory->create();
 
-        $btcpayInvoiceId = $this->request->getParam('btcpayInvoiceId');
-
-        if (!$btcpayInvoiceId && $order->getPayment()->getMethodInstance()->getCode() === \Storefront\BTCPay\Model\BTCPay::PAYMENT_METHOD_CODE) {
-
-//            $newStatus = $this->getStoreConfig('payment/btcpay/new_status', $order->getStoreId());
-//
-//            $order->setState('new');
-//            if ($newStatus) {
-//                $order->setStatus($newStatus);
-//            } else {
-//                $order->setStatus('new'); // TODO can we avoid hard coded status here?
-//            }
-
-            $order->save();
-
+        if ($order) {
             $btcpayInvoice = $this->invoiceService->createInvoice($order);
-
             $invoiceId = $btcpayInvoice->getId();
 
             if ($invoiceId) {
@@ -105,12 +97,14 @@ class Redirect implements ObserverInterface {
                     $this->setCookie('oar_email', $order->getCustomerEmail(), $duration);
                 }
                 $invoiceUrl = $btcpayInvoice->getUrl();
-
-                $this->redirect->redirect($this->response, $invoiceUrl);
+                $resultRedirect->setUrl($invoiceUrl);
             } else {
                 throw new \RuntimeException('Could not create the transaction in BTCPay Server');
             }
+        } else {
+            $resultRedirect->setUrl($order->getStore()->getUrl('checkout/cart'));
         }
+        return $resultRedirect;
     }
 
 }

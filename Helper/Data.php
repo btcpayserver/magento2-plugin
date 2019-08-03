@@ -55,15 +55,15 @@ class Data {
     }
 
     /**
-     * @param int $transactionId
+     * @param int $invoiceId
      * @return Order|null
      * @throws LocalizedException
      * @throws InputException
      * @throws NoSuchEntityException
      */
-    public function updateTransaction(int $transactionId): ?Order {
-        $tableName = $this->db->getTableName('btcpay_transactions');
-        $select = $this->db->select()->from($tableName)->where('transaction_id = ?', $transactionId)->limit(1);
+    public function updateInvoice(int $invoiceId): ?Order {
+        $tableName = $this->db->getTableName('btcpay_invoices');
+        $select = $this->db->select()->from($tableName)->where('invoice_id = ?', $invoiceId)->limit(1);
 
         $result = $this->db->fetchRow($select);
         if ($result) {
@@ -78,21 +78,21 @@ class Data {
                 $host = $this->getStoreConfig('payment/btcpay/host', $storeId);
 
                 $params = new stdClass();
-                $params->invoiceID = $transactionId;
+                $params->invoiceID = $invoiceId;
                 //$params->extension_version = $this->getExtensionVersion();
                 $item = new Item($token, $host, $params);
                 $invoice = new Invoice($item);
 
-                $orderStatus = json_decode($invoice->checkInvoiceStatus($transactionId), true);
+                $orderStatus = json_decode($invoice->checkInvoiceStatus($invoiceId), true);
 
                 if ($orderId !== $orderStatus['orderID']) {
-                    throw new RuntimeException('The supplied order ID ' . $orderId . ' does not match transaction ID ' . $transactionId . '. Cannot process BTCPay Server IPN.');
+                    throw new RuntimeException('The supplied order ID ' . $orderId . ' does not match transaction ID ' . $invoiceId . '. Cannot process BTCPay Server IPN.');
                 }
 
                 $invoiceStatus = $orderStatus['data']['status'] ?? false;
 
                 // TODO refactor to use the Transaction model instead of direct SQL reading
-                $where = $this->db->quoteInto('order_id = ?', $orderId) . ' and ' . $this->db->quoteInto('transaction_id = ?', $transactionId);
+                $where = $this->db->quoteInto('order_id = ?', $orderId) . ' and ' . $this->db->quoteInto('transaction_id = ?', $invoiceId);
                 $rowsChanged = $this->db->update($tableName, ['status' => $invoiceStatus], $where);
 
                 // TODO fill $event in some other way...
@@ -175,11 +175,11 @@ class Data {
         }
     }
 
-    public function updateIncompleteTransations() {
+    public function updateIncompleteInvoices() {
         // TODO poll BTCPay Server for updates on non-completed invoices (just in case we missed an update pushed to Magento)
         // TODO refactor to use the Transaction model instead of direct SQL reading
-        $tableName = $this->db->getTableName('btcpay_transactions');
-        $select = $this->db->select()->from($tableName)->where('transaction_status != ?', 'completed')->limit(1);
+        $tableName = $this->db->getTableName('btcpay_invoices');
+        $select = $this->db->select()->from($tableName)->where('status != ?', 'completed')->limit(1);
 
         $result = $this->db->fetchRow($select);
         $row = $result->fetch();

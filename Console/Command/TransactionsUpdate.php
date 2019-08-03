@@ -43,7 +43,7 @@ class TransactionsUpdate extends Command {
      * {@inheritdoc}
      */
     protected function execute(InputInterface $input, OutputInterface $output) {
-        $numUpdated = $this->helper->updateIncompleteTransations();
+        $numUpdated = $this->helper->updateIncompleteInvoices();
         $output->writeln('Updated ' . $numUpdated . ' transactions from BTCPay Server');
     }
 

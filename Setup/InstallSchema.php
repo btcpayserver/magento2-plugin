@@ -27,7 +27,7 @@ class InstallSchema implements InstallSchemaInterface {
         $installer->startSetup();
 
         $connection = $installer->getConnection();
-        $table = $connection->newTable($installer->getTable('btcpay_transactions'));
+        $table = $connection->newTable($installer->getTable('btcpay_invoices'));
 
         $table->addColumn('id', Table::TYPE_INTEGER, null, [
             'identity' => true,
@@ -36,8 +36,8 @@ class InstallSchema implements InstallSchemaInterface {
             'unsigned' => true
         ], 'ID');
         $table->addColumn('order_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Order ID');
-        $table->addColumn('transaction_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction ID');
-        $table->addColumn('status', Table::TYPE_TEXT, 255, ['nullable' => false], 'Transaction Status');
+        $table->addColumn('invoice_id', Table::TYPE_TEXT, 255, ['nullable' => false], 'BTCPay Invoice ID');
+        $table->addColumn('status', Table::TYPE_TEXT, 255, ['nullable' => false], 'Payment Status');
         $table->addColumn('created_at', Table::TYPE_TIMESTAMP, null, [
             'nullable' => false,
             'default' => Table::TIMESTAMP_INIT
@@ -48,11 +48,6 @@ class InstallSchema implements InstallSchemaInterface {
         ], 'Updated At');
 
         $connection->createTable($table);
-
-
-        // Generate the keys
-        $this->helper->generateKeys();
-
 
         $installer->endSetup();
     }

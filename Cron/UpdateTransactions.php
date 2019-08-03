@@ -28,6 +28,6 @@ class UpdateTransactions {
      * You can use this for testing integrations if your BTCPay Server cannot reach your Magento DEV installation. You may be behind a firewall or not have port forwarding set up to your machine.
      */
     public function execute() {
-        $this->helper->updateIncompleteTransations();
+        $this->helper->updateIncompleteInvoices();
     }
 }

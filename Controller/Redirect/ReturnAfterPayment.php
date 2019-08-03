@@ -1,6 +1,6 @@
 <?php
 
-namespace Storefront\BTCPay\Controller\Checkout;
+namespace Storefront\BTCPay\Controller\Redirect;
 
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
@@ -43,7 +43,7 @@ class ReturnAfterPayment extends Action {
      * @param OrderRepositoryInterface $orderRepository
      * @param \Magento\Checkout\Model\Session $checkoutSession
      */
-    public function __construct(Context $context, LoggerInterface $logger, PageFactory $resultPageFactory, InvoiceService $invoiceService, OrderRepositoryInterface $orderRepository, \Magento\Checkout\Model\Session $checkoutSession,  UrlInterface $url) {
+    public function __construct(Context $context, LoggerInterface $logger, PageFactory $resultPageFactory, InvoiceService $invoiceService, OrderRepositoryInterface $orderRepository, \Magento\Checkout\Model\Session $checkoutSession, UrlInterface $url) {
         $this->resultPageFactory = $resultPageFactory;
         $this->logger = $logger;
         $this->invoiceService = $invoiceService;
@@ -62,7 +62,6 @@ class ReturnAfterPayment extends Action {
         $request = $this->getRequest();
         $orderId = $request->getParam('orderId');
         $hash = $request->getParam('hash');
-        $btcpayInvoiceId = $request->getParam('invoiceId');
 
         $order = null;
         $valid = false;
@@ -81,11 +80,12 @@ class ReturnAfterPayment extends Action {
             // Order not found
         }
 
-        if ($btcpayInvoiceId && $order && $valid) {
+        if ($order && $valid) {
+            $this->checkoutSession->setLastQuoteId($order->getQuoteId());
             $this->checkoutSession->setLastSuccessQuoteId($order->getQuoteId());
             $this->checkoutSession->setLastOrderId($order->getId());
 
-            $resultRedirect->setUrl($order->getStore()->getUrl('checkout/onepage/success', ['btcpayInvoiceId' => $btcpayInvoiceId]));
+            $resultRedirect->setUrl($order->getStore()->getUrl('checkout/onepage/success'));
         } else {
             $resultRedirect->setUrl($this->url->getUrl('checkout/cart/'));
         }

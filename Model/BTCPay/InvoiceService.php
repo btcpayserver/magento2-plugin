@@ -239,7 +239,7 @@ class InvoiceService {
         $btcpayInvoice->setExtendedNotifications(false);
 
         $orderHash = $this->getOrderHash($order);
-        $returnUrl = $order->getStore()->getUrl('btcpay/checkout/returnafterpayment', [
+        $returnUrl = $order->getStore()->getUrl('btcpay/redirect/returnafterpayment', [
             'orderId' => $order->getId(),
             'hash' => $orderHash,
             'invoiceId' => $btcpayInvoice->getId(),
@@ -249,10 +249,10 @@ class InvoiceService {
 
         $client->createInvoice($btcpayInvoice);
 
-        $tableName = $this->db->getTableName('btcpay_transactions');
+        $tableName = $this->db->getTableName('btcpay_invoices');
         $this->db->insert($tableName, [
             'order_id' => $orderId,
-            'transaction_id' => $btcpayInvoice->getId(),
+            'invoice_id' => $btcpayInvoice->getId(),
             'status' => 'new'
         ]);
 
