@@ -22,36 +22,37 @@
 namespace Storefront\BTCPay\Console\Command;
 
 use Storefront\BTCPay\Helper\Data;
+use Storefront\BTCPay\Model\BTCPay\InvoiceService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class TransactionsUpdate extends Command {
+class InvoicesUpdate extends Command {
 
 
     /**
-     * @var Data
+     * @var InvoiceService
      */
-    private $helper;
+    private $invoiceService;
 
-    public function __construct(Data $helper, string $name = null) {
+    public function __construct(InvoiceService $invoiceService, string $name = null) {
         parent::__construct($name);
-        $this->helper = $helper;
+        $this->invoiceService = $invoiceService;
     }
 
     /**
      * {@inheritdoc}
      */
     protected function execute(InputInterface $input, OutputInterface $output) {
-        $numUpdated = $this->helper->updateIncompleteInvoices();
-        $output->writeln('Updated ' . $numUpdated . ' transactions from BTCPay Server');
+        $numUpdated = $this->invoiceService->updateIncompleteInvoices();
+        $output->writeln('Updated ' . $numUpdated . ' invoices from BTCPay Server');
     }
 
     /**
      * {@inheritdoc}
      */
     protected function configure() {
-        $this->setName('btcpay:transaction:update');
+        $this->setName('btcpay:invoices:update');
         $this->setDescription('Poll your BTCPay Server for the latest transaction updates (in case you missed any)');
 
         parent::configure();
