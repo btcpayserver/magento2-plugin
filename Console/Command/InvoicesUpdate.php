@@ -53,7 +53,7 @@ class InvoicesUpdate extends Command {
      */
     protected function configure() {
         $this->setName('btcpay:invoices:update');
-        $this->setDescription('Poll your BTCPay Server for the latest transaction updates (in case you missed any)');
+        $this->setDescription('Poll your BTCPay Server for the latest invoice updates (in case you missed any)');
 
         parent::configure();
     }

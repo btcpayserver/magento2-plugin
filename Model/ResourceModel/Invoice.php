@@ -21,7 +21,7 @@
 
 namespace Storefront\BTCPay\Model\ResourceModel;
 
-class Transaction extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
+class Invoice extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
 {
 
     /**
@@ -31,6 +31,6 @@ class Transaction extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
      */
     protected function _construct()
     {
-        $this->_init('btcpay_transaction', 'id');
+        $this->_init('btcpay_invoice', 'id');
     }
 }

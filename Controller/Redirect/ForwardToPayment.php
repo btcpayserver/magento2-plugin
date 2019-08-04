@@ -99,7 +99,7 @@ class ForwardToPayment extends Action {
                 $invoiceUrl = $btcpayInvoice->getUrl();
                 $resultRedirect->setUrl($invoiceUrl);
             } else {
-                throw new \RuntimeException('Could not create the transaction in BTCPay Server');
+                throw new \RuntimeException('Could not create the invoice in BTCPay Server');
             }
         } else {
             $resultRedirect->setUrl($order->getStore()->getUrl('checkout/cart'));

@@ -21,50 +21,50 @@
 
 namespace Storefront\BTCPay\Api\Data;
 
-interface TransactionInterface extends \Magento\Framework\Api\ExtensibleDataInterface
+interface InvoiceInterface extends \Magento\Framework\Api\ExtensibleDataInterface
 {
 
-    const TRANSACTION_STATUS = 'status';
-    const TRANSACTION_ID = 'transaction_id';
+    const INVOICE_STATUS = 'status';
+    const INVOICE_ID = 'invoice_id';
 
     /**
-     * Get transaction_id
+     * Get invoice_id
      * @return string|null
      */
-    public function getTransactionId();
+    public function getInvoiceId();
 
     /**
-     * Set transaction_id
-     * @param string $transactionId
-     * @return \Storefront\BTCPay\Api\Data\TransactionInterface
+     * Set invoice ID
+     * @param string $invoiceId
+     * @return \Storefront\BTCPay\Api\Data\InvoiceInterface
      */
-    public function setTransactionId($transactionId);
+    public function setInvoiceId($invoiceId);
 
     /**
      * Get status
      * @return string|null
      */
-    public function geStatus();
+    public function getStatus();
 
     /**
-     * Set transaction_status
-     * @param string $transactionStatus
-     * @return \Storefront\BTCPay\Api\Data\TransactionInterface
+     * Set status
+     * @param string $status
+     * @return \Storefront\BTCPay\Api\Data\InvoiceInterface
      */
-    public function setTransactionStatus($transactionStatus);
+    public function setStatus($sStatus);
 
     /**
      * Retrieve existing extension attributes object or create a new one.
-     * @return \Storefront\BTCPay\Api\Data\TransactionExtensionInterface|null
+     * @return \Storefront\BTCPay\Api\Data\InvoiceExtensionInterface|null
      */
     public function getExtensionAttributes();
 
     /**
      * Set an extension attributes object.
-     * @param \Storefront\BTCPay\Api\Data\TransactionExtensionInterface $extensionAttributes
+     * @param \Storefront\BTCPay\Api\Data\InvoiceExtensionInterface $extensionAttributes
      * @return $this
      */
     public function setExtensionAttributes(
-        \Storefront\BTCPay\Api\Data\TransactionExtensionInterface $extensionAttributes
+        \Storefront\BTCPay\Api\Data\InvoiceExtensionInterface $extensionAttributes
     );
 }

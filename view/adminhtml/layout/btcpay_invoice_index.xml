@@ -3,7 +3,7 @@
 	<update handle="styles"/>
 	<body>
 		<referenceContainer name="content">
-			<uiComponent name="btcpay_transaction_listing"/>
+			<uiComponent name="btcpay_invoice_listing"/>
 		</referenceContainer>
 	</body>
 </page>

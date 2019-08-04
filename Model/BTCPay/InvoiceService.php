@@ -2,8 +2,6 @@
 
 namespace Storefront\BTCPay\Model\BTCPay;
 
-use Bitpay\Invoice;
-use Bitpay\Item;
 use Bitpay\Token;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\ResourceConnection;
@@ -17,8 +15,8 @@ use Magento\Sales\Model\Order;
 use Magento\Sales\Model\OrderRepository;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
-use stdClass;
 use Storefront\BTCPay\Storage\EncryptedConfigStorage;
 
 class InvoiceService {
@@ -68,8 +66,12 @@ class InvoiceService {
      * @var Transaction
      */
     private $transaction;
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
-    public function __construct(ResourceConnection $resource, EncryptedConfigStorage $encryptedConfigStorage, \Magento\Framework\App\Config\ConfigResource\ConfigInterface $configResource, StoreManagerInterface $storeManager, UrlInterface $url, \Magento\Framework\HTTP\ZendClientFactory $httpClientFactory, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction) {
+    public function __construct(ResourceConnection $resource, EncryptedConfigStorage $encryptedConfigStorage, \Magento\Framework\App\Config\ConfigResource\ConfigInterface $configResource, StoreManagerInterface $storeManager, UrlInterface $url, \Magento\Framework\HTTP\ZendClientFactory $httpClientFactory, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger) {
         $this->httpClientFactory = $httpClientFactory;
         $this->scopeConfig = $scopeConfig;
         $this->url = $url;
@@ -79,6 +81,7 @@ class InvoiceService {
         $this->encryptedConfigStorage = $encryptedConfigStorage;
         $this->orderRepository = $orderRepository;
         $this->transaction = $transaction;
+        $this->logger = $logger;
     }
 
 
@@ -91,24 +94,23 @@ class InvoiceService {
     private function getClient($storeId, $loadToken = true) {
         $client = new \BitPay\Client\Client();
 
-        $adapter = new \BitPay\Client\Adapter\CurlAdapter();
 
         $privateKey = $this->getPrivateKey();
         $publicKey = $this->getPublicKey();
-
         $client->setPrivateKey($privateKey);
         $client->setPublicKey($publicKey);
 
         $host = $this->getHost($storeId);
         $port = $this->getPort($storeId);
         $network = new \Bitpay\Network\Customnet($host, $port);
-
         $client->setNetwork($network);
 
+        $adapter = new \BitPay\Client\Adapter\CurlAdapter();
         $client->setAdapter($adapter);
 
         if ($loadToken) {
             $token = $this->getTokenOrRegenerate($storeId);
+            $token->setFacade('merchant');
             $client->setToken($token);
         }
 
@@ -269,11 +271,11 @@ class InvoiceService {
 
 
     /**
-     * @param int $invoiceId
+     * @param string $invoiceId
      * @return Order|null
-     * @throws LocalizedException
      * @throws InputException
      * @throws NoSuchEntityException
+     * @throws \BitPay\Client\BitpayException
      */
     public function updateInvoice(string $invoiceId): ?Order {
         $tableName = $this->db->getTableName('btcpay_invoices');
@@ -290,97 +292,81 @@ class InvoiceService {
             $client = $this->getClient($storeId);
             $invoice = $client->getInvoice($invoiceId);
 
-            if ($orderId !== $invoice['orderID']) {
-                throw new RuntimeException('The supplied order ID ' . $orderId . ' does not match transaction ID ' . $invoiceId . '. Cannot process BTCPay Server IPN.');
+            if ($order->getIncrementId() !== $invoice->getOrderId()) {
+                throw new RuntimeException('The supplied order "' . $orderId . '"" does not match BTCPay Invoice "' . $invoiceId . '"". Cannot process BTCPay Server IPN.');
             }
 
-            $invoiceStatus = $invoiceStatus['data']['status'] ?? false;
+            $invoiceStatus = $invoice->getStatus();
 
-            // TODO refactor to use the Transaction model instead of direct SQL reading
+            // TODO refactor to use the model instead of direct SQL reading
             $where = $this->db->quoteInto('order_id = ?', $orderId) . ' and ' . $this->db->quoteInto('invoice_id = ?', $invoiceId);
             $rowsChanged = $this->db->update($tableName, ['status' => $invoiceStatus], $where);
 
-            // TODO fill $event in some other way...
-            $event = [];
-            switch ($event['name']) {
+            switch ($invoiceStatus) {
+                case \Storefront\BTCPay\Model\Invoice::STATUS_PAID:
+                    // 1) Payments have been made to the invoice for the requested amount but the invoice has not been confirmed yet. We also don't know if the amount is enough.
+                    $paidNotConfirmedStatus = $this->getStoreConfig('payment/btcpay/payment_paid_status', $storeId);
 
-                case 'invoice_paidInFull':
-
-                    if ($invoiceStatus === \Storefront\BTCPay\Model\Transaction::STATUS_PAID) {
-                        // 1) Payments have been made to the invoice for the requested amount but the transaction has not been confirmed yet
-                        $paidNotConfirmedStatus = $this->getStoreConfig('payment/btcpay/payment_paid_status', $storeId);
-
-                        $order->addStatusHistoryComment('Payment underway, but not confirmed yet', $paidNotConfirmedStatus);
-                        $order->save();
-                    }
+                    $order->addStatusHistoryComment('Payment underway, but not sure about the amount and also not confirmed yet', $paidNotConfirmedStatus);
+                    $order->save();
                     break;
+                case \Storefront\BTCPay\Model\Invoice::STATUS_CONFIRMED:
 
-                case 'invoice_confirmed':
-                    if ($invoiceStatus === \Storefront\BTCPay\Model\Transaction::STATUS_CONFIRMED) {
-                        // 2) Paid and confirmed (happens before completed and transitions to it quickly)
+                    // 2) Paid and confirmed (happens before completed and transitions to it quickly)
 
-                        // TODO maybe add the transation ID in the comment or something like that?
+                    // TODO maybe add the transation ID in the comment or something like that?
 
-                        $confirmedStatus = $this->getStoreConfig('payment/btcpay/payment_confirmed_status', $storeId);
-                        $order->addStatusHistoryComment('Payment confirmed, but not completed yet', $confirmedStatus);
-
-                        $order->save();
-                    }
-                    break;
-
-                case 'invoice_completed':
-                    if ($invoiceStatus === \Storefront\BTCPay\Model\Transaction::STATUS_COMPLETE) {
-                        // 3) Paid, confirmed and settled. Final!
-                        // TODO maybe add the transation ID in the comment or something like that?
-
-                        $completedStatus = $this->getStoreConfig('payment/btcpay/payment_completed_status', $storeId);
-                        $order->addStatusHistoryComment('Payment completed', $completedStatus);
-                        $invoice = $this->invoiceService->prepareInvoice($order);
-                        $invoice->register();
-
-                        // TODO we really need to save the invoice first as we are saving it again in this transaction? Leaving it out for now.
-                        //$invoice->save();
-
-                        $transactionSave = $this->transaction->addObject($invoice)->addObject($invoice->getOrder());
-                        $transactionSave->save();
-                    }
-                    break;
-
-                case 'invoice_failedToConfirm':
-                    if ($invoiceStatus === \Storefront\BTCPay\Model\Transaction::STATUS_INVALID) {
-                        $order->addStatusHistoryComment('Failed to confirm the order. The order will automatically update when the status changes.');
-                        $order->save();
-                    }
-                    break;
-
-                case 'invoice_expired':
-                    if ($invoiceStatus === \Storefront\BTCPay\Model\Transaction::STATUS_EXPIRED) {
-                        // Invoice expired - let's do nothing.
-                    }
-                    break;
-
-                case 'invoice_refundComplete':
-                    // Full refund
-
-                    $order->addStatusHistoryComment('Refund received through BTCPay Server.');
-                    $order->setState(Order::STATE_CLOSED)->setStatus(Order::STATE_CLOSED);
+                    $confirmedStatus = $this->getStoreConfig('payment/btcpay/payment_confirmed_status', $storeId);
+                    $order->addStatusHistoryComment('Payment confirmed, but not completed yet', $confirmedStatus);
 
                     $order->save();
-
                     break;
+                case \Storefront\BTCPay\Model\Invoice::STATUS_COMPLETE:
+                    // 3) Paid, confirmed and settled. Final!
+                    $completedStatus = $this->getStoreConfig('payment/btcpay/payment_completed_status', $storeId);
+                    $order->addStatusHistoryComment('Payment completed', $completedStatus);
+                    $invoice = $order->prepareInvoice();
+                    $invoice->register();
 
-                // TODO what about partial refunds, partial payments and overpayment?
+                    // TODO we really need to save the invoice first as we are saving it again in this invoice? Leaving it out for now.
+                    //$invoice->save();
+
+                    $invoiceSave = $this->transaction->addObject($invoice)->addObject($invoice->getOrder());
+                    $invoiceSave->save();
+                    break;
+                case \Storefront\BTCPay\Model\Invoice::STATUS_INVALID:
+                    $order->addStatusHistoryComment('Failed to confirm the order. The order will automatically update when the status changes.');
+                    $order->save();
+                    break;
+                case \Storefront\BTCPay\Model\Invoice::STATUS_EXPIRED:
+                    // Invoice expired - let's do nothing?
+                default:
+                    $order->addStatusHistoryComment('Invoice status: ' . $invoiceStatus);
+                    $this->logger->exception('Unknown invoice state "' . $invoiceStatus . '" for invoice "' . $invoiceId . '"');
+                    break;
             }
-
+//
+//                case 'invoice_refundComplete':
+//                    // Full refund
+//
+//                    $order->addStatusHistoryComment('Refund received through BTCPay Server.');
+//                    $order->setState(Order::STATE_CLOSED)->setStatus(Order::STATE_CLOSED);
+//
+//                    $order->save();
+//
+//                    break;
+//
+//                // TODO what about partial refunds, partial payments and overpayment?
             return $order;
+
         } else {
-            // No transaction round found
+            // No invoice record found
             return null;
         }
     }
 
     public function updateIncompleteInvoices() {
-        // TODO refactor to use the Transaction model instead of direct SQL reading
+        // TODO refactor to use the Invoice model instead of direct SQL reading
         $tableName = $this->db->getTableName('btcpay_invoices');
         $select = $this->db->select()->from($tableName)->where('status != ?', 'completed')->limit(1);
 
@@ -402,54 +388,54 @@ class InvoiceService {
 //        return $data['data']['url'] ?? false;
 //    }
 
-    public function updateBuyersEmail($invoice_result, $buyers_email) {
-        $invoice_result = json_decode($invoice_result, false);
-
-        $token = $this->getPairingCode();
-
-        $update_fields = new stdClass();
-        $update_fields->token = $token;
-        $update_fields->buyerProvidedEmail = $buyers_email;
-        $update_fields->invoiceId = $invoice_result->data->id;
-        $update_fields = json_encode($update_fields);
-        // TODO replace with Zend HTTP Client
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://' . $this->item->getBuyerTransactionEndpoint());
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $update_fields);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $result = curl_exec($ch);
-        curl_close($ch);
-        return $result;
-    }
-
-    public function updateBuyerCurrency($invoice_result, $buyer_currency) {
-        $invoice_result = json_decode($invoice_result);
-
-        $update_fields = new stdClass();
-        $update_fields->token = $this->item->item_params->token;
-        $update_fields->buyerSelectedTransactionCurrency = $buyer_currency;
-        $update_fields->invoiceId = $invoice_result->data->id;
-        $update_fields = json_encode($update_fields);
-        // TODO replace with Zend HTTP Client
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://' . $this->item->getBuyerTransactionEndpoint());
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $update_fields);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $result = curl_exec($ch);
-        curl_close($ch);
-        return $result;
-    }
-
-    /**
-     * @return string
-     */
-    public function getBuyerTransactionEndpoint(): string {
-        return $this->host . '/invoiceData/setBuyerSelectedTransactionCurrency';
-    }
+//    public function updateBuyersEmail($invoice_result, $buyers_email) {
+//        $invoice_result = json_decode($invoice_result, false);
+//
+//        $token = $this->getPairingCode();
+//
+//        $update_fields = new stdClass();
+//        $update_fields->token = $token;
+//        $update_fields->buyerProvidedEmail = $buyers_email;
+//        $update_fields->invoiceId = $invoice_result->data->id;
+//        $update_fields = json_encode($update_fields);
+//        // TODO replace with Zend HTTP Client
+//        $ch = curl_init();
+//        curl_setopt($ch, CURLOPT_URL, 'https://' . $this->item->getBuyerInvoiceEndpoint());
+//        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+//        curl_setopt($ch, CURLOPT_POST, 1);
+//        curl_setopt($ch, CURLOPT_POSTFIELDS, $update_fields);
+//        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+//        $result = curl_exec($ch);
+//        curl_close($ch);
+//        return $result;
+//    }
+//
+//    public function updateBuyerCurrency($invoice_result, $buyer_currency) {
+//        $invoice_result = json_decode($invoice_result);
+//
+//        $update_fields = new stdClass();
+//        $update_fields->token = $this->item->item_params->token;
+//        $update_fields->buyerSelectedInvoiceCurrency = $buyer_currency;
+//        $update_fields->invoiceId = $invoice_result->data->id;
+//        $update_fields = json_encode($update_fields);
+//        // TODO replace with Zend HTTP Client
+//        $ch = curl_init();
+//        curl_setopt($ch, CURLOPT_URL, 'https://' . $this->item->getBuyerInvoiceEndpoint());
+//        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+//        curl_setopt($ch, CURLOPT_POST, 1);
+//        curl_setopt($ch, CURLOPT_POSTFIELDS, $update_fields);
+//        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+//        $result = curl_exec($ch);
+//        curl_close($ch);
+//        return $result;
+//    }
+//
+//    /**
+//     * @return string
+//     */
+//    public function getBuyerInvoiceEndpoint(): string {
+//        return $this->host . '/invoiceData/setBuyerSelectedInvoiceCurrency';
+//    }
 
     public function getStoreConfig($path, $storeId): ?string {
         $r = $this->scopeConfig->getValue($path, ScopeInterface::SCOPE_STORE, $storeId);
@@ -483,11 +469,12 @@ class InvoiceService {
         return $r;
     }
 
-    private function getInvoicesEndpoint(int $storeId) {
+    public function getInvoiceDetailUrl(int $storeId, string $invoiceId) {
         $host = $this->getHost($storeId);
-        $r = 'https://' . $host . '/invoices';
+        $r = 'https://' . $host . '/invoices/' . $invoiceId;
         return $r;
     }
+
 
     /**
      * @param $pairingCode

@@ -19,21 +19,21 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Storefront\BTCPay\Api\Data;
+namespace Storefront\BTCPay\Model\ResourceModel\Invoice;
 
-interface TransactionSearchResultsInterface extends \Magento\Framework\Api\SearchResultsInterface
+class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\AbstractCollection
 {
 
     /**
-     * Get Transaction list.
-     * @return \Storefront\BTCPay\Api\Data\TransactionInterface[]
+     * Define resource model
+     *
+     * @return void
      */
-    public function getItems();
-
-    /**
-     * Set transaction_status list.
-     * @param \Storefront\BTCPay\Api\Data\TransactionInterface[] $items
-     * @return $this
-     */
-    public function setItems(array $items);
+    protected function _construct()
+    {
+        $this->_init(
+            \Storefront\BTCPay\Model\Invoice::class,
+            \Storefront\BTCPay\Model\ResourceModel\Invoice::class
+        );
+    }
 }

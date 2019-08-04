@@ -21,7 +21,7 @@
 
 namespace Storefront\BTCPay\Controller\Adminhtml;
 
-abstract class Transaction extends \Magento\Backend\App\Action
+abstract class Invoice extends \Magento\Backend\App\Action
 {
 
     const ADMIN_RESOURCE = 'Storefront_BTCPay::top_level';
@@ -48,7 +48,7 @@ abstract class Transaction extends \Magento\Backend\App\Action
     public function initPage($resultPage)
     {
         $resultPage->setActiveMenu(self::ADMIN_RESOURCE)
-            ->addBreadcrumb(__('BTCPay Transactions'), __('BTCPay Transactions'));
+            ->addBreadcrumb(__('BTCPay Invoices'), __('BTCPay Invoices'));
         return $resultPage;
     }
 }

@@ -21,7 +21,6 @@
 
 namespace Storefront\BTCPay\Console\Command;
 
-use Storefront\BTCPay\Helper\Data;
 use Storefront\BTCPay\Model\BTCPay\InvoiceService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -30,18 +29,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Pair extends Command {
 
-
-    /**
-     * @var Data
-     */
-    private $helper;
     /**
      * @var InvoiceService
      */
     private $invoiceService;
 
 
-    public function __construct(Data $helper, InvoiceService $invoiceService, string $name = null) {
+    public function __construct(InvoiceService $invoiceService, string $name = null) {
         parent::__construct($name);
         $this->invoiceService = $invoiceService;
     }

@@ -19,9 +19,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Storefront\BTCPay\Model\Transaction;
+namespace Storefront\BTCPay\Model\Invoice;
 
-use Storefront\BTCPay\Model\ResourceModel\Transaction\CollectionFactory;
+use Storefront\BTCPay\Model\ResourceModel\Invoice\CollectionFactory;
 use Magento\Framework\App\Request\DataPersistorInterface;
 
 class DataProvider extends \Magento\Ui\DataProvider\AbstractDataProvider
@@ -72,13 +72,13 @@ class DataProvider extends \Magento\Ui\DataProvider\AbstractDataProvider
         foreach ($items as $model) {
             $this->loadedData[$model->getId()] = $model->getData();
         }
-        $data = $this->dataPersistor->get('btcpay_transaction');
+        $data = $this->dataPersistor->get('btcpay_invoice');
         
         if (!empty($data)) {
             $model = $this->collection->getNewEmptyItem();
             $model->setData($data);
             $this->loadedData[$model->getId()] = $model->getData();
-            $this->dataPersistor->clear('btcpay_transaction');
+            $this->dataPersistor->clear('btcpay_invoice');
         }
         
         return $this->loadedData;

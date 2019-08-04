@@ -21,11 +21,11 @@
 
 namespace Storefront\BTCPay\Model;
 
-use Storefront\BTCPay\Api\Data\TransactionInterface;
-use Storefront\BTCPay\Api\Data\TransactionInterfaceFactory;
+use Storefront\BTCPay\Api\Data\InvoiceInterface;
+use Storefront\BTCPay\Api\Data\InvoiceInterfaceFactory;
 use Magento\Framework\Api\DataObjectHelper;
 
-class Transaction extends \Magento\Framework\Model\AbstractModel {
+class Invoice extends \Magento\Framework\Model\AbstractModel {
 
     const STATUS_PAID = 'paid';
     const STATUS_CONFIRMED = 'confirmed';
@@ -33,37 +33,37 @@ class Transaction extends \Magento\Framework\Model\AbstractModel {
     const STATUS_INVALID = 'invalid';
     const STATUS_EXPIRED = 'expired';
 
-    protected $transactionDataFactory;
+    protected $invoiceDataFactory;
 
     protected $dataObjectHelper;
 
-    protected $_eventPrefix = 'storefront_btcpay_transaction';
+    protected $_eventPrefix = 'storefront_btcpay_invoice';
 
     /**
      * @param \Magento\Framework\Model\Context $context
      * @param \Magento\Framework\Registry $registry
-     * @param TransactionInterfaceFactory $transactionDataFactory
+     * @param InvoiceInterfaceFactory $invoiceDataFactory
      * @param DataObjectHelper $dataObjectHelper
-     * @param \Storefront\BTCPay\Model\ResourceModel\Transaction $resource
-     * @param \Storefront\BTCPay\Model\ResourceModel\Transaction\Collection $resourceCollection
+     * @param \Storefront\BTCPay\Model\ResourceModel\Invoice $resource
+     * @param \Storefront\BTCPay\Model\ResourceModel\Invoice\Collection $resourceCollection
      * @param array $data
      */
-    public function __construct(\Magento\Framework\Model\Context $context, \Magento\Framework\Registry $registry, TransactionInterfaceFactory $transactionDataFactory, DataObjectHelper $dataObjectHelper, \Storefront\BTCPay\Model\ResourceModel\Transaction $resource, \Storefront\BTCPay\Model\ResourceModel\Transaction\Collection $resourceCollection, array $data = []) {
-        $this->transactionDataFactory = $transactionDataFactory;
+    public function __construct(\Magento\Framework\Model\Context $context, \Magento\Framework\Registry $registry, InvoiceInterfaceFactory $invoiceDataFactory, DataObjectHelper $dataObjectHelper, \Storefront\BTCPay\Model\ResourceModel\Invoice $resource, \Storefront\BTCPay\Model\ResourceModel\Invoice\Collection $resourceCollection, array $data = []) {
+        $this->invoiceDataFactory = $invoiceDataFactory;
         $this->dataObjectHelper = $dataObjectHelper;
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);
     }
 
     /**
-     * Retrieve transaction model with transaction data
-     * @return TransactionInterface
+     * Retrieve invoice model with invoice data
+     * @return InvoiceInterface
      */
     public function getDataModel() {
-        $transactionData = $this->getData();
+        $invoiceData = $this->getData();
 
-        $transactionDataObject = $this->transactionDataFactory->create();
-        $this->dataObjectHelper->populateWithArray($transactionDataObject, $transactionData, TransactionInterface::class);
+        $invoiceDataObject = $this->invoiceDataFactory->create();
+        $this->dataObjectHelper->populateWithArray($invoiceDataObject, $invoiceData, InvoiceInterface::class);
 
-        return $transactionDataObject;
+        return $invoiceDataObject;
     }
 }

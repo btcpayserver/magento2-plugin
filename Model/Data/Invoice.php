@@ -21,52 +21,52 @@
 
 namespace Storefront\BTCPay\Model\Data;
 
-use Storefront\BTCPay\Api\Data\TransactionInterface;
+use Storefront\BTCPay\Api\Data\InvoiceInterface;
 
-class Transaction extends \Magento\Framework\Api\AbstractExtensibleObject implements TransactionInterface
+class Invoice extends \Magento\Framework\Api\AbstractExtensibleObject implements InvoiceInterface
 {
 
     /**
-     * Get transaction_id
+     * Get invoice_id
      * @return string|null
      */
-    public function getTransactionId()
+    public function getInvoiceId()
     {
-        return $this->_get(self::TRANSACTION_ID);
+        return $this->_get(self::INVOICE_ID);
     }
 
     /**
-     * Set transaction_id
-     * @param string $transactionId
-     * @return \Storefront\BTCPay\Api\Data\TransactionInterface
+     * Set invoice_id
+     * @param string $invoiceId
+     * @return \Storefront\BTCPay\Api\Data\InvoiceInterface
      */
-    public function setTransactionId($transactionId)
+    public function setInvoiceId($invoiceId)
     {
-        return $this->setData(self::TRANSACTION_ID, $transactionId);
+        return $this->setData(self::INVOICE_ID, $invoiceId);
     }
 
     /**
-     * Get transaction_status
+     * Get invoice_status
      * @return string|null
      */
-    public function getTransactionStatus()
+    public function getStatus()
     {
-        return $this->_get(self::TRANSACTION_STATUS);
+        return $this->_get(self::INVOICE_STATUS);
     }
 
     /**
-     * Set transaction_status
-     * @param string $transactionStatus
-     * @return \Storefront\BTCPay\Api\Data\TransactionInterface
+     * Set invoice_status
+     * @param string $invoiceStatus
+     * @return \Storefront\BTCPay\Api\Data\InvoiceInterface
      */
-    public function setTransactionStatus($transactionStatus)
+    public function setStatus($invoiceStatus)
     {
-        return $this->setData(self::TRANSACTION_STATUS, $transactionStatus);
+        return $this->setData(self::INVOICE_STATUS, $invoiceStatus);
     }
 
     /**
      * Retrieve existing extension attributes object or create a new one.
-     * @return \Storefront\BTCPay\Api\Data\TransactionExtensionInterface|null
+     * @return \Storefront\BTCPay\Api\Data\InvoiceExtensionInterface|null
      */
     public function getExtensionAttributes()
     {
@@ -75,11 +75,11 @@ class Transaction extends \Magento\Framework\Api\AbstractExtensibleObject implem
 
     /**
      * Set an extension attributes object.
-     * @param \Storefront\BTCPay\Api\Data\TransactionExtensionInterface $extensionAttributes
+     * @param \Storefront\BTCPay\Api\Data\InvoiceExtensionInterface $extensionAttributes
      * @return $this
      */
     public function setExtensionAttributes(
-        \Storefront\BTCPay\Api\Data\TransactionExtensionInterface $extensionAttributes
+        \Storefront\BTCPay\Api\Data\InvoiceExtensionInterface $extensionAttributes
     ) {
         return $this->_setExtensionAttributes($extensionAttributes);
     }

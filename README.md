@@ -7,10 +7,10 @@
 
 ## Features
 - Allows you to pay with BTCPay Server in Magento 2 stores
-- Magento receives transaction updates and updates the order statuses 
+- Magento receives invoice updates and updates the order statuses 
 - Custom order statuses in Magento are supported
-- View BTC Pay transactions created in Magento Admin
-- Magento also polls for transaction updates as a safety net for when real-time updates didn't reach Magento
+- View BTC Pay invoices created in Magento Admin
+- Magento also polls for invoice updates as a safety net for when real-time updates didn't reach Magento
 - Multi-website and multi-store compatible
 
 ## Goal
@@ -29,9 +29,9 @@ You will need to get a pairing code from BTCPay Server and enter that.
 - When an order is placed in Magento and BTCPay was selected as a payment method, the customer is redirected to the payment page on your BTCPay Server.
 - The customer can pay there, or he can cancel his order.
 - When he cancels, the unpaid order is canceled freeing up reserved stock and the customer is sent back to the shopping cart page. This module will restore the contents of the shopping cart, so the customer does not need to start from scratch.
-- When the customer pays, BTCPay Server will be notified of the payment and will signal Magento on the changed transaction status.
-- BTCPay Server pushes payment status changes to Magento, but Magento can also poll for transaction changes on it's own. We've built this as a safety net in case BTCPay Server cannot connect to Magento (i.e. during developement, behind a firewall).
-- Transaction updates from BTCPay Server to Magento are instant.
+- When the customer pays, BTCPay Server will be notified of the payment and will signal Magento on the changed invoice status.
+- BTCPay Server pushes payment status changes to Magento, but Magento can also poll for invoice changes on it's own. We've built this as a safety net in case BTCPay Server cannot connect to Magento (i.e. during developement, behind a firewall).
+- Invoice updates from BTCPay Server to Magento are instant.
 - Magento polls BTCPay Server for updates every 5 minutes.
  
 ## Which payment methods are supported?
@@ -53,12 +53,12 @@ This module does NOT contain any advertising and is 100% open source and free to
 - We now have a module dedicated to BTCPay, so both BTCPay Server and this module can innovate freely without having to consider BitPay compatibility
 - Higher code quality means less maintenance and easier compatibility with future Magento versions
 
-## What can I do if my BTCPay Server or Magento was offline for some time and transaction updates may not have synchronized?
-Magento polls BTCPay Serer every 5 minutes for updates to non-completed transactions, so basically you don't need to do anything.
-If you don't want to wait 5 minutes or prefer to see what is happening, we have prepared a console command to run the transaction sync manually:
+## What can I do if my BTCPay Server or Magento was offline for some time and invoice updates may not have synchronized?
+Magento polls BTCPay Serer every 5 minutes for updates to non-completed invoices, so basically you don't need to do anything.
+If you don't want to wait 5 minutes or prefer to see what is happening, we have prepared a console command to run the invoice sync manually:
 
 ```
-bin/magento btcpay:transaction:update
+bin/magento btcpay:invoice:update
 ```
 
 ## What is the future roadmap?

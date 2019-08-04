@@ -68,7 +68,7 @@
                     <label>Paid Order Status</label>
                     <comment><![CDATA[
                         Optional. If you use custom order statuses, select the status you want to use.
-                        <br />A full payment is underway, but not yet confirmed. Choose a status that falls under the "new" state.
+                        <br />A full payment is underway, but not sure about the amount and not yet confirmed. Choose a status that falls under the "new" state.
                         ]]>
                     </comment>
                     <source_model>Storefront\BTCPay\Model\Config\Source\Order\Status\NewStatuses</source_model>

@@ -2,21 +2,21 @@
 <listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
 	<argument name="data" xsi:type="array">
 		<item name="js_config" xsi:type="array">
-			<item name="provider" xsi:type="string">btcpay_transaction_listing.btcpay_transaction_listing_data_source</item>
+			<item name="provider" xsi:type="string">btcpay_invoice_listing.btcpay_invoice_listing_data_source</item>
 		</item>
 	</argument>
 	<settings>
-		<spinner>btcpay_transaction_columns</spinner>
+		<spinner>btcpay_invoice_columns</spinner>
 		<deps>
-			<dep>btcpay_transaction_listing.btcpay_transaction_listing_data_source</dep>
+			<dep>btcpay_invoice_listing.btcpay_invoice_listing_data_source</dep>
 		</deps>
 	</settings>
-	<dataSource component="Magento_Ui/js/grid/provider" name="btcpay_transaction_listing_data_source">
+	<dataSource component="Magento_Ui/js/grid/provider" name="btcpay_invoice_listing_data_source">
 		<settings>
 			<updateUrl path="mui/index/render"/>
 		</settings>
-		<aclResource>Storefront_BTCPay::transaction</aclResource>
-		<dataProvider class="Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider" name="btcpay_transaction_listing_data_source">
+		<aclResource>Storefront_BTCPay::invoice</aclResource>
+		<dataProvider class="Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider" name="btcpay_invoice_listing_data_source">
 			<settings>
 				<requestFieldName>id</requestFieldName>
 				<primaryFieldName>id</primaryFieldName>
@@ -32,20 +32,21 @@
 		<filters name="listing_filters"/>
 		<paging name="listing_paging"/>
 	</listingToolbar>
-	<columns name="btcpay_transaction_columns">
+	<columns name="btcpay_invoice_columns">
 		<settings>
+            <!--
 			<editorConfig>
-				<param name="selectProvider" xsi:type="string">btcpay_transaction_listing.btcpay_transaction_listing.btcpay_transaction_columns.ids</param>
+				<param name="selectProvider" xsi:type="string">btcpay_invoice_listing.btcpay_invoice_listing.btcpay_invoice_columns.ids</param>
 				<param name="enabled" xsi:type="boolean">true</param>
 				<param name="indexField" xsi:type="string">id</param>
 				<param name="clientConfig" xsi:type="array">
-					<item name="saveUrl" path="storefront_btcpay/Transaction/inlineEdit" xsi:type="url"/>
+					<item name="saveUrl" path="storefront_btcpay/Invoice/inlineEdit" xsi:type="url"/>
 					<item name="validateBeforeSave" xsi:type="boolean">false</item>
 				</param>
 			</editorConfig>
 			<childDefaults>
 				<param name="fieldAction" xsi:type="array">
-					<item name="provider" xsi:type="string">btcpay_transaction_listing.btcpay_transaction_listing.btcpay_transaction_columns_editor</item>
+					<item name="provider" xsi:type="string">btcpay_invoice_listing.btcpay_invoice_listing.btcpay_invoice_columns_editor</item>
 					<item name="target" xsi:type="string">startEdit</item>
 					<item name="params" xsi:type="array">
 						<item name="0" xsi:type="string">${ $.$data.rowIndex }</item>
@@ -53,32 +54,42 @@
 					</item>
 				</param>
 			</childDefaults>
+			-->
 		</settings>
 		<selectionsColumn name="ids">
 			<settings>
 				<indexField>id</indexField>
 			</settings>
 		</selectionsColumn>
-		<column name="transaction_id">
+		<column name="invoice_id">
 			<settings>
 				<filter>text</filter>
 				<sorting>asc</sorting>
-				<label translate="true">Transaction ID</label>
+				<label translate="true">Invoice ID</label>
 			</settings>
 		</column>
-		<column name="transaction_status">
+        <column name="order_id">
+            <settings>
+                <filter>text</filter>
+                <sorting>asc</sorting>
+                <label translate="true">Order ID</label>
+            </settings>
+        </column>
+		<column name="status">
 			<settings>
 				<filter>text</filter>
-				<label translate="true">Transaction Status</label>
+				<label translate="true">Status</label>
+                <!--
 				<editor>
 					<editorType>text</editorType>
 					<validation>
 						<rule name="required-entry" xsi:type="boolean">false</rule>
 					</validation>
 				</editor>
+				-->
 			</settings>
 		</column>
-		<actionsColumn class="Storefront\BTCPay\Ui\Component\Listing\Column\TransactionActions" name="actions">
+		<actionsColumn class="Storefront\BTCPay\Ui\Component\Listing\Column\InvoiceActions" name="actions">
 			<settings>
 				<indexField>id</indexField>
 				<resizeEnabled>false</resizeEnabled>

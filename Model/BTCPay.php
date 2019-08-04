@@ -6,7 +6,6 @@
 
 namespace Storefront\BTCPay\Model;
 
-
 use Magento\Directory\Helper\Data as DirectoryHelper;
 use Magento\Payment\Model\Method\AbstractMethod;
 
@@ -50,11 +49,9 @@ class BTCPay extends AbstractMethod {
      */
     private $url;
 
-    public function __construct(\Magento\Framework\Model\Context $context, \Magento\Framework\Registry $registry, \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory, \Magento\Framework\Api\AttributeValueFactory $customAttributeFactory, \Magento\Payment\Helper\Data $paymentData, \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig, Logger $logger, \Magento\Framework\UrlInterface $url, \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null, \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null, array $data = [], DirectoryHelper $directory = null) {
-
-        $this->url = $url;
-
+    public function __construct(\Magento\Framework\Model\Context $context, \Magento\Framework\Registry $registry, \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory, \Magento\Framework\Api\AttributeValueFactory $customAttributeFactory, \Magento\Payment\Helper\Data $paymentData, \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig, \Magento\Framework\UrlInterface $url,\Magento\Payment\Model\Method\Logger $logger, \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null, \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null, array $data = [], DirectoryHelper $directory = null) {
         parent::__construct($context, $registry, $extensionFactory, $customAttributeFactory, $paymentData, $scopeConfig, $logger, $resource, $resourceCollection, $data, $directory);
+        $this->url = $url;
     }
 
     public function isAvailable(\Magento\Quote\Api\Data\CartInterface $quote = null) {
@@ -77,7 +74,7 @@ class BTCPay extends AbstractMethod {
      * @return string
      */
     public function getOrderPlaceRedirectUrl() {
-        return $this->url('btcpay/redirect/forward', [
+        return $this->url('btcpay/redirect/forwardtopayment', [
             '_secure' => true,
             '_nosid' => true
         ]);

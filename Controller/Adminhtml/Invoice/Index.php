@@ -19,7 +19,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Storefront\BTCPay\Controller\Adminhtml\Transaction;
+namespace Storefront\BTCPay\Controller\Adminhtml\Invoice;
 
 class Index extends \Magento\Backend\App\Action
 {
@@ -48,7 +48,7 @@ class Index extends \Magento\Backend\App\Action
     public function execute()
     {
         $resultPage = $this->resultPageFactory->create();
-            $resultPage->getConfig()->getTitle()->prepend(__('BTCPay Transactions'));
+            $resultPage->getConfig()->getTitle()->prepend(__('BTCPay Invoices'));
             return $resultPage;
     }
 }

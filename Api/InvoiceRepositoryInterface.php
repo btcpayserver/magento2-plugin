@@ -23,31 +23,31 @@ namespace Storefront\BTCPay\Api;
 
 use Magento\Framework\Api\SearchCriteriaInterface;
 
-interface TransactionRepositoryInterface
+interface InvoiceRepositoryInterface
 {
 
     /**
-     * Save Transaction
-     * @param \Storefront\BTCPay\Api\Data\TransactionInterface $transaction
-     * @return \Storefront\BTCPay\Api\Data\TransactionInterface
+     * Save Invoice
+     * @param \Storefront\BTCPay\Api\Data\InvoiceInterface $invoice
+     * @return \Storefront\BTCPay\Api\Data\InvoiceInterface
      * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function save(
-        \Storefront\BTCPay\Api\Data\TransactionInterface $transaction
+        \Storefront\BTCPay\Api\Data\InvoiceInterface $invoice
     );
 
     /**
-     * Retrieve Transaction
-     * @param string $transactionId
-     * @return \Storefront\BTCPay\Api\Data\TransactionInterface
+     * Retrieve Invoice
+     * @param string $invoiceId
+     * @return \Storefront\BTCPay\Api\Data\InvoiceInterface
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function getById($transactionId);
+    public function getById($invoiceId);
 
     /**
-     * Retrieve Transaction matching the specified criteria.
+     * Retrieve Invoice matching the specified criteria.
      * @param \Magento\Framework\Api\SearchCriteriaInterface $searchCriteria
-     * @return \Storefront\BTCPay\Api\Data\TransactionSearchResultsInterface
+     * @return \Storefront\BTCPay\Api\Data\InvoiceSearchResultsInterface
      * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function getList(
@@ -55,21 +55,21 @@ interface TransactionRepositoryInterface
     );
 
     /**
-     * Delete Transaction
-     * @param \Storefront\BTCPay\Api\Data\TransactionInterface $transaction
+     * Delete Invoice
+     * @param \Storefront\BTCPay\Api\Data\InvoiceInterface $invoice
      * @return bool true on success
      * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function delete(
-        \Storefront\BTCPay\Api\Data\TransactionInterface $transaction
+        \Storefront\BTCPay\Api\Data\InvoiceInterface $invoice
     );
 
     /**
-     * Delete Transaction by ID
-     * @param string $transactionId
+     * Delete Invoice by ID
+     * @param string $invoiceId
      * @return bool true on success
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function deleteById($transactionId);
+    public function deleteById($invoiceId);
 }

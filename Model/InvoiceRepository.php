@@ -21,29 +21,29 @@
 
 namespace Storefront\BTCPay\Model;
 
-use Storefront\BTCPay\Api\TransactionRepositoryInterface;
-use Storefront\BTCPay\Api\Data\TransactionSearchResultsInterfaceFactory;
-use Storefront\BTCPay\Api\Data\TransactionInterfaceFactory;
+use Storefront\BTCPay\Api\InvoiceRepositoryInterface;
+use Storefront\BTCPay\Api\Data\InvoiceSearchResultsInterfaceFactory;
+use Storefront\BTCPay\Api\Data\InvoiceInterfaceFactory;
 use Magento\Framework\Api\DataObjectHelper;
 use Magento\Framework\Exception\CouldNotDeleteException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Reflection\DataObjectProcessor;
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
-use Storefront\BTCPay\Model\ResourceModel\Transaction as ResourceTransaction;
-use Storefront\BTCPay\Model\ResourceModel\Transaction\CollectionFactory as TransactionCollectionFactory;
+use Storefront\BTCPay\Model\ResourceModel\Invoice as ResourceInvoice;
+use Storefront\BTCPay\Model\ResourceModel\Invoice\CollectionFactory as InvoiceCollectionFactory;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Api\ExtensionAttribute\JoinProcessorInterface;
 use Magento\Framework\Api\ExtensibleDataObjectConverter;
 
-class TransactionRepository implements TransactionRepositoryInterface
+class InvoiceRepository implements InvoiceRepositoryInterface
 {
 
     protected $resource;
 
-    protected $transactionFactory;
+    protected $invoiceFactory;
 
-    protected $transactionCollectionFactory;
+    protected $invoiceCollectionFactory;
 
     protected $searchResultsFactory;
 
@@ -51,7 +51,7 @@ class TransactionRepository implements TransactionRepositoryInterface
 
     protected $dataObjectProcessor;
 
-    protected $dataTransactionFactory;
+    protected $dataInvoiceFactory;
 
     protected $extensionAttributesJoinProcessor;
 
@@ -62,11 +62,11 @@ class TransactionRepository implements TransactionRepositoryInterface
     protected $extensibleDataObjectConverter;
 
     /**
-     * @param ResourceTransaction $resource
-     * @param TransactionFactory $transactionFactory
-     * @param TransactionInterfaceFactory $dataTransactionFactory
-     * @param TransactionCollectionFactory $transactionCollectionFactory
-     * @param TransactionSearchResultsInterfaceFactory $searchResultsFactory
+     * @param ResourceInvoice $resource
+     * @param InvoiceFactory $invoiceFactory
+     * @param InvoiceInterfaceFactory $dataInvoiceFactory
+     * @param InvoiceCollectionFactory $invoiceCollectionFactory
+     * @param InvoiceSearchResultsInterfaceFactory $searchResultsFactory
      * @param DataObjectHelper $dataObjectHelper
      * @param DataObjectProcessor $dataObjectProcessor
      * @param StoreManagerInterface $storeManager
@@ -75,11 +75,11 @@ class TransactionRepository implements TransactionRepositoryInterface
      * @param ExtensibleDataObjectConverter $extensibleDataObjectConverter
      */
     public function __construct(
-        ResourceTransaction $resource,
-        TransactionFactory $transactionFactory,
-        TransactionInterfaceFactory $dataTransactionFactory,
-        TransactionCollectionFactory $transactionCollectionFactory,
-        TransactionSearchResultsInterfaceFactory $searchResultsFactory,
+        ResourceInvoice $resource,
+        InvoiceFactory $invoiceFactory,
+        InvoiceInterfaceFactory $dataInvoiceFactory,
+        InvoiceCollectionFactory $invoiceCollectionFactory,
+        InvoiceSearchResultsInterfaceFactory $searchResultsFactory,
         DataObjectHelper $dataObjectHelper,
         DataObjectProcessor $dataObjectProcessor,
         StoreManagerInterface $storeManager,
@@ -88,11 +88,11 @@ class TransactionRepository implements TransactionRepositoryInterface
         ExtensibleDataObjectConverter $extensibleDataObjectConverter
     ) {
         $this->resource = $resource;
-        $this->transactionFactory = $transactionFactory;
-        $this->transactionCollectionFactory = $transactionCollectionFactory;
+        $this->invoiceFactory = $invoiceFactory;
+        $this->invoiceCollectionFactory = $invoiceCollectionFactory;
         $this->searchResultsFactory = $searchResultsFactory;
         $this->dataObjectHelper = $dataObjectHelper;
-        $this->dataTransactionFactory = $dataTransactionFactory;
+        $this->dataInvoiceFactory = $dataInvoiceFactory;
         $this->dataObjectProcessor = $dataObjectProcessor;
         $this->storeManager = $storeManager;
         $this->collectionProcessor = $collectionProcessor;
@@ -104,43 +104,43 @@ class TransactionRepository implements TransactionRepositoryInterface
      * {@inheritdoc}
      */
     public function save(
-        \Storefront\BTCPay\Api\Data\TransactionInterface $transaction
+        \Storefront\BTCPay\Api\Data\InvoiceInterface $invoice
     ) {
-        /* if (empty($transaction->getStoreId())) {
+        /* if (empty($invoice->getStoreId())) {
             $storeId = $this->storeManager->getStore()->getId();
-            $transaction->setStoreId($storeId);
+            $invoice->setStoreId($storeId);
         } */
         
-        $transactionData = $this->extensibleDataObjectConverter->toNestedArray(
-            $transaction,
+        $invoiceData = $this->extensibleDataObjectConverter->toNestedArray(
+            $invoice,
             [],
-            \Storefront\BTCPay\Api\Data\TransactionInterface::class
+            \Storefront\BTCPay\Api\Data\InvoiceInterface::class
         );
         
-        $transactionModel = $this->transactionFactory->create()->setData($transactionData);
+        $invoiceModel = $this->invoiceFactory->create()->setData($invoiceData);
         
         try {
-            $this->resource->save($transactionModel);
+            $this->resource->save($invoiceModel);
         } catch (\Exception $exception) {
             throw new CouldNotSaveException(__(
-                'Could not save the BTC Pay transaction: %1',
+                'Could not save the BTC Pay invoice: %1',
                 $exception->getMessage()
             ));
         }
-        return $transactionModel->getDataModel();
+        return $invoiceModel->getDataModel();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getById($transactionId)
+    public function getById($invoiceId)
     {
-        $transaction = $this->transactionFactory->create();
-        $this->resource->load($transaction, $transactionId);
-        if (!$transaction->getId()) {
-            throw new NoSuchEntityException(__('BTCPay transaction with id "%1" does not exist.', $transactionId));
+        $invoice = $this->invoiceFactory->create();
+        $this->resource->load($invoice, $invoiceId);
+        if (!$invoice->getId()) {
+            throw new NoSuchEntityException(__('BTCPay invoice with id "%1" does not exist.', $invoiceId));
         }
-        return $transaction->getDataModel();
+        return $invoice->getDataModel();
     }
 
     /**
@@ -149,11 +149,11 @@ class TransactionRepository implements TransactionRepositoryInterface
     public function getList(
         \Magento\Framework\Api\SearchCriteriaInterface $criteria
     ) {
-        $collection = $this->transactionCollectionFactory->create();
+        $collection = $this->invoiceCollectionFactory->create();
         
         $this->extensionAttributesJoinProcessor->process(
             $collection,
-            \Storefront\BTCPay\Api\Data\TransactionInterface::class
+            \Storefront\BTCPay\Api\Data\InvoiceInterface::class
         );
         
         $this->collectionProcessor->process($criteria, $collection);
@@ -175,15 +175,15 @@ class TransactionRepository implements TransactionRepositoryInterface
      * {@inheritdoc}
      */
     public function delete(
-        \Storefront\BTCPay\Api\Data\TransactionInterface $transaction
+        \Storefront\BTCPay\Api\Data\InvoiceInterface $invoice
     ) {
         try {
-            $transactionModel = $this->transactionFactory->create();
-            $this->resource->load($transactionModel, $transaction->getTransactionId());
-            $this->resource->delete($transactionModel);
+            $invoiceModel = $this->invoiceFactory->create();
+            $this->resource->load($invoiceModel, $invoice->getInvoiceId());
+            $this->resource->delete($invoiceModel);
         } catch (\Exception $exception) {
             throw new CouldNotDeleteException(__(
-                'Could not delete the BTCPay transaction ID: %1',
+                'Could not delete the BTCPay invoice ID: %1',
                 $exception->getMessage()
             ));
         }
@@ -193,8 +193,8 @@ class TransactionRepository implements TransactionRepositoryInterface
     /**
      * {@inheritdoc}
      */
-    public function deleteById($transactionId)
+    public function deleteById($invoiceId)
     {
-        return $this->delete($this->getById($transactionId));
+        return $this->delete($this->getById($invoiceId));
     }
 }
