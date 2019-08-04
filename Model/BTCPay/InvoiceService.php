@@ -285,6 +285,7 @@ class InvoiceService {
         if ($row) {
 
             $orderId = $row['order_id'];
+            /* @var $order \Magento\Sales\Model\Order */
             $order = $this->orderRepository->get($orderId);
 
             $storeId = $order->getStoreId();
@@ -324,15 +325,23 @@ class InvoiceService {
                 case \Storefront\BTCPay\Model\Invoice::STATUS_COMPLETE:
                     // 3) Paid, confirmed and settled. Final!
                     $completedStatus = $this->getStoreConfig('payment/btcpay/payment_completed_status', $storeId);
-                    $order->addStatusHistoryComment('Payment completed', $completedStatus);
-                    $invoice = $order->prepareInvoice();
-                    $invoice->register();
+                    if ($order->canInvoice()) {
+                        if ($completedStatus) {
+                            $order->addStatusHistoryComment('Payment completed', $completedStatus);
+                        } else {
+                            $order->addStatusHistoryComment('Payment completed');
+                        }
+                        $invoice = $order->prepareInvoice();
+                        $invoice->setState(\Magento\Sales\Model\Order\Invoice::STATE_PAID);
+                        $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_OFFLINE);
+                        $invoice->register();
 
-                    // TODO we really need to save the invoice first as we are saving it again in this invoice? Leaving it out for now.
-                    //$invoice->save();
+                        // TODO we really need to save the invoice first as we are saving it again in this invoice? Leaving it out for now.
+                        //$invoice->save();
 
-                    $invoiceSave = $this->transaction->addObject($invoice)->addObject($invoice->getOrder());
-                    $invoiceSave->save();
+                        $invoiceSave = $this->transaction->addObject($invoice)->addObject($invoice->getOrder());
+                        $invoiceSave->save();
+                    }
                     break;
                 case \Storefront\BTCPay\Model\Invoice::STATUS_INVALID:
                     $order->addStatusHistoryComment('Failed to confirm the order. The order will automatically update when the status changes.');
