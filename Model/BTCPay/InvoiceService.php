@@ -307,7 +307,9 @@ class InvoiceService {
                 case \Storefront\BTCPay\Model\Invoice::STATUS_PAID:
                     // 1) Payments have been made to the invoice for the requested amount but the invoice has not been confirmed yet. We also don't know if the amount is enough.
                     $paidNotConfirmedStatus = $this->getStoreConfig('payment/btcpay/payment_paid_status', $storeId);
-
+                    if (!$paidNotConfirmedStatus) {
+                        $paidNotConfirmedStatus = false;
+                    }
                     $order->addStatusHistoryComment('Payment underway, but not sure about the amount and also not confirmed yet', $paidNotConfirmedStatus);
                     $order->save();
                     break;
@@ -325,14 +327,14 @@ class InvoiceService {
                 case \Storefront\BTCPay\Model\Invoice::STATUS_COMPLETE:
                     // 3) Paid, confirmed and settled. Final!
                     $completedStatus = $this->getStoreConfig('payment/btcpay/payment_completed_status', $storeId);
+                    if (!$completedStatus) {
+                        $completedStatus = false;
+                    }
                     if ($order->canInvoice()) {
-                        if ($completedStatus) {
-                            $order->addStatusHistoryComment('Payment completed', $completedStatus);
-                        } else {
-                            $order->addStatusHistoryComment('Payment completed');
-                        }
+                        $order->addStatusHistoryComment('Payment completed', $completedStatus);
+
                         $invoice = $order->prepareInvoice();
-                        $invoice->setState(\Magento\Sales\Model\Order\Invoice::STATE_PAID);
+                        //$invoice->setState(\Magento\Sales\Model\Order\Invoice::STATE_PAID);
                         $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_OFFLINE);
                         $invoice->register();
 
