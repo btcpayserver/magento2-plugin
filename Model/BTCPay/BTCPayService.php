@@ -352,7 +352,7 @@ class BTCPayService {
                     // Invoice expired - let's do nothing?
                 default:
                     $order->addStatusHistoryComment('Invoice status: ' . $invoiceStatus);
-                    $this->logger->exception('Unknown invoice state "' . $invoiceStatus . '" for invoice "' . $invoiceId . '"');
+                    $this->logger->error('Unknown invoice state "' . $invoiceStatus . '" for invoice "' . $invoiceId . '"');
                     break;
             }
 //
@@ -378,7 +378,7 @@ class BTCPayService {
     public function updateIncompleteInvoices() {
         // TODO refactor to use the Invoice model instead of direct SQL reading
         $tableName = $this->db->getTableName('btcpay_invoices');
-        $select = $this->db->select()->from($tableName)->where('status != ?', 'complete')->limit(1);
+        $select = $this->db->select()->from($tableName)->where('status != ?', 'complete');
 
         $r = 0;
 

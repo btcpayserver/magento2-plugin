@@ -84,6 +84,7 @@ class ReturnAfterPayment extends Action {
             $this->checkoutSession->setLastQuoteId($order->getQuoteId());
             $this->checkoutSession->setLastSuccessQuoteId($order->getQuoteId());
             $this->checkoutSession->setLastOrderId($order->getId());
+            $this->checkoutSession->setLastRealOrderId($order->getIncrementId());
 
             $resultRedirect->setUrl($order->getStore()->getUrl('checkout/onepage/success'));
         } else {
