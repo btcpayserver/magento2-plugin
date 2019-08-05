@@ -303,58 +303,59 @@ class BTCPayService {
             $where = $this->db->quoteInto('order_id = ?', $orderId) . ' and ' . $this->db->quoteInto('invoice_id = ?', $invoiceId);
             $rowsChanged = $this->db->update($tableName, ['status' => $invoiceStatus], $where);
 
-            switch ($invoiceStatus) {
-                case \Storefront\BTCPay\Model\Invoice::STATUS_PAID:
-                    // 1) Payments have been made to the invoice for the requested amount but the invoice has not been confirmed yet. We also don't know if the amount is enough.
-                    $paidNotConfirmedStatus = $this->getStoreConfig('payment/btcpay/payment_paid_status', $storeId);
-                    if (!$paidNotConfirmedStatus) {
-                        $paidNotConfirmedStatus = false;
-                    }
-                    $order->addStatusHistoryComment('Payment underway, but not sure about the amount and also not confirmed yet', $paidNotConfirmedStatus);
-                    $order->save();
-                    break;
-                case \Storefront\BTCPay\Model\Invoice::STATUS_CONFIRMED:
+            if ($rowsChanged === 1) {
+                switch ($invoiceStatus) {
+                    case \Storefront\BTCPay\Model\Invoice::STATUS_PAID:
+                        // 1) Payments have been made to the invoice for the requested amount but the invoice has not been confirmed yet. We also don't know if the amount is enough.
+                        $paidNotConfirmedStatus = $this->getStoreConfig('payment/btcpay/payment_paid_status', $storeId);
+                        if (!$paidNotConfirmedStatus) {
+                            $paidNotConfirmedStatus = false;
+                        }
+                        $order->addStatusHistoryComment('Payment underway, but not sure about the amount and also not confirmed yet', $paidNotConfirmedStatus);
+                        $order->save();
+                        break;
+                    case \Storefront\BTCPay\Model\Invoice::STATUS_CONFIRMED:
 
-                    // 2) Paid and confirmed (happens before complete and transitions to it quickly)
+                        // 2) Paid and confirmed (happens before complete and transitions to it quickly)
 
-                    // TODO maybe add the transation ID in the comment or something like that?
+                        // TODO maybe add the transation ID in the comment or something like that?
 
-                    $confirmedStatus = $this->getStoreConfig('payment/btcpay/payment_confirmed_status', $storeId);
-                    $order->addStatusHistoryComment('Payment confirmed, but not complete yet', $confirmedStatus);
+                        $confirmedStatus = $this->getStoreConfig('payment/btcpay/payment_confirmed_status', $storeId);
+                        $order->addStatusHistoryComment('Payment confirmed, but not complete yet', $confirmedStatus);
 
-                    $order->save();
-                    break;
-                case \Storefront\BTCPay\Model\Invoice::STATUS_COMPLETE:
-                    // 3) Paid, confirmed and settled. Final!
-                    $completeStatus = $this->getStoreConfig('payment/btcpay/payment_complete_status', $storeId);
-                    if (!$completeStatus) {
-                        $completeStatus = false;
-                    }
-                    if ($order->canInvoice()) {
-                        $order->addStatusHistoryComment('Payment complete', $completeStatus);
+                        $order->save();
+                        break;
+                    case \Storefront\BTCPay\Model\Invoice::STATUS_COMPLETE:
+                        // 3) Paid, confirmed and settled. Final!
+                        $completeStatus = $this->getStoreConfig('payment/btcpay/payment_complete_status', $storeId);
+                        if (!$completeStatus) {
+                            $completeStatus = false;
+                        }
+                        if ($order->canInvoice()) {
+                            $order->addStatusHistoryComment('Payment complete', $completeStatus);
 
-                        $invoice = $order->prepareInvoice();
-                        $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_OFFLINE);
-                        $invoice->register();
+                            $invoice = $order->prepareInvoice();
+                            $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_OFFLINE);
+                            $invoice->register();
 
-                        // TODO we really need to save the invoice first as we are saving it again in this invoice? Leaving it out for now.
-                        //$invoice->save();
+                            // TODO we really need to save the invoice first as we are saving it again in this invoice? Leaving it out for now.
+                            //$invoice->save();
 
-                        $invoiceSave = $this->transaction->addObject($invoice)->addObject($invoice->getOrder());
-                        $invoiceSave->save();
-                    }
-                    break;
-                case \Storefront\BTCPay\Model\Invoice::STATUS_INVALID:
-                    $order->addStatusHistoryComment('Failed to confirm the order. The order will automatically update when the status changes.');
-                    $order->save();
-                    break;
-                case \Storefront\BTCPay\Model\Invoice::STATUS_EXPIRED:
-                    // Invoice expired - let's do nothing?
-                default:
-                    $order->addStatusHistoryComment('Invoice status: ' . $invoiceStatus);
-                    $this->logger->error('Unknown invoice state "' . $invoiceStatus . '" for invoice "' . $invoiceId . '"');
-                    break;
-            }
+                            $invoiceSave = $this->transaction->addObject($invoice)->addObject($invoice->getOrder());
+                            $invoiceSave->save();
+                        }
+                        break;
+                    case \Storefront\BTCPay\Model\Invoice::STATUS_INVALID:
+                        $order->addStatusHistoryComment('Failed to confirm the order. The order will automatically update when the status changes.');
+                        $order->save();
+                        break;
+                    case \Storefront\BTCPay\Model\Invoice::STATUS_EXPIRED:
+                        // Invoice expired - let's do nothing?
+                    default:
+                        $order->addStatusHistoryComment('Invoice status: ' . $invoiceStatus);
+                        $this->logger->error('Unknown invoice state "' . $invoiceStatus . '" for invoice "' . $invoiceId . '"');
+                        break;
+                }
 //
 //                case 'invoice_refundComplete':
 //                    // Full refund
@@ -367,7 +368,12 @@ class BTCPayService {
 //                    break;
 //
 //                // TODO what about partial refunds, partial payments and overpayment?
-            return $order;
+
+                return $order;
+            } else {
+                // Nothing was changed
+                return null;
+            }
 
         } else {
             // No invoice record found
@@ -378,7 +384,9 @@ class BTCPayService {
     public function updateIncompleteInvoices() {
         // TODO refactor to use the Invoice model instead of direct SQL reading
         $tableName = $this->db->getTableName('btcpay_invoices');
-        $select = $this->db->select()->from($tableName)->where('status != ?', 'complete');
+        $select = $this->db->select()->from($tableName);
+        $select->where('status != ?', \Storefront\BTCPay\Model\Invoice::STATUS_COMPLETE);
+        $select->where('status != ?', \Storefront\BTCPay\Model\Invoice::STATUS_EXPIRED);
 
         $r = 0;
 

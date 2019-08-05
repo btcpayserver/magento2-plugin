@@ -25,9 +25,10 @@ use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 
 class InvoiceActions extends \Magento\Ui\Component\Listing\Columns\Column {
 
-    const URL_PATH_EDIT = 'storefront_btcpay/invoice/edit';
-    const URL_PATH_DELETE = 'storefront_btcpay/invoice/delete';
-    const URL_PATH_DETAILS = 'storefront_btcpay/invoice/details';
+    const URL_PATH_UPDATE = 'btcpay/invoice/update';
+//    const URL_PATH_EDIT = 'btcpay/invoice/edit';
+//    const URL_PATH_DELETE = 'btcpay/invoice/delete';
+//    const URL_PATH_DETAILS = 'btcpay/invoice/details';
 
     /**
      * @var \Magento\Framework\UrlInterface
@@ -67,23 +68,17 @@ class InvoiceActions extends \Magento\Ui\Component\Listing\Columns\Column {
                     $viewUrl = $this->btcPayService->getInvoiceDetailUrl(0, $item['invoice_id']);
 
                     $item[$this->getData('name')] = [
-                        // TODO add poll for update
-
                         'view' => [
                             'href' => $viewUrl,
                             'label' => __('View in BTCPay Server'),
                             'target' => '_blank'
                         ],
-
-                        //                        'edit' => [
-                        //                            'href' => $this->urlBuilder->getUrl(
-                        //                                static::URL_PATH_EDIT,
-                        //                                [
-                        //                                    'invoice_id' => $item['invoice_id']
-                        //                                ]
-                        //                            ),
-                        //                            'label' => __('Edit')
-                        //                        ],
+                        'update' => [
+                            'href' => $this->urlBuilder->getUrl(static::URL_PATH_UPDATE, [
+                                'invoice_id' => $item['id']
+                            ]),
+                            'label' => __('Update')
+                        ],
                         //                        'delete' => [
                         //                            'href' => $this->urlBuilder->getUrl(
                         //                                static::URL_PATH_DELETE,

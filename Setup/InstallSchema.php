@@ -38,6 +38,8 @@ class InstallSchema implements InstallSchemaInterface {
 
         $connection->createTable($table);
 
+        // TODO foreign key from btcpay_invoices to sales_order table for the order entity ID
+
         $installer->endSetup();
     }
 
