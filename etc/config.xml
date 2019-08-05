@@ -13,7 +13,7 @@
                 <title>Pay with Bitcoin</title>
                 <order_status>pending</order_status>
                 <payment_confirmed_status></payment_confirmed_status>
-                <payment_completed_status></payment_completed_status>
+                <payment_complete_status></payment_complete_status>
                 <payment_action>true</payment_action>
                 <model>Storefront\BTCPay\Model\BTCPay</model>
                 <group>offline</group>

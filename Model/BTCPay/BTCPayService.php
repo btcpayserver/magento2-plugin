@@ -315,23 +315,23 @@ class BTCPayService {
                     break;
                 case \Storefront\BTCPay\Model\Invoice::STATUS_CONFIRMED:
 
-                    // 2) Paid and confirmed (happens before completed and transitions to it quickly)
+                    // 2) Paid and confirmed (happens before complete and transitions to it quickly)
 
                     // TODO maybe add the transation ID in the comment or something like that?
 
                     $confirmedStatus = $this->getStoreConfig('payment/btcpay/payment_confirmed_status', $storeId);
-                    $order->addStatusHistoryComment('Payment confirmed, but not completed yet', $confirmedStatus);
+                    $order->addStatusHistoryComment('Payment confirmed, but not complete yet', $confirmedStatus);
 
                     $order->save();
                     break;
                 case \Storefront\BTCPay\Model\Invoice::STATUS_COMPLETE:
                     // 3) Paid, confirmed and settled. Final!
-                    $completedStatus = $this->getStoreConfig('payment/btcpay/payment_completed_status', $storeId);
-                    if (!$completedStatus) {
-                        $completedStatus = false;
+                    $completeStatus = $this->getStoreConfig('payment/btcpay/payment_complete_status', $storeId);
+                    if (!$completeStatus) {
+                        $completeStatus = false;
                     }
                     if ($order->canInvoice()) {
-                        $order->addStatusHistoryComment('Payment completed', $completedStatus);
+                        $order->addStatusHistoryComment('Payment complete', $completeStatus);
 
                         $invoice = $order->prepareInvoice();
                         $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_OFFLINE);
@@ -378,7 +378,7 @@ class BTCPayService {
     public function updateIncompleteInvoices() {
         // TODO refactor to use the Invoice model instead of direct SQL reading
         $tableName = $this->db->getTableName('btcpay_invoices');
-        $select = $this->db->select()->from($tableName)->where('status != ?', 'completed')->limit(1);
+        $select = $this->db->select()->from($tableName)->where('status != ?', 'complete')->limit(1);
 
         $r = 0;
 

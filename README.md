@@ -54,7 +54,7 @@ This module does NOT contain any advertising and is 100% open source and free to
 - Higher code quality means less maintenance and easier compatibility with future Magento versions
 
 ## What can I do if my BTCPay Server or Magento was offline for some time and invoice updates may not have synchronized?
-Magento polls BTCPay Serer every 5 minutes for updates to non-completed invoices, so basically you don't need to do anything.
+Magento polls BTCPay Server every 5 minutes for updates to non-complete invoices, so basically you don't need to do anything. This is handled by a cronjob.
 If you don't want to wait 5 minutes or prefer to see what is happening, we have prepared a console command to run the invoice sync manually:
 
 ```

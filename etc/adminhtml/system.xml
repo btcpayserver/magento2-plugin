@@ -85,7 +85,7 @@
                     <source_model>Storefront\BTCPay\Model\Config\Source\Order\Status\NewStatuses</source_model>
                 </field>
 
-                <field id="payment_completed_status" translate="label" type="select" sortOrder="62" showInDefault="1" showInWebsite="0"
+                <field id="payment_complete_status" translate="label" type="select" sortOrder="62" showInDefault="1" showInWebsite="0"
                        showInStore="0">
                     <label>Completed Order Status</label>
                     <comment><![CDATA[
