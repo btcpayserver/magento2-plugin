@@ -21,7 +21,7 @@
 
 namespace Storefront\BTCPay\Console\Command;
 
-use Storefront\BTCPay\Model\BTCPay\InvoiceService;
+use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -30,14 +30,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 class Pair extends Command {
 
     /**
-     * @var InvoiceService
+     * @var BTCPayService
      */
-    private $invoiceService;
+    private $btcPayService;
 
 
-    public function __construct(InvoiceService $invoiceService, string $name = null) {
+    public function __construct(BTCPayService $btcPayService, string $name = null) {
         parent::__construct($name);
-        $this->invoiceService = $invoiceService;
+        $this->btcPayService = $btcPayService;
     }
 
     /**
@@ -45,7 +45,7 @@ class Pair extends Command {
      */
     protected function execute(InputInterface $input, OutputInterface $output) {
         $pairingCode = $input->getArgument('pairing_code');
-        $this->invoiceService->pair(0, $pairingCode);
+        $this->btcPayService->pair(0, $pairingCode);
         $output->writeln('Successfully paired and new keys generated.');
     }
 

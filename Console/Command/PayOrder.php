@@ -22,7 +22,7 @@
 namespace Storefront\BTCPay\Console\Command;
 
 use Magento\Sales\Api\OrderRepositoryInterface;
-use Storefront\BTCPay\Model\BTCPay\InvoiceService;
+use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -32,9 +32,9 @@ class PayOrder extends Command {
 
 
     /**
-     * @var InvoiceService
+     * @var BTCPayService
      */
-    private $invoiceService;
+    private $btcPayService;
 
     /**
      * @var OrderRepositoryInterface
@@ -42,9 +42,9 @@ class PayOrder extends Command {
     private $orderRepository;
 
 
-    public function __construct(InvoiceService $invoiceService, OrderRepositoryInterface $orderRepository, string $name = null) {
+    public function __construct(BTCPayService $btcPayService, OrderRepositoryInterface $orderRepository, string $name = null) {
         parent::__construct($name);
-        $this->invoiceService = $invoiceService;
+        $this->btcPayService = $btcPayService;
         $this->orderRepository = $orderRepository;
     }
 
@@ -54,7 +54,7 @@ class PayOrder extends Command {
     protected function execute(InputInterface $input, OutputInterface $output) {
         $orderId = $input->getArgument('orderId');
         $order = $this->orderRepository->get($orderId);
-        $invoice = $this->invoiceService->createInvoice($order);
+        $invoice = $this->btcPayService->createInvoice($order);
         $output->writeln(__('You can pay order %1 by visiting URL %2.', $order->getIncrementId(), $invoice->getUrl()));
     }
 

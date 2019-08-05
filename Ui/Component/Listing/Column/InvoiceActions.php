@@ -21,7 +21,7 @@
 
 namespace Storefront\BTCPay\Ui\Component\Listing\Column;
 
-use Storefront\BTCPay\Model\BTCPay\InvoiceService;
+use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 
 class InvoiceActions extends \Magento\Ui\Component\Listing\Columns\Column {
 
@@ -34,9 +34,9 @@ class InvoiceActions extends \Magento\Ui\Component\Listing\Columns\Column {
      */
     protected $urlBuilder;
     /**
-     * @var InvoiceService
+     * @var BTCPayService
      */
-    private $invoiceService;
+    private $btcPayService;
 
     /**
      * @param \Magento\Framework\View\Element\UiComponent\ContextInterface $context
@@ -45,11 +45,11 @@ class InvoiceActions extends \Magento\Ui\Component\Listing\Columns\Column {
      * @param array $components
      * @param array $data
      */
-    public function __construct(\Magento\Framework\View\Element\UiComponent\ContextInterface $context, \Magento\Framework\View\Element\UiComponentFactory $uiComponentFactory, \Magento\Framework\UrlInterface $urlBuilder, InvoiceService $invoiceService,
+    public function __construct(\Magento\Framework\View\Element\UiComponent\ContextInterface $context, \Magento\Framework\View\Element\UiComponentFactory $uiComponentFactory, \Magento\Framework\UrlInterface $urlBuilder, BTCPayService $btcPayService,
 
                                 array $components = [], array $data = []) {
         $this->urlBuilder = $urlBuilder;
-        $this->invoiceService = $invoiceService;
+        $this->btcPayService = $btcPayService;
         parent::__construct($context, $uiComponentFactory, $components, $data);
     }
 
@@ -64,7 +64,7 @@ class InvoiceActions extends \Magento\Ui\Component\Listing\Columns\Column {
             foreach ($dataSource['data']['items'] as & $item) {
                 if (isset($item['invoice_id'])) {
 
-                    $viewUrl = $this->invoiceService->getInvoiceDetailUrl(0, $item['invoice_id']);
+                    $viewUrl = $this->btcPayService->getInvoiceDetailUrl(0, $item['invoice_id']);
 
                     $item[$this->getData('name')] = [
                         // TODO add poll for update

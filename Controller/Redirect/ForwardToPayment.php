@@ -20,7 +20,7 @@ use Magento\Framework\View\Result\PageFactory;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\OrderRepository;
 use Psr\Log\LoggerInterface;
-use Storefront\BTCPay\Model\BTCPay\InvoiceService;
+use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 
 class ForwardToPayment extends Action {
 
@@ -43,22 +43,22 @@ class ForwardToPayment extends Action {
     private $sessionManager;
 
     /**
-     * @var \Storefront\BTCPay\Model\BTCPay\InvoiceService
+     * @var \Storefront\BTCPay\Model\BTCPay\BTCPayService
      */
-    private $invoiceService;
+    private $btcPayService;
     /**
      * @var Session
      */
     private $checkoutSession;
 
 
-    public function __construct(Context $context, Session $checkoutSession, CookieManagerInterface $cookieManager, CookieMetadataFactory $cookieMetadataFactory, SessionManagerInterface $sessionManager, \Storefront\BTCPay\Model\BTCPay\InvoiceService $invoiceService, CustomerSession $customerSession) {
+    public function __construct(Context $context, Session $checkoutSession, CookieManagerInterface $cookieManager, CookieMetadataFactory $cookieMetadataFactory, SessionManagerInterface $sessionManager, \Storefront\BTCPay\Model\BTCPay\BTCPayService $btcPayService, CustomerSession $customerSession) {
         parent::__construct($context);
         $this->checkoutSession = $checkoutSession;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->cookieManager = $cookieManager;
         $this->sessionManager = $sessionManager;
-        $this->invoiceService = $invoiceService;
+        $this->btcPayService = $btcPayService;
         $this->customerSession = $customerSession;
     }
 
@@ -85,7 +85,7 @@ class ForwardToPayment extends Action {
         $resultRedirect = $this->resultRedirectFactory->create();
 
         if ($order) {
-            $btcpayInvoice = $this->invoiceService->createInvoice($order);
+            $btcpayInvoice = $this->btcPayService->createInvoice($order);
             $invoiceId = $btcpayInvoice->getId();
 
             if ($invoiceId) {

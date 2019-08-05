@@ -7,18 +7,18 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use RuntimeException;
 use Storefront\BTCPay\Helper\Data;
-use Storefront\BTCPay\Model\BTCPay\InvoiceService;
+use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 
 class Ipn implements IpnInterface {
 
 
     /**
-     * @var InvoiceService
+     * @var BTCPayService
      */
-    private $invoiceService;
+    private $btcPayService;
 
-    public function __construct(InvoiceService $invoiceService) {
-        $this->invoiceService = $invoiceService;
+    public function __construct(BTCPayService $btcPayService) {
+        $this->btcPayService = $btcPayService;
     }
 
     /**
@@ -41,7 +41,7 @@ class Ipn implements IpnInterface {
         unset($data);
 
         if ($btcpayInvoiceId) {
-            $this->invoiceService->updateInvoice($btcpayInvoiceId);
+            $this->btcPayService->updateInvoice($btcpayInvoiceId);
             return true;
         } else {
             throw new RuntimeException('Invalid data POSTed');

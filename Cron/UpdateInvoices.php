@@ -6,19 +6,19 @@
  * Time: 20:15
  */
 
-namespace Storefront\JobQueue\Cron;
+namespace Storefront\BTCPay\Cron;
 
-use Storefront\BTCPay\Model\BTCPay\InvoiceService;
+use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 
 class UpdateInvoices {
 
     /**
-     * @var InvoiceService
+     * @var BTCPayService
      */
-    protected $nvoiceService;
+    protected $btcPayService;
 
-    public function __construct(InvoiceService $invoiceService) {
-        $this->invoiceService = $invoiceService;
+    public function __construct(BTCPayService $btcPayService) {
+        $this->btcPayService = $btcPayService;
     }
 
 
@@ -28,6 +28,6 @@ class UpdateInvoices {
      * You can use this for testing integrations if your BTCPay Server cannot reach your Magento DEV installation. You may be behind a firewall or not have port forwarding set up to your machine.
      */
     public function execute() {
-        $this->invoiceService->updateIncompleteInvoices();
+        $this->btcPayService->updateIncompleteInvoices();
     }
 }

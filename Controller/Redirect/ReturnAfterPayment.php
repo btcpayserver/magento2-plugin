@@ -10,15 +10,15 @@ use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Result\PageFactory;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Psr\Log\LoggerInterface;
-use Storefront\BTCPay\Model\BTCPay\InvoiceService;
+use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 
 class ReturnAfterPayment extends Action {
     protected $resultPageFactory;
     private $logger;
     /**
-     * @var InvoiceService
+     * @var BTCPayService
      */
-    private $invoiceService;
+    private $btcPayService;
     /**
      * @var OrderRepositoryInterface
      */
@@ -39,14 +39,14 @@ class ReturnAfterPayment extends Action {
      * @param Context $context
      * @param LoggerInterface $logger
      * @param PageFactory $resultPageFactory
-     * @param InvoiceService $invoiceService
+     * @param BTCPayService $btcPayService
      * @param OrderRepositoryInterface $orderRepository
      * @param \Magento\Checkout\Model\Session $checkoutSession
      */
-    public function __construct(Context $context, LoggerInterface $logger, PageFactory $resultPageFactory, InvoiceService $invoiceService, OrderRepositoryInterface $orderRepository, \Magento\Checkout\Model\Session $checkoutSession, UrlInterface $url) {
+    public function __construct(Context $context, LoggerInterface $logger, PageFactory $resultPageFactory, BTCPayService $btcPayService, OrderRepositoryInterface $orderRepository, \Magento\Checkout\Model\Session $checkoutSession, UrlInterface $url) {
         $this->resultPageFactory = $resultPageFactory;
         $this->logger = $logger;
-        $this->invoiceService = $invoiceService;
+        $this->btcPayService = $btcPayService;
         $this->orderRepository = $orderRepository;
         $this->checkoutSession = $checkoutSession;
         $this->url = $url;
@@ -69,7 +69,7 @@ class ReturnAfterPayment extends Action {
         $resultRedirect = $this->resultRedirectFactory->create();
         try {
             $order = $this->orderRepository->get($orderId);
-            $correctHash = $this->invoiceService->getOrderHash($order);
+            $correctHash = $this->btcPayService->getOrderHash($order);
 
             if ($hash === $correctHash) {
                 $valid = true;

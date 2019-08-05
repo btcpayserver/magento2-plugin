@@ -19,7 +19,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Storefront\BTCPay\Storage\EncryptedConfigStorage;
 
-class InvoiceService {
+class BTCPayService {
 
     CONST KEY_PUBLIC = 'btcpay.pub';
     CONST KEY_PRIVATE = 'btcpay.priv';
@@ -334,7 +334,6 @@ class InvoiceService {
                         $order->addStatusHistoryComment('Payment completed', $completedStatus);
 
                         $invoice = $order->prepareInvoice();
-                        //$invoice->setState(\Magento\Sales\Model\Order\Invoice::STATE_PAID);
                         $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_OFFLINE);
                         $invoice->register();
 
@@ -502,14 +501,14 @@ class InvoiceService {
      * @return \Bitpay\KeyInterface
      */
     public function getPrivateKey() {
-        return $this->encryptedConfigStorage->load(\Storefront\BTCPay\Model\BTCPay\InvoiceService::KEY_PRIVATE);
+        return $this->encryptedConfigStorage->load(\Storefront\BTCPay\Model\BTCPay\BTCPayService::KEY_PRIVATE);
     }
 
     /**
      * @return \Bitpay\KeyInterface
      */
     public function getPublicKey() {
-        return $this->encryptedConfigStorage->load(\Storefront\BTCPay\Model\BTCPay\InvoiceService::KEY_PUBLIC);
+        return $this->encryptedConfigStorage->load(\Storefront\BTCPay\Model\BTCPay\BTCPayService::KEY_PUBLIC);
     }
 
     private function getPort($storeId) {
