@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
-    <!--
+
     <event name="checkout_submit_all_after">
-        <observer name="btcpay_controller_success_action" instance="Storefront\BTCPay\Observer\Redirect"/>
+        <observer name="btcpay_redirect_to_payment" instance="Storefront\BTCPay\Observer\RedirectToPayment"/>
     </event>
-    -->
+
 </config>
