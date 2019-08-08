@@ -85,6 +85,13 @@
                 <label translate="true">Order ID</label>
             </settings>
         </column>
+        <column name="order_increment_id">
+            <settings>
+                <filter>text</filter>
+                <sorting>asc</sorting>
+                <label translate="true">Order</label>
+            </settings>
+        </column>
 		<column name="status">
 			<settings>
 				<filter>text</filter>
