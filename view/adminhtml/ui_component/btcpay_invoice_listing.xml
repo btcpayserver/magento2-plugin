@@ -75,9 +75,10 @@
 			<settings>
 				<filter>text</filter>
 				<sorting>asc</sorting>
-				<label translate="true">Invoice ID</label>
+				<label translate="true">BTCPay Invoice</label>
 			</settings>
 		</column>
+        <!--
         <column name="order_id">
             <settings>
                 <filter>text</filter>
@@ -85,6 +86,7 @@
                 <label translate="true">Order ID</label>
             </settings>
         </column>
+        -->
         <column name="order_increment_id">
             <settings>
                 <filter>text</filter>
