@@ -14,6 +14,9 @@
 	<dataSource component="Magento_Ui/js/grid/provider" name="btcpay_invoice_listing_data_source">
 		<settings>
 			<updateUrl path="mui/index/render"/>
+            <storageConfig>
+                <param name="indexField" xsi:type="string">id</param>
+            </storageConfig>
 		</settings>
 		<aclResource>Storefront_BTCPay::invoice</aclResource>
 		<dataProvider class="Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider" name="btcpay_invoice_listing_data_source">
@@ -61,6 +64,13 @@
 				<indexField>id</indexField>
 			</settings>
 		</selectionsColumn>
+        <column name="id">
+            <settings>
+                <filter>number</filter>
+                <sorting>asc</sorting>
+                <label translate="true">ID</label>
+            </settings>
+        </column>
 		<column name="invoice_id">
 			<settings>
 				<filter>text</filter>
