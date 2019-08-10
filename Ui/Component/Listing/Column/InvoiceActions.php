@@ -68,11 +68,6 @@ class InvoiceActions extends \Magento\Ui\Component\Listing\Columns\Column {
                     $viewUrl = $this->btcPayService->getInvoiceDetailUrl(0, $item['invoice_id']);
 
                     $item[$this->getData('name')] = [
-                        'view' => [
-                            'href' => $viewUrl,
-                            'label' => __('View in BTCPay Server'),
-                            'target' => '_blank'
-                        ],
                         'update' => [
                             'href' => $this->urlBuilder->getUrl(static::URL_PATH_UPDATE, [
                                 'invoice_id' => $item['id']
