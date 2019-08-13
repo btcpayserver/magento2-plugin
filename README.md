@@ -18,7 +18,10 @@ The goal of this module is to allow Bitcoin, Lightcoin and other crypto payments
 This module is also designed to be robust, low-maintenance and a solid foundation for future customization, should your business need it.
 
 ## How to install
-Just like any other Magento 2 module. Nothing special.
+Install using composer by running:
+```
+composer require storefront/magento2-btcpay-module
+```
 
 ## How to configure
 After installation, a new Payment Method will be visible in Stores > Configuration > Sales > Payment Methods. Configure the fields there.
@@ -70,8 +73,8 @@ bin/magento btcpay:invoice:update
 ## What if I need help?
 Just like with any other open source software, you can get help anywhere from the community, or just open an issue here on Github.
 
-You can talk to Wouter Samaey on the BTCPay Server Slack #development channel
+You can talk to Wouter Samaey on the BTCPay Server Mattermost #development channel
 
 If you prefer professional paid support, you can contact Storefront at info@storefront.be.
 
-If this module powers your business, consider getting paid support (we built this module for free) and also donate to the development of BTCPay Server at https://btcpayserver.org/#makeADonation 
+If this module powers your business, consider getting paid support (we did build this module for free) and also donate to the development of BTCPay Server at https://btcpayserver.org/#makeADonation 
