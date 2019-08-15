@@ -2,13 +2,25 @@
 
 namespace Storefront\BTCPay\Model\BTCPay;
 
+use BTCPayServer\Buyer;
+use BTCPayServer\Client\Adapter\CurlAdapter;
+use BTCPayServer\Client\BTCPayServerException;
+use BTCPayServer\Client\Client;
+use BTCPayServer\Currency;
+use BTCPayServer\Item;
+use BTCPayServer\KeyInterface;
+use BTCPayServer\PrivateKey;
+use BTCPayServer\PublicKey;
+use BTCPayServer\SinKey;
 use BTCPayServer\Token;
+use Magento\Framework\App\Config\ConfigResource\ConfigInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Transaction;
 use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\HTTP\ZendClientFactory;
 use Magento\Framework\UrlInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\OrderRepository;
@@ -16,6 +28,7 @@ use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Storefront\BTCPay\Model\Invoice;
 use Storefront\BTCPay\Storage\EncryptedConfigStorage;
 
 class BTCPayService {
@@ -44,12 +57,12 @@ class BTCPayService {
     private $db;
 
     /**
-     * @var \Magento\Framework\HTTP\ZendClientFactory
+     * @var ZendClientFactory
      */
     private $httpClientFactory;
 
     /**
-     * @var \Magento\Framework\App\Config\ConfigResource\ConfigInterface
+     * @var ConfigInterface
      */
     private $configResource;
     /**
@@ -70,7 +83,7 @@ class BTCPayService {
      */
     private $logger;
 
-    public function __construct(ResourceConnection $resource, EncryptedConfigStorage $encryptedConfigStorage, \Magento\Framework\App\Config\ConfigResource\ConfigInterface $configResource, StoreManagerInterface $storeManager, UrlInterface $url, \Magento\Framework\HTTP\ZendClientFactory $httpClientFactory, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger) {
+    public function __construct(ResourceConnection $resource, EncryptedConfigStorage $encryptedConfigStorage, ConfigInterface $configResource, StoreManagerInterface $storeManager, UrlInterface $url, ZendClientFactory $httpClientFactory, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger) {
         $this->httpClientFactory = $httpClientFactory;
         $this->scopeConfig = $scopeConfig;
         $this->url = $url;
@@ -87,11 +100,11 @@ class BTCPayService {
     /**
      * @param $storeId
      * @param bool $loadToken
-     * @return \BTCPayServer\Client\Client
-     * @throws \BTCPayServer\Client\BTCPayServerException
+     * @return Client
+     * @throws BTCPayServerException
      */
     private function getClient($storeId, $loadToken = true) {
-        $client = new \BTCPayServer\Client\Client();
+        $client = new Client();
 
 
         $privateKey = $this->getPrivateKey();
@@ -101,9 +114,10 @@ class BTCPayService {
 
         $host = $this->getHost($storeId);
         $port = $this->getPort($storeId);
-        $client->setUri('https://' . $host . ':' . $port);
+        $scheme = $this->getScheme($storeId);
+        $client->setUri($scheme . '://' . $host . ':' . $port);
 
-        $adapter = new \BTCPayServer\Client\Adapter\CurlAdapter();
+        $adapter = new CurlAdapter();
         $client->setAdapter($adapter);
 
         if ($loadToken) {
@@ -119,7 +133,7 @@ class BTCPayService {
      * @param $storeId
      * @param null $pairingCode New pairing code to set, or if empty load the pairing code entered in Magento config
      * @return Token
-     * @throws \BTCPayServer\Client\BTCPayServerException
+     * @throws BTCPayServerException
      */
     public function pair($storeId, $pairingCode = null) {
 
@@ -132,13 +146,13 @@ class BTCPayService {
         /**
          * Start by creating a PrivateKey object
          */
-        $privateKey = new \BTCPayServer\PrivateKey(self::KEY_PRIVATE);
+        $privateKey = new PrivateKey(self::KEY_PRIVATE);
 
         // Generate a random number
         $privateKey->generate();
 
         // Once we have a private key, a public key is created from it.
-        $publicKey = new \BTCPayServer\PublicKey(self::KEY_PUBLIC);
+        $publicKey = new PublicKey(self::KEY_PUBLIC);
 
         // Inject the private key into the public key
         $publicKey->setPrivateKey($privateKey);
@@ -156,7 +170,7 @@ class BTCPayService {
          * Currently this part is required, however future versions of the PHP SDK will
          * be refactor and this part may become obsolete.
          */
-        $sin = \BTCPayServer\SinKey::create()->setPublicKey($publicKey)->generate();
+        $sin = SinKey::create()->setPublicKey($publicKey)->generate();
         /**** end ****/
 
         $baseUrl = $this->getStoreConfig('web/unsecure/base_url', $storeId);
@@ -182,11 +196,12 @@ class BTCPayService {
     }
 
     /**
-     * @param \Magento\Sales\Model\Order $order
+     * @param Order $order
      * @return \BTCPayServer\Invoice
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @throws BTCPayServerException
+     * @throws NoSuchEntityException
      */
-    public function createInvoice(\Magento\Sales\Model\Order $order) {
+    public function createInvoice(Order $order) {
         $storeId = $order->getStoreId();
         $orderId = $order->getId();
 
@@ -196,7 +211,7 @@ class BTCPayService {
 
         $ba = $order->getBillingAddress();
 
-        $buyer = new \BTCPayServer\Buyer();
+        $buyer = new Buyer();
         $buyer->setFirstName($order->getCustomerFirstname());
         $buyer->setLastName($order->getCustomerLastname());
         $buyer->setCountry($ba->getCountryId());
@@ -214,7 +229,7 @@ class BTCPayService {
         // Add the buyers info to invoice
         $btcpayInvoice->setBuyer($buyer);
 
-        $item = new \BTCPayServer\Item();
+        $item = new Item();
         $item->setCode($order->getIncrementId());
         // TODO the description "Order #%1" is hard coded and not in the locale of the customer.
         $item->setDescription('Order #' . $order->getIncrementId());
@@ -232,7 +247,7 @@ class BTCPayService {
          *
          * @see https://docs.btcpayserver.org/faq-and-common-issues/faq-general#which-cryptocurrencies-are-supported-in-btcpay for supported currencies
          */
-        $btcpayInvoice->setCurrency(new \BTCPayServer\Currency($order->getOrderCurrencyCode()));
+        $btcpayInvoice->setCurrency(new Currency($order->getOrderCurrencyCode()));
 
         // Configure the rest of the invoice
         $ipnUrl = $this->storeManager->getStore()->getBaseUrl() . 'rest/V1/btcpay/ipn';
@@ -271,9 +286,10 @@ class BTCPayService {
     /**
      * @param string $invoiceId
      * @return Order|null
+     * @throws BTCPayServerException
      * @throws InputException
      * @throws NoSuchEntityException
-     * @throws \BTCPayServer\Client\BTCPayServerException
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function updateInvoice(string $invoiceId): ?Order {
         $tableName = $this->db->getTableName('btcpay_invoices');
@@ -283,7 +299,7 @@ class BTCPayService {
         if ($row) {
 
             $orderId = $row['order_id'];
-            /* @var $order \Magento\Sales\Model\Order */
+            /* @var $order Order */
             $order = $this->orderRepository->get($orderId);
 
             $storeId = $order->getStoreId();
@@ -303,7 +319,7 @@ class BTCPayService {
 
             if ($rowsChanged === 1) {
                 switch ($invoiceStatus) {
-                    case \Storefront\BTCPay\Model\Invoice::STATUS_PAID:
+                    case Invoice::STATUS_PAID:
                         // 1) Payments have been made to the invoice for the requested amount but the invoice has not been confirmed yet. We also don't know if the amount is enough.
                         $paidNotConfirmedStatus = $this->getStoreConfig('payment/btcpay/payment_paid_status', $storeId);
                         if (!$paidNotConfirmedStatus) {
@@ -312,7 +328,7 @@ class BTCPayService {
                         $order->addStatusHistoryComment('Payment underway, but not sure about the amount and also not confirmed yet', $paidNotConfirmedStatus);
                         $order->save();
                         break;
-                    case \Storefront\BTCPay\Model\Invoice::STATUS_CONFIRMED:
+                    case Invoice::STATUS_CONFIRMED:
 
                         // 2) Paid and confirmed (happens before complete and transitions to it quickly)
 
@@ -323,7 +339,7 @@ class BTCPayService {
 
                         $order->save();
                         break;
-                    case \Storefront\BTCPay\Model\Invoice::STATUS_COMPLETE:
+                    case Invoice::STATUS_COMPLETE:
                         // 3) Paid, confirmed and settled. Final!
                         $completeStatus = $this->getStoreConfig('payment/btcpay/payment_complete_status', $storeId);
                         if (!$completeStatus) {
@@ -343,11 +359,11 @@ class BTCPayService {
                             $invoiceSave->save();
                         }
                         break;
-                    case \Storefront\BTCPay\Model\Invoice::STATUS_INVALID:
+                    case Invoice::STATUS_INVALID:
                         $order->addStatusHistoryComment('Failed to confirm the order. The order will automatically update when the status changes.');
                         $order->save();
                         break;
-                    case \Storefront\BTCPay\Model\Invoice::STATUS_EXPIRED:
+                    case Invoice::STATUS_EXPIRED:
                         // Invoice expired - let's do nothing?
                     default:
                         $order->addStatusHistoryComment('Invoice status: ' . $invoiceStatus);
@@ -383,8 +399,8 @@ class BTCPayService {
         // TODO refactor to use the Invoice model instead of direct SQL reading
         $tableName = $this->db->getTableName('btcpay_invoices');
         $select = $this->db->select()->from($tableName);
-        $select->where('status != ?', \Storefront\BTCPay\Model\Invoice::STATUS_COMPLETE);
-        $select->where('status != ?', \Storefront\BTCPay\Model\Invoice::STATUS_EXPIRED);
+        $select->where('status != ?', Invoice::STATUS_COMPLETE);
+        $select->where('status != ?', Invoice::STATUS_EXPIRED);
 
         $r = 0;
 
@@ -465,8 +481,8 @@ class BTCPayService {
 
     /**
      * @param int $storeId
-     * @return \Storefront\BTCPay\Model\BTCPay\Token
-     * @throws \BTCPayServer\Client\BTCPayServerException
+     * @return Token
+     * @throws BTCPayServerException
      */
     private function getTokenOrRegenerate(int $storeId): Token {
         $tokenString = $this->getStoreConfig('payment/btcpay/token', $storeId);
@@ -485,9 +501,16 @@ class BTCPayService {
         return $r;
     }
 
+    private function getScheme($storeId) {
+        $r = $this->getStoreConfig('payment/btcpay/http_scheme', $storeId);
+        return $r;
+    }
+
     public function getInvoiceDetailUrl(int $storeId, string $invoiceId) {
         $host = $this->getHost($storeId);
-        $r = 'https://' . $host . '/invoices/' . $invoiceId;
+        $scheme = $this->getScheme($storeId);
+        $port = $this->getPort($storeId);
+        $r = $scheme . '://' . $host . ':' . $port . '/invoices/' . $invoiceId;
         return $r;
     }
 
@@ -504,31 +527,39 @@ class BTCPayService {
     }
 
     /**
-     * @return \Bitpay\KeyInterface
+     * @return KeyInterface
      */
     public function getPrivateKey() {
-        return $this->encryptedConfigStorage->load(\Storefront\BTCPay\Model\BTCPay\BTCPayService::KEY_PRIVATE);
+        return $this->encryptedConfigStorage->load(BTCPayService::KEY_PRIVATE);
     }
 
     /**
-     * @return \Bitpay\KeyInterface
+     * @return KeyInterface
      */
     public function getPublicKey() {
-        return $this->encryptedConfigStorage->load(\Storefront\BTCPay\Model\BTCPay\BTCPayService::KEY_PUBLIC);
+        return $this->encryptedConfigStorage->load(BTCPayService::KEY_PUBLIC);
     }
 
     private function getPort($storeId) {
-        // TODO port is hard coded for now
-        return 443;
+        $r = $this->getStoreConfig('payment/btcpay/http_port', $storeId);
+        if (!$r) {
+            $scheme = $this->getScheme($storeId);
+            if ($scheme === 'https') {
+                $r = 443;
+            } elseif ($scheme === 'http') {
+                $r = 80;
+            }
+        }
+        return $r;
     }
 
     /**
      * Create a unique hash for an order
-     * @param \Magento\Sales\Model\Order $order
+     * @param Order $order
      * @return string
      */
-    public function getOrderHash(\Magento\Sales\Model\Order $order) {
-        $preHash = $order->getId() . '-' . $order->getIncrementId() . '-' . $order->getSecret() . '-' . $order->getCreatedAt();
+    public function getOrderHash(Order $order) {
+        $preHash = $order->getId() . '-' . $order->getSecret() . '-' . $order->getCreatedAt();
         $r = sha1($preHash);
         return $r;
     }
