@@ -1,4 +1,4 @@
-#BTCPay Server integration for Magento 2
+# BTCPay Server integration for Magento 2
 
 ## Requirements
 - Magento 2.3 installation (tested on Community Edition 2.3.2 with PHP 7.2)
