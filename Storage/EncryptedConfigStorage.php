@@ -9,8 +9,8 @@
 namespace Storefront\BTCPay\Storage;
 
 
-use Bitpay\KeyInterface;
-use BitPay\Storage\StorageInterface;
+use BTCPayServer\KeyInterface;
+use BTCPayServer\Storage\StorageInterface;
 
 class EncryptedConfigStorage implements StorageInterface {
 
@@ -43,7 +43,7 @@ class EncryptedConfigStorage implements StorageInterface {
     /**
      * @param KeyInterface $key
      */
-    public function persist(\BitPay\KeyInterface $key) {
+    public function persist(\BTCPayServer\KeyInterface $key) {
         $unencrypted = serialize($key);
         $encrypted = $this->encryptor->encrypt($unencrypted);
 

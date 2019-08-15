@@ -2,13 +2,12 @@
 
 namespace Storefront\BTCPay\Model\BTCPay;
 
-use Bitpay\Token;
+use BTCPayServer\Token;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Transaction;
 use Magento\Framework\Exception\InputException;
-use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\UrlInterface;
 use Magento\Sales\Model\Order;
@@ -88,11 +87,11 @@ class BTCPayService {
     /**
      * @param $storeId
      * @param bool $loadToken
-     * @return \BitPay\Client\Client
-     * @throws \BitPay\Client\BitpayException
+     * @return \BTCPayServer\Client\Client
+     * @throws \BTCPayServer\Client\BTCPayServerException
      */
     private function getClient($storeId, $loadToken = true) {
-        $client = new \BitPay\Client\Client();
+        $client = new \BTCPayServer\Client\Client();
 
 
         $privateKey = $this->getPrivateKey();
@@ -102,10 +101,9 @@ class BTCPayService {
 
         $host = $this->getHost($storeId);
         $port = $this->getPort($storeId);
-        $network = new \Bitpay\Network\Customnet($host, $port);
-        $client->setNetwork($network);
+        $client->setUri('https://' . $host . ':' . $port);
 
-        $adapter = new \BitPay\Client\Adapter\CurlAdapter();
+        $adapter = new \BTCPayServer\Client\Adapter\CurlAdapter();
         $client->setAdapter($adapter);
 
         if ($loadToken) {
@@ -121,7 +119,7 @@ class BTCPayService {
      * @param $storeId
      * @param null $pairingCode New pairing code to set, or if empty load the pairing code entered in Magento config
      * @return Token
-     * @throws \BitPay\Client\BitpayException
+     * @throws \BTCPayServer\Client\BTCPayServerException
      */
     public function pair($storeId, $pairingCode = null) {
 
@@ -134,13 +132,13 @@ class BTCPayService {
         /**
          * Start by creating a PrivateKey object
          */
-        $privateKey = new \BitPay\PrivateKey(self::KEY_PRIVATE);
+        $privateKey = new \BTCPayServer\PrivateKey(self::KEY_PRIVATE);
 
         // Generate a random number
         $privateKey->generate();
 
         // Once we have a private key, a public key is created from it.
-        $publicKey = new \BitPay\PublicKey(self::KEY_PUBLIC);
+        $publicKey = new \BTCPayServer\PublicKey(self::KEY_PUBLIC);
 
         // Inject the private key into the public key
         $publicKey->setPrivateKey($privateKey);
@@ -158,7 +156,7 @@ class BTCPayService {
          * Currently this part is required, however future versions of the PHP SDK will
          * be refactor and this part may become obsolete.
          */
-        $sin = \BitPay\SinKey::create()->setPublicKey($publicKey)->generate();
+        $sin = \BTCPayServer\SinKey::create()->setPublicKey($publicKey)->generate();
         /**** end ****/
 
         $baseUrl = $this->getStoreConfig('web/unsecure/base_url', $storeId);
@@ -185,7 +183,7 @@ class BTCPayService {
 
     /**
      * @param \Magento\Sales\Model\Order $order
-     * @return \BitPay\Invoice
+     * @return \BTCPayServer\Invoice
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
     public function createInvoice(\Magento\Sales\Model\Order $order) {
@@ -194,11 +192,11 @@ class BTCPayService {
 
         $client = $this->getClient($storeId);
 
-        $btcpayInvoice = new \BitPay\Invoice();
+        $btcpayInvoice = new \BTCPayServer\Invoice();
 
         $ba = $order->getBillingAddress();
 
-        $buyer = new \BitPay\Buyer();
+        $buyer = new \BTCPayServer\Buyer();
         $buyer->setFirstName($order->getCustomerFirstname());
         $buyer->setLastName($order->getCustomerLastname());
         $buyer->setCountry($ba->getCountryId());
@@ -216,7 +214,7 @@ class BTCPayService {
         // Add the buyers info to invoice
         $btcpayInvoice->setBuyer($buyer);
 
-        $item = new \BitPay\Item();
+        $item = new \BTCPayServer\Item();
         $item->setCode($order->getIncrementId());
         // TODO the description "Order #%1" is hard coded and not in the locale of the customer.
         $item->setDescription('Order #' . $order->getIncrementId());
@@ -234,7 +232,7 @@ class BTCPayService {
          *
          * @see https://docs.btcpayserver.org/faq-and-common-issues/faq-general#which-cryptocurrencies-are-supported-in-btcpay for supported currencies
          */
-        $btcpayInvoice->setCurrency(new \BitPay\Currency($order->getOrderCurrencyCode()));
+        $btcpayInvoice->setCurrency(new \BTCPayServer\Currency($order->getOrderCurrencyCode()));
 
         // Configure the rest of the invoice
         $ipnUrl = $this->storeManager->getStore()->getBaseUrl() . 'rest/V1/btcpay/ipn';
@@ -275,7 +273,7 @@ class BTCPayService {
      * @return Order|null
      * @throws InputException
      * @throws NoSuchEntityException
-     * @throws \BitPay\Client\BitpayException
+     * @throws \BTCPayServer\Client\BTCPayServerException
      */
     public function updateInvoice(string $invoiceId): ?Order {
         $tableName = $this->db->getTableName('btcpay_invoices');
@@ -468,7 +466,7 @@ class BTCPayService {
     /**
      * @param int $storeId
      * @return \Storefront\BTCPay\Model\BTCPay\Token
-     * @throws \BitPay\Client\BitpayException
+     * @throws \BTCPayServer\Client\BTCPayServerException
      */
     private function getTokenOrRegenerate(int $storeId): Token {
         $tokenString = $this->getStoreConfig('payment/btcpay/token', $storeId);
