@@ -1,5 +1,5 @@
 {
-  "name": "storefront/module-btcpay",
+  "name": "storefront/magento2-btcpay-module",
   "description": "",
   "type": "magento2-module",
   "license": "mit",
