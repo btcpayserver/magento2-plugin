@@ -63,6 +63,12 @@ If you don't want to wait 5 minutes or prefer to see what is happening, we have 
 bin/magento btcpay:invoice:update
 ```
 
+## Can I pair from the command line?
+Yes, just run the following command:
+```
+bin/magento btcpay:pair YOUR-PAIRING-CODE
+```
+
 ## What is the future roadmap?
 - As this is a first release, we want to learn more from actual day-to-day use and work on stability first.
 - We hope to bring you easier automated testing, but for this we need changes in BTCPay Server too: https://github.com/btcpayserver/btcpayserver/issues/917
