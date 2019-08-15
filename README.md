@@ -42,12 +42,11 @@ This depends on your configuration of BTCPay Server. All payment methods you hav
 
 ## What isn't supported?
 - Only 1 domain name can be configured for BTCPay Server, so you cannot have multiple BTCPay Servers. The one is used for the whole Magento installation.
-- Connecting to BTCPay server over HTTP is not possible. Only HTTPS.
 
 ## Who has created this module?
 This module was created by Storefront, a small Magento integrator from Belgium with over 10 years experience. Visit our website at www.storefront.be to learn more about us.
 
-This module does NOT contain any advertising and is 100% open source and free to use.
+This module does NOT contain any advertising, is 100% open-source and free to use.
 
 ## Why did you create this module?
 - Existing modules had very poor code quality, did not follow Magento 2 best-practises
