@@ -18,10 +18,21 @@ The goal of this module is to allow Bitcoin, Lightcoin and other crypto payments
 This module is also designed to be robust, low-maintenance and a solid foundation for future customization, should your business need it.
 
 ## How to install
-Install using composer by running:
+
+The installation process is just like any other Magento 2 module that you'd install using composer. For your reference, these are the typical steps:
+
+- Add the `Storefront_BTCPay` module using composer by running:
 ```
 composer require storefront/magento2-btcpay-module
 ```
+- Enable the new module
+```
+php bin/magento module:enable Storefront_BTCPay
+```
+- Run the installation script of the new module
+```
+php bin/magento setup:upgrade
+``` 
 
 ## How to configure
 After installation, a new Payment Method will be visible in Stores > Configuration > Sales > Payment Methods. Configure the fields there.
