@@ -13,7 +13,7 @@
   "minimum-stability": "dev",
   "require": {
     "php": "^7.1.0",
-    "btcpayserver/btcpayserver-php-client": "^0.2"
+    "btcpayserver/btcpayserver-php-client": "^1.0"
   },
   "autoload": {
     "files": [
