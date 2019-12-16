@@ -2,6 +2,6 @@
 <page xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <head>
-        <script src="Storefront_BTCPay::js/btcpay/config.js"/>
+        <script src="Storefront_BTCPay::js/btcpayserver/config.js"/>
     </head>
 </page>
