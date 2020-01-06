@@ -95,7 +95,7 @@ class BTCPay extends AbstractMethod {
      * @return \Storefront\PayIngenico\Model\Payment\PaymentAbstract
      */
     public function initialize($paymentAction, $stateObject) {
-        $stateObject->setState(\Magento\Sales\Model\Order::STATE_PENDING_PAYMENT)->setStatus(\Magento\Sales\Model\Order::STATE_PENDING_PAYMENT);
+        $stateObject->setState(\Magento\Sales\Model\Order::STATE_NEW)->setStatus(\Magento\Sales\Model\Order::STATE_PENDING_PAYMENT);
 
         $message = __('Customer is forwarded to BTCPay Server to pay. Awaiting feedback.');
 
