@@ -3,9 +3,9 @@
 	<acl>
 		<resources>
 			<resource id="Magento_Backend::admin">
-				<resource id="Storefront_BTCPay::invoice" sortOrder="10" title="BTCPay Invoices">
+				<resource id="Storefront_BTCPay::invoice" sortOrder="10" title="BTC Pay Server Invoices">
                     <!--
-                    <resource id="Storefront_BTCPay::invoice_update" sortOrder="10" title="BTCPay Update Invoice" />
+                    <resource id="Storefront_BTCPay::invoice_update" sortOrder="10" title="BTCPay Server Update Invoice" />
                     -->
                 </resource>
 			</resource>

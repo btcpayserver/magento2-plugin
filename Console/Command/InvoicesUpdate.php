@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Integrates BTCPay Server with Magento 2 for online payments
  * Copyright (C) 2019  Storefront BVBA

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Storefront\BTCPay\Controller\Redirect;
 
@@ -86,7 +87,7 @@ class ForwardToPayment extends Action {
 
         if ($order) {
             $btcpayInvoice = $this->btcPayService->createInvoice($order);
-            $invoiceId = $btcpayInvoice->getId();
+            $invoiceId = $btcpayInvoice['id'];
 
             if ($invoiceId) {
                 if (!$this->customerSession->isLoggedIn()) {
@@ -96,7 +97,7 @@ class ForwardToPayment extends Action {
                     $this->setCookie('oar_billing_lastname', $order->getBillingAddress()->getLastName(), $duration);
                     $this->setCookie('oar_email', $order->getCustomerEmail(), $duration);
                 }
-                $invoiceUrl = $btcpayInvoice->getUrl();
+                $invoiceUrl = $btcpayInvoice['checkoutLink'];
                 $resultRedirect->setUrl($invoiceUrl);
             } else {
                 throw new \RuntimeException('Could not create the invoice in BTCPay Server');

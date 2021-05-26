@@ -22,8 +22,6 @@ require([
             $.cookie("oar_billing_lastname", null, {path: '/'});
             $.cookie("oar_email", null, {path: '/'});
         }
-
     }
-
 });
 

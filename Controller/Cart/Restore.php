@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Storefront\BTCPay\Controller\Cart;
 
@@ -38,6 +39,8 @@ class Restore extends Action {
      * @return ResultInterface
      */
     public function execute() {
+        // TODO this is unused and untested for now...
+
         $order_id = $this->getRequest()->getParam('order_id');
         // TODO is this the order ID or the increment ID?
         // TODO remove ObjectManager

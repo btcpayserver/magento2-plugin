@@ -1,7 +1,9 @@
 <?php
+declare(strict_types=1);
 /**
  * Integrates BTCPay Server with Magento 2 for online payments
- * Copyright (C) 2019  Storefront BVBA
+ * @copyright Copyright © 2019-2021 Storefront bv. All rights reserved.
+ * @author    Wouter Samaey - wouter.samaey@storefront.be
  *
  * This file is part of Storefront/BTCPay.
  *
@@ -18,7 +20,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 namespace Storefront\BTCPay\Ui\Component\Listing\Column;
 
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
@@ -65,6 +66,7 @@ class InvoiceActions extends \Magento\Ui\Component\Listing\Columns\Column {
             foreach ($dataSource['data']['items'] as & $item) {
                 if (isset($item['invoice_id'])) {
 
+                    // TODO add view URL
                     $viewUrl = $this->btcPayService->getInvoiceDetailUrl(0, $item['invoice_id']);
 
                     $item[$this->getData('name')] = [

@@ -1,20 +1,22 @@
 # BTCPay Server integration for Magento 2
 
 ## Requirements
-- Magento 2.3 installation (tested on Community Edition 2.3.2 with PHP 7.2)
-- Magento < 2.3 should also work, but is untested.
-- Your BTCPay server must be setup with HTTPS
+- Magento 2.4.2 or later installation (tested on Community Edition 2.4.2)
+- Magento < 2.4 should also work, but is untested. 
+- PHP 7.2 or greater. Tested with PHP 7.4.
+- Your BTCPay Server must be setup with HTTPS or HTTP using TOR for security.
+- You need an API key for your user in BTCPay Server (new since module v2.0)
 
 ## Features
 - Allows you to pay with BTCPay Server in Magento 2 stores
-- Magento receives invoice updates and updates the order statuses 
+- Magento receives invoice updates and updates the order statuses through webhooks
 - Custom order statuses in Magento are supported
-- View BTC Pay invoices created in Magento Admin
+- View BTCPay Server invoices created in Magento Admin
 - Magento also polls for invoice updates as a safety net for when real-time updates didn't reach Magento
 - Multi-website and multi-store compatible
 
 ## Goal
-The goal of this module is to allow Bitcoin, Lightcoin and other crypto payments in Magento 2 without any other 3rd party.
+The goal of this module is to allow Bitcoin payments in Magento 2 without any other 3rd party.
 This module is also designed to be robust, low-maintenance and a solid foundation for future customization, should your business need it.
 
 ## How to install
@@ -37,10 +39,10 @@ php bin/magento setup:upgrade
 ## How to configure
 After installation, a new Payment Method will be visible in Stores > Configuration > Sales > Payment Methods. Configure the fields there.
 
-You will need to get a pairing code from BTCPay Server and enter that.
+You will need to enter your BTCPay Server API key.
 
 ## How does it work?
-- When an order is placed in Magento and BTCPay was selected as a payment method, the customer is redirected to the payment page on your BTCPay Server.
+- When an order is placed in Magento and BTCPay Server was selected as a payment method, the customer is redirected to the payment page on your BTCPay Server.
 - The customer can pay there, or he can cancel his order.
 - When he cancels, the unpaid order is canceled freeing up reserved stock and the customer is sent back to the shopping cart page. This module will restore the contents of the shopping cart, so the customer does not need to start from scratch.
 - When the customer pays, BTCPay Server will be notified of the payment and will signal Magento on the changed invoice status.
@@ -54,8 +56,12 @@ This depends on your configuration of BTCPay Server. All payment methods you hav
 ## What isn't supported?
 - Only 1 domain name can be configured for BTCPay Server, so you cannot have multiple BTCPay Servers. The one is used for the whole Magento installation.
 
+## What's new in this module v2?
+This module v2 now uses BTCPay Server's new Greenfield API and no longer relies on the old BitPay PHP API. By making this switch, we are opening ourselves up to future improvements.
+For you as a shopkeeper, it means that you'll need to configure an API key in Magento (create it in BTCPay Server, then enter it in Magento config). The original pairing process has been removed.
+
 ## Who has created this module?
-This module was created by Storefront, a small Magento integrator from Belgium with over 10 years experience. Visit our website at www.storefront.be to learn more about us.
+This module was created by Storefront, a small Magento integrator from Belgium with over 12 years experience. Visit our website at https://www.storefront.be to learn more about us.
 
 This module does NOT contain any advertising, is 100% open-source and free to use.
 
@@ -75,22 +81,15 @@ bin/magento btcpay:invoice:update
 ```
 
 ## Can I pair from the command line?
-Yes, just run the following command:
-```
-bin/magento btcpay:pair YOUR-PAIRING-CODE
-```
+No. Pairing was the old way of linking this module to your BTCPay Server and is no longer needed. Instead, just enter your API key in Stores > Configuration > Sales > Payment Methods.
 
 ## What is the future roadmap?
-- As this is a first release, we want to learn more from actual day-to-day use and work on stability first.
-- We hope to bring you easier automated testing, but for this we need changes in BTCPay Server too: https://github.com/btcpayserver/btcpayserver/issues/917
 - Support for configuring multiple BTCPay Servers, so you can have separate installations for different websites/stores (low priority).
 - Nothing else is required really, as this module does what it needs to do in a robust and dependable way.
 
 ## What if I need help?
 Just like with any other open source software, you can get help anywhere from the community, or just open an issue here on Github.
 
-You can talk to Wouter Samaey on the BTCPay Server Mattermost #development channel
+You can talk to Wouter Samaey on the BTCPay Server Mattermost #development channel or if you prefer professional paid support, you can contact Storefront at info@storefront.be.
 
-If you prefer professional paid support, you can contact Storefront at info@storefront.be.
-
-If this module powers your business, consider getting paid support (we did build this module for free) and also donate to the development of BTCPay Server at https://btcpayserver.org/#makeADonation 
+If this module powers your business, consider getting paid support (we did build this module for free) and also donate to the development of BTCPay Server at https://btcpayserver.org/#makeADonation

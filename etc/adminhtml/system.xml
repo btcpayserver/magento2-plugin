@@ -1,16 +1,10 @@
 <?xml version="1.0"?>
-<!--
-/**
- * Copyright © 2015 Magento. All rights reserved.
- * See COPYING.txt for license details.
- */
--->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../Config/etc/system_file.xsd">
     <system>
         <section id="payment">
             <group id="btcpay" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1"
                    showInStore="1">
-                <label>BTCPay</label>
+                <label>BTC Pay Server</label>
 
                 <field id="active" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1"
                        showInStore="0">
@@ -23,17 +17,17 @@
                     <label>Title</label>
                 </field>
 
-                <field id="host" translate="label" type="text" sortOrder="30" showInDefault="1"
-                       showInWebsite="0" showInStore="0">
-                    <label>Domain</label>
-                    <comment>Your BTCPay Server domain. Don't put "https://", just the domain. Example: mybtcpay.com</comment>
-                </field>
-
-                <field id="http_scheme" translate="label" type="select" sortOrder="40" showInDefault="1"
+                <field id="http_scheme" translate="label" type="select" sortOrder="30" showInDefault="1"
                        showInWebsite="0" showInStore="0">
                     <label>HTTP Scheme</label>
                     <source_model>Storefront\BTCPay\Model\Config\Source\HttpScheme</source_model>
                     <comment></comment>
+                </field>
+
+                <field id="host" translate="label" type="text" sortOrder="40" showInDefault="1"
+                       showInWebsite="0" showInStore="0">
+                    <label>Domain</label>
+                    <comment>Your BTCPay Server domain. Don't put "https://", just the domain. Example: mybtcpay.com</comment>
                 </field>
 
                 <field id="http_port" translate="label" type="text" sortOrder="50" showInDefault="1"
@@ -42,92 +36,102 @@
                     <comment>If you want a different port, enter it here. When empty, we will use port 443 for HTTPS and port 80 for HTTP.</comment>
                 </field>
 
-                <field id="pairing_code" translate="label" type="text" sortOrder="60" showInDefault="1"
+                <field id="webhook_secret" translate="label" type="text" sortOrder="55" showInDefault="1"
                        showInWebsite="0" showInStore="0">
-                    <label>Pairing Code</label>
-                    <comment>
-                        <![CDATA[
-                        To get this token:
-                        <ol class="note">
-                        <li>Log in to BTCPay Server</li>
-                        <li>Go to "Stores"</li>
-                        <li>Go to "Access Tokens"</li>
-                        <li>Click "Create a new token"</li>
-                        <li>Don't enter anything. Leave the fields "Label" and "PublicKey" empty. They're optional.</li>
-                        <li>Click "Request pairing"</li>
-                        <li>On the next step you'll see that the Label is empty and SIN says "Server-Initiated Pairing". This is fine.
-                        <li>Make sure the correct store is selected in the dropdown and click "Approve".</li>
-                        <li>You will see a green success message that reads: "Server initiated pairing code: xxx"</li>
-                        <li>Put this code here or you can configure Magento from the command line by running bin/magento btcpay:pair <your pairing code></li>
-                        </ol>
-                        ]]>
-                    </comment>
+                    <label>Webhook Secret</label>
+                    <comment>This secret is used by the BTCPay Server Webhook. No need to worry about it. Webhooks are installed automatically.</comment>
                 </field>
 
-                <field id="order_status" translate="label" type="select" sortOrder="70" showInDefault="1" showInWebsite="0"
+                <field id="api_key" translate="label" type="text" sortOrder="60" showInDefault="1"
+                       showInWebsite="0" showInStore="0">
+                    <label>API Key</label>
+                    <comment model="Storefront\BTCPay\Model\Config\ApiKeyComment" />
+                </field>
+
+                <field id="btcpay_store_id" translate="label" type="select" sortOrder="70" showInDefault="1"
+                       showInWebsite="1" showInStore="1">
+                    <label>Store</label>
+                    <source_model>Storefront\BTCPay\Model\Config\Source\BtcPayStore</source_model>
+                    <comment>Select the BTCPay Server Store to use.</comment>
+                </field>
+
+                <field id="server_info" translate="label" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>BTCPay Server Info</label>
+                    <frontend_model>Storefront\BTCPay\Block\Adminhtml\Form\Field\ServerInfo</frontend_model>
+                </field>
+
+
+                <field id="event_InvoiceCreated" translate="label" type="select" sortOrder="90" showInDefault="1" showInWebsite="0"
                        showInStore="0">
-                    <label>New Order Status</label>
-                    <comment>
-                        <![CDATA[
-                        Optional. If you use custom order statuses, select the status you want to use.
-                        <br />The order was just created. Not paid yet. Choose a status that falls under the "new" state.
-                        ]]>
-                    </comment>
-                    <source_model>Storefront\BTCPay\Model\Config\Source\Order\Status\NewStatuses</source_model>
+                    <label>When a BTC Pay Invoice is created</label>
+                    <comment></comment>
+                    <source_model>Storefront\BTCPay\Model\Config\Source\Event\InvoiceCreated</source_model>
                 </field>
 
-                <field id="payment_paid_status" translate="label" type="select" sortOrder="80" showInDefault="1" showInWebsite="0"
+                <field id="event_InvoiceReceivedPayment" translate="label" type="select" sortOrder="91" showInDefault="1" showInWebsite="0"
                        showInStore="0">
-                    <label>Paid Order Status</label>
-                    <comment><![CDATA[
-                        Optional. If you use custom order statuses, select the status you want to use.
-                        <br />A full payment is underway, but not sure about the amount and not yet confirmed. Choose a status that falls under the "new" state.
-                        ]]>
-                    </comment>
-                    <source_model>Storefront\BTCPay\Model\Config\Source\Order\Status\NewStatuses</source_model>
+                    <label>When a BTC Pay Invoice receives a payment</label>
+                    <comment>The payment can be for any amount, so do not assume you can start processing the order just yet.</comment>
+                    <source_model>Storefront\BTCPay\Model\Config\Source\Event\InvoiceReceivedPayment</source_model>
                 </field>
 
-                <field id="payment_confirmed_status" translate="label" type="select" sortOrder="90" showInDefault="1" showInWebsite="0"
+                <field id="event_InvoiceProcessing" translate="label" type="select" sortOrder="92" showInDefault="1" showInWebsite="0"
                        showInStore="0">
-                    <label>Confirmed Order Status</label>
-                    <comment><![CDATA[
-                        Optional. If you use custom order statuses, select the status you want to use.
-                        <br />The payment has 1 or more confirmations on the blockchain, but not the required number to be considered complete. Choose a status that falls under the "new" state.
-                        ]]>
-                    </comment>
-                    <source_model>Storefront\BTCPay\Model\Config\Source\Order\Status\NewStatuses</source_model>
+                    <label>When a BTC Pay Invoice is processing</label>
+                    <comment></comment>
+                    <source_model>Storefront\BTCPay\Model\Config\Source\Event\InvoiceProcessing</source_model>
                 </field>
 
-                <field id="payment_complete_status" translate="label" type="select" sortOrder="100" showInDefault="1" showInWebsite="0"
+                <field id="event_InvoiceExpired" translate="label" type="select" sortOrder="93" showInDefault="1" showInWebsite="0"
                        showInStore="0">
-                    <label>Completed Order Status</label>
-                    <comment><![CDATA[
-                        Optional. If you use custom order statuses, select the status you want to use.
-                        <br />The payment has the required number of confirmations on the blockchain and is considered final. Choose a status that falls under the "processing" state.
-                        ]]>
-                    </comment>
-                    <source_model>Storefront\BTCPay\Model\Config\Source\Order\Status\ProcessingStatuses</source_model>
+                    <label>When a BTC Pay Invoice expires</label>
+                    <comment></comment>
+                    <source_model>Storefront\BTCPay\Model\Config\Source\Event\InvoiceExpired</source_model>
                 </field>
 
-                <field id="sort_order" translate="label" type="text" sortOrder="110" showInDefault="1" showInWebsite="1"
+                <field id="event_InvoiceSettled" translate="label" type="select" sortOrder="94" showInDefault="1" showInWebsite="0"
+                       showInStore="0">
+                    <label>When a BTC Pay Invoice is settled</label>
+                    <comment>Once "settled" you can be certain that your have received your payment.</comment>
+                    <source_model>Storefront\BTCPay\Model\Config\Source\Event\InvoiceSettled</source_model>
+                </field>
+
+                <field id="event_InvoiceInvalid" translate="label" type="select" sortOrder="95" showInDefault="1" showInWebsite="0"
+                       showInStore="0">
+                    <label>When a BTC Pay Invoice becomes invalid</label>
+                    <comment></comment>
+                    <source_model>Storefront\BTCPay\Model\Config\Source\Event\InvoiceInvalid</source_model>
+                </field>
+
+                <!--
+                TODO flatten payment methods or expand every payment method
+                -->
+
+                <!--
+                TODO should we still use this?
+                <field id="auto_cancel" translate="label" type="select" sortOrder="130" showInDefault="1" showInWebsite="0"
+                       showInStore="0">
+                    <label>Auto-Cancel Orders</label>
+                    <comment></comment>
+                    <source_model>Storefront\BTCPay\Model\Config\Source\AutoCancel</source_model>
+                </field>
+                -->
+
+                <field id="sort_order" translate="label" type="text" sortOrder="140" showInDefault="1" showInWebsite="1"
                        showInStore="0">
                     <label>Sort Order</label>
                     <frontend_class>validate-number</frontend_class>
                 </field>
 
-                <field id="allowspecific" translate="label" type="select" sortOrder="120" showInDefault="1" showInWebsite="1">
-                    <label>Payment Applicable From</label>
+                <field id="allowspecific" translate="label" type="allowspecific" sortOrder="150" showInDefault="1" showInWebsite="1" canRestore="1">
+                    <label>Payment from Applicable Countries</label>
                     <source_model>Magento\Payment\Model\Config\Source\Allspecificcountries</source_model>
-                    <attribute type="shared">1</attribute>
                 </field>
 
-                <field id="specificcountry" translate="label" type="multiselect" sortOrder="130" showInDefault="1" showInWebsite="1">
-                    <label>Countries Payment Applicable From</label>
-                    <source_model>Magento\Paypal\Model\System\Config\Source\BuyerCountry</source_model>
-                    <attribute type="shared">1</attribute>
-                    <depends>
-                        <field id="allowspecific">1</field>
-                    </depends>
+                <field id="specificcountry" translate="label" type="multiselect" sortOrder="160" showInDefault="1" showInWebsite="1">
+                    <label>Payment from Specific Countries</label>
+                    <source_model>Magento\Directory\Model\Config\Source\Country</source_model>
+                    <can_be_empty>1</can_be_empty>
                 </field>
 
             </group>

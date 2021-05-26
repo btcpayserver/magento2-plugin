@@ -1,24 +1,25 @@
 <?php
+declare(strict_types=1);
 /**
  * Integrates BTCPay Server with Magento 2 for online payments
- * Copyright (C) 2019  Storefront BVBA
- * 
+ * @copyright Copyright © 2019-2021 Storefront bv. All rights reserved.
+ * @author    Wouter Samaey - wouter.samaey@storefront.be
+ *
  * This file is part of Storefront/BTCPay.
- * 
+ *
  * Storefront/BTCPay is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 namespace Storefront\BTCPay\Model;
 
 use Storefront\BTCPay\Api\InvoiceRepositoryInterface;
@@ -110,20 +111,20 @@ class InvoiceRepository implements InvoiceRepositoryInterface
             $storeId = $this->storeManager->getStore()->getId();
             $invoice->setStoreId($storeId);
         } */
-        
+
         $invoiceData = $this->extensibleDataObjectConverter->toNestedArray(
             $invoice,
             [],
             \Storefront\BTCPay\Api\Data\InvoiceInterface::class
         );
-        
+
         $invoiceModel = $this->invoiceFactory->create()->setData($invoiceData);
-        
+
         try {
             $this->resource->save($invoiceModel);
         } catch (\Exception $exception) {
             throw new CouldNotSaveException(__(
-                'Could not save the BTC Pay invoice: %1',
+                'Could not save the BTCPay invoice: %1',
                 $exception->getMessage()
             ));
         }
@@ -150,22 +151,22 @@ class InvoiceRepository implements InvoiceRepositoryInterface
         \Magento\Framework\Api\SearchCriteriaInterface $criteria
     ) {
         $collection = $this->invoiceCollectionFactory->create();
-        
+
         $this->extensionAttributesJoinProcessor->process(
             $collection,
             \Storefront\BTCPay\Api\Data\InvoiceInterface::class
         );
-        
+
         $this->collectionProcessor->process($criteria, $collection);
-        
+
         $searchResults = $this->searchResultsFactory->create();
         $searchResults->setSearchCriteria($criteria);
-        
+
         $items = [];
         foreach ($collection as $model) {
             $items[] = $model->getDataModel();
         }
-        
+
         $searchResults->setItems($items);
         $searchResults->setTotalCount($collection->getSize());
         return $searchResults;

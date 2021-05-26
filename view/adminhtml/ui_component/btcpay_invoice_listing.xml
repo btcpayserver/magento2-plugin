@@ -1,4 +1,26 @@
 <?xml version="1.0" ?>
+<!--
+/**
+ * Integrates BTCPay Server with Magento 2 for online payments
+ * @copyright Copyright © 2019-2021 Storefront bv. All rights reserved.
+ * @author    Wouter Samaey - wouter.samaey@storefront.be
+ *
+ * This file is part of Storefront/BTCPay.
+ *
+ * Storefront/BTCPay is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+-->
 <listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
 	<argument name="data" xsi:type="array">
 		<item name="js_config" xsi:type="array">
@@ -71,11 +93,19 @@
                 <label translate="true">ID</label>
             </settings>
         </column>
+        <column name="btcpay_store_id">
+            <settings>
+                <filter>text</filter>
+                <sorting>asc</sorting>
+                <label translate="true">BTCPay Server Store ID</label>
+                <bodyTmpl>ui/grid/cells/html</bodyTmpl>
+            </settings>
+        </column>
 		<column name="invoice_id" class="Storefront\BTCPay\Ui\Component\Listing\Column\BtcPayInvoice">
 			<settings>
 				<filter>text</filter>
 				<sorting>asc</sorting>
-				<label translate="true">BTCPay Invoice</label>
+				<label translate="true">BTCPay Server Invoice</label>
                 <bodyTmpl>ui/grid/cells/html</bodyTmpl>
 			</settings>
 		</column>

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Integrates BTCPay Server with Magento 2 for online payments
  * Copyright (C) 2019  Storefront BVBA
@@ -62,13 +63,13 @@ class Update extends \Magento\Backend\App\Action {
                 // TODO improve success message with the actual invoice ID, not the auto-increment field
                 $order = $this->btcPayService->updateInvoice($invoiceId);
                 if ($order) {
-                    $this->messageManager->addSuccessMessage(__('Updated BTCPay Invoice %1 successfully', $invoiceId));
+                    $this->messageManager->addSuccessMessage(__('Updated BTCPay Server Invoice %1 successfully', $invoiceId));
                 } else {
-                    $this->messageManager->addSuccessMessage(__('BTCPay Invoice %1 hasn\'t changed.', $invoiceId));
+                    $this->messageManager->addSuccessMessage(__('BTCPay Server Invoice %1 hasn\'t changed.', $invoiceId));
                 }
             } catch (\Exception $ex) {
                 $this->logger->error($ex);
-                $this->messageManager->addErrorMessage(__('Could not update BTCPay Invoice %1: %2', $invoiceId, $ex->getMessage()));
+                $this->messageManager->addErrorMessage(__('Could not update BTCPay Server Invoice %1: %2', $invoiceId, $ex->getMessage()));
             }
         }
         $resultRedirect = $this->resultRedirectFactory->create();

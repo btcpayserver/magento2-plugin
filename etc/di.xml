@@ -18,14 +18,13 @@
         </arguments>
     </type>
 
-    <preference for="Storefront\BTCPay\Api\IpnInterface" type="\Storefront\BTCPay\Api\Ipn" />
+    <preference for="Storefront\BTCPay\Api\WebhookInterface" type="\Storefront\BTCPay\Api\Webhook" />
 
 
     <!-- Commands -->
     <type name="Magento\Framework\Console\CommandList">
         <arguments>
             <argument name="commands" xsi:type="array">
-                <item name="btcpay:pair" xsi:type="object">Storefront\BTCPay\Console\Command\Pair</item>
                 <item name="btcpay:invoices:update" xsi:type="object">Storefront\BTCPay\Console\Command\InvoicesUpdate</item>
                 <item name="btcpay:order:pay" xsi:type="object">Storefront\BTCPay\Console\Command\PayOrder</item>
             </argument>

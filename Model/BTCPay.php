@@ -1,9 +1,25 @@
 <?php
+declare(strict_types=1);
 /**
- * Copyright © 2015 Magento. All rights reserved.
- * See COPYING.txt for license details.
+ * Integrates BTCPay Server with Magento 2 for online payments
+ * @copyright Copyright © 2019-2021 Storefront bv. All rights reserved.
+ * @author    Wouter Samaey - wouter.samaey@storefront.be
+ *
+ * This file is part of Storefront/BTCPay.
+ *
+ * Storefront/BTCPay is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 namespace Storefront\BTCPay\Model;
 
 use Magento\Directory\Helper\Data as DirectoryHelper;
@@ -48,22 +64,23 @@ class BTCPay extends AbstractMethod {
      * @var \Magento\Framework\UrlInterface
      */
     private $url;
+    /**
+     * @var \Storefront\BTCPay\Helper\Data
+     */
+    private $btcPayHelper;
 
-    public function __construct(\Magento\Framework\Model\Context $context, \Magento\Framework\Registry $registry, \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory, \Magento\Framework\Api\AttributeValueFactory $customAttributeFactory, \Magento\Payment\Helper\Data $paymentData, \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig, \Magento\Framework\UrlInterface $url, \Magento\Payment\Model\Method\Logger $logger, \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null, \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null, array $data = [], DirectoryHelper $directory = null) {
+    public function __construct(\Storefront\BTCPay\Helper\Data $btcPayHelper, \Magento\Framework\Model\Context $context, \Magento\Framework\Registry $registry, \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory, \Magento\Framework\Api\AttributeValueFactory $customAttributeFactory, \Magento\Payment\Helper\Data $paymentData, \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig, \Magento\Framework\UrlInterface $url, \Magento\Payment\Model\Method\Logger $logger, \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null, \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null, array $data = [], DirectoryHelper $directory = null) {
         parent::__construct($context, $registry, $extensionFactory, $customAttributeFactory, $paymentData, $scopeConfig, $logger, $resource, $resourceCollection, $data, $directory);
         $this->url = $url;
+        $this->btcPayHelper = $btcPayHelper;
     }
 
     public function isAvailable(\Magento\Quote\Api\Data\CartInterface $quote = null) {
         $r = parent::isAvailable($quote);
 
-        if ($r) {
-            $token = $this->getConfigData('token');
-
-            if (!$token) {
-                // Hide the payment method, no token entered
-                $r = false;
-            }
+        $errors = $this->btcPayHelper->getInstallationErrors((int) $quote->getStoreId(), true);
+        if(count($errors) > 0){
+            $r = false;
         }
 
         return $r;
