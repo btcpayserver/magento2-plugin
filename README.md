@@ -14,6 +14,7 @@
 - View BTCPay Server invoices created in Magento Admin
 - Magento also polls for invoice updates as a safety net for when real-time updates didn't reach Magento
 - Multi-website and multi-store compatible
+- Creating an API key is easy through the use of the Greenfield API authorize URL 
 
 ## Goal
 The goal of this module is to allow Bitcoin payments in Magento 2 without any other 3rd party.
@@ -49,19 +50,25 @@ You will need to enter your BTCPay Server API key.
 - BTCPay Server pushes payment status changes to Magento, but Magento can also poll for invoice changes on it's own. We've built this as a safety net in case BTCPay Server cannot connect to Magento (i.e. during developement, behind a firewall).
 - Invoice updates from BTCPay Server to Magento are instant.
 - Magento polls BTCPay Server for updates every 5 minutes.
+
+## What does the order status flow look like?
+![Order status flowchart](flowchart.png "Order status flowchart")
+
  
 ## Which payment methods are supported?
 This depends on your configuration of BTCPay Server. All payment methods you have activated on BTCPay Server, will be available to the customer.
 
 ## What isn't supported?
 - Only 1 domain name can be configured for BTCPay Server, so you cannot have multiple BTCPay Servers. The one is used for the whole Magento installation.
+- Refunds cannot be handled from within Magento (coming in the future)
+- Orders that are underpaid, overpaid or paid with a too low fee get the status "Payment Review" so they can be checked manually.
 
 ## What's new in this module v2?
 This module v2 now uses BTCPay Server's new Greenfield API and no longer relies on the old BitPay PHP API. By making this switch, we are opening ourselves up to future improvements.
 For you as a shopkeeper, it means that you'll need to configure an API key in Magento (create it in BTCPay Server, then enter it in Magento config). The original pairing process has been removed.
 
 ## Who has created this module?
-This module was created by Storefront, a small Magento integrator from Belgium with over 12 years experience. Visit our website at https://www.storefront.be to learn more about us.
+This module was created by Storefront, a small Magento integrator from Belgium with over 12 years of Magento experience. Visit our website at https://www.storefront.be to learn more about us.
 
 This module does NOT contain any advertising, is 100% open-source and free to use.
 
@@ -81,9 +88,10 @@ bin/magento btcpay:invoice:update
 ```
 
 ## Can I pair from the command line?
-No. Pairing was the old way of linking this module to your BTCPay Server and is no longer needed. Instead, just enter your API key in Stores > Configuration > Sales > Payment Methods.
+Pairing was the old way of linking this module to your BTCPay Server and is no longer needed. Instead, just enter your API key in Stores > Configuration > Sales > Payment Methods.
 
 ## What is the future roadmap?
+- Handling refunds from within Magento
 - Support for configuring multiple BTCPay Servers, so you can have separate installations for different websites/stores (low priority).
 - Nothing else is required really, as this module does what it needs to do in a robust and dependable way.
 
@@ -92,4 +100,4 @@ Just like with any other open source software, you can get help anywhere from th
 
 You can talk to Wouter Samaey on the BTCPay Server Mattermost #development channel or if you prefer professional paid support, you can contact Storefront at info@storefront.be.
 
-If this module powers your business, consider getting paid support (we did build this module for free) and also donate to the development of BTCPay Server at https://btcpayserver.org/#makeADonation
+If this module powers your business, consider getting paid support and also donate to the development of BTCPay Server at https://btcpayserver.org/#makeADonation
