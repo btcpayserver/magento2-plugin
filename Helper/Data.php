@@ -74,75 +74,80 @@ class Data
 
             $specificStores = [];
 
-            foreach ($myPermissions as $permission) {
-                $parts = explode($permissionsSeparator, $permission);
-                if (count($parts) === 1) {
-                    // This is not a store-specific permission
-                } elseif (count($parts) === 2) {
-                    // Store-specific permission
-                    $btcPayStoreId = $parts[1];
-                    if (!in_array($btcPayStoreId, $specificStores, true)) {
-                        $specificStores[] = $btcPayStoreId;
+            if ($myPermissions) {
+
+                foreach ($myPermissions as $permission) {
+                    $parts = explode($permissionsSeparator, $permission);
+                    if (count($parts) === 1) {
+                        // This is not a store-specific permission
+                    } elseif (count($parts) === 2) {
+                        // Store-specific permission
+                        $btcPayStoreId = $parts[1];
+                        if (!in_array($btcPayStoreId, $specificStores, true)) {
+                            $specificStores[] = $btcPayStoreId;
+                        }
+                    } else {
+                        throw new \Storefront\BTCPay\Model\BTCPay\Exception\InvalidPermissionFormat($permission);
                     }
+                }
+
+                $neededPermissions = [];
+                if (count($specificStores) === 0) {
+                    // The user does not have any store-specific permissions, so he can access all stores.
+                    $neededPermissions = self::REQUIRED_API_PERMISSIONS;
                 } else {
-                    throw new \Storefront\BTCPay\Model\BTCPay\Exception\InvalidPermissionFormat($permission);
-                }
-            }
-
-            $neededPermissions = [];
-            if (count($specificStores) === 0) {
-                // The user does not have any store-specific permissions, so he can access all stores.
-                $neededPermissions = self::REQUIRED_API_PERMISSIONS;
-            } else {
-                // The user has store-specific permissions, so these should all be present for each store
-                foreach ($specificStores as $specificStore) {
-                    foreach (self::REQUIRED_API_PERMISSIONS as $essentialPermission) {
-                        $neededPermissions[] = $essentialPermission . $permissionsSeparator . $specificStore;
+                    // The user has store-specific permissions, so these should all be present for each store
+                    foreach ($specificStores as $specificStore) {
+                        foreach (self::REQUIRED_API_PERMISSIONS as $essentialPermission) {
+                            $neededPermissions[] = $essentialPermission . $permissionsSeparator . $specificStore;
+                        }
                     }
                 }
-            }
 
-            sort($myPermissions);
-            sort($neededPermissions);
+                sort($myPermissions);
+                sort($neededPermissions);
 
-            if ($myPermissions === $neededPermissions) {
-                // Permissions are exact
+                if ($myPermissions === $neededPermissions) {
+                    // Permissions are exact
 
-                $btcPayStoreId = $this->btcPayService->getBtcPayStore($magentoStoreId);
+                    $btcPayStoreId = $this->btcPayService->getBtcPayStore($magentoStoreId);
 
-                if ($btcPayStoreId) {
+                    if ($btcPayStoreId) {
 
-                    if ($this->checkWebhook($magentoStoreId, true)) {
-                        // There are no errors...
+                        if ($this->checkWebhook($magentoStoreId, true)) {
+                            // There are no errors...
 
-                        // TODO check if the store has any actual payment methods we can use. The store may still be misconfigured (i.e. no wallet is configured). To check this, we need a new API call, but we don't have it yet.
+                            // TODO check if the store has any actual payment methods we can use. The store may still be misconfigured (i.e. no wallet is configured). To check this, we need a new API call, but we don't have it yet.
+
+                        } else {
+                            $errors[] = __('Could not install the webhook in BTCPay Server for this Magento installation.');
+                        }
 
                     } else {
-                        $errors[] = __('Could not install the webhook in BTCPay Server for this Magento installation.');
+                        $errors[] = __('Please select a BTCPay Server Store to use.');
                     }
-
                 } else {
-                    $errors[] = __('Please select a BTCPay Server Store to use.');
-                }
-            } else {
-                // You either have too many permissions or too few!
-                $missingPermissions = array_diff($neededPermissions, $myPermissions);
-                $superfluousPermissions = array_diff($myPermissions, $neededPermissions);
+                    // You either have too many permissions or too few!
+                    $missingPermissions = array_diff($neededPermissions, $myPermissions);
+                    $superfluousPermissions = array_diff($myPermissions, $neededPermissions);
 
-                if (count($missingPermissions)) {
-                    foreach ($missingPermissions as $missingPermission) {
-                        $errors[] = __('Your API key does not have the %1 permission. Please add it for this key.', $missingPermission);
+                    if (count($missingPermissions)) {
+                        foreach ($missingPermissions as $missingPermission) {
+                            $errors[] = __('Your API key does not have the %1 permission. Please add it for this key.', $missingPermission);
+                        }
+                    }
+                    if (count($superfluousPermissions)) {
+                        foreach ($superfluousPermissions as $superfluousPermission) {
+                            $errors[] = __('Your API key has the %1 permission, but we don\'t need it. Please use an API key that has the exact permissions for increased security.', '<span style="font-family: monospace; background: #EEE; padding: 2px 4px; display: inline-block">' . $superfluousPermission . '</span>');
+                        }
                     }
                 }
-                if (count($superfluousPermissions)) {
-                    foreach ($superfluousPermissions as $superfluousPermission) {
-                        $errors[] = __('Your API key has the %1 permission, but we don\'t need it. Please use an API key that has the exact permissions for increased security.', '<span style="font-family: monospace; background: #EEE; padding: 2px 4px; display: inline-block">' . $superfluousPermission . '</span>');
-                    }
-                }
-            }
 
-            if ($useCache) {
-                $this->cache->save(\json_encode($errors, JSON_THROW_ON_ERROR), $cacheKey, [Config::CACHE_TAG], 15 * 60);
+                if ($useCache) {
+                    $this->cache->save(\json_encode($errors, JSON_THROW_ON_ERROR), $cacheKey, [Config::CACHE_TAG], 15 * 60);
+                }
+            }else {
+                $errors[] = __('No permissions, please check if your API key is valid.');
             }
         }
 
