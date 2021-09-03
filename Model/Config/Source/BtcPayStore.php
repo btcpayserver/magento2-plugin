@@ -45,9 +45,10 @@ class BtcPayStore implements \Magento\Framework\Data\OptionSourceInterface
         $stores = $this->btcPayService->getStores($magentoStoreId);
 
         $r[] = '';
-
-        foreach ($stores as $store) {
-            $r[$store['id']] = $store['name'];
+        if ($stores) {
+            foreach ($stores as $store) {
+                $r[$store['id']] = $store['name'];
+            }
         }
 
         return $r;
