@@ -93,6 +93,13 @@ class BTCPayService
         return $client;
     }
 
+    private function getBtcPayServerBaseUrl(int $storeId): ?string
+    {
+
+        $r = $this->getStoreConfig('payment/btcpay/btcpay_base_url', $storeId);
+        return $r;
+    }
+
     /**
      * @param Order $order
      * @return Invoice
@@ -486,7 +493,7 @@ class BTCPayService
         }
     }
 
-    public function getStores(int $magentoStoreId): array
+    public function getStores(int $magentoStoreId): ?array
     {
         $response = $this->doRequest($magentoStoreId, 'api/v1/stores', 'GET');
         $status = $response->getStatusCode();
@@ -496,7 +503,7 @@ class BTCPayService
             $data = \json_decode($body, true, 512, \JSON_THROW_ON_ERROR);
             return $data;
         } else {
-            // TODO handle this
+            return null;
         }
     }
 
