@@ -17,24 +17,12 @@
                     <label>Title</label>
                 </field>
 
-                <field id="http_scheme" translate="label" type="select" sortOrder="30" showInDefault="1"
+
+                <field id="btcpay_base_url" translate="label" type="text" sortOrder="50" showInDefault="1"
                        showInWebsite="0" showInStore="0">
-                    <label>HTTP Scheme</label>
-                    <source_model>Storefront\BTCPay\Model\Config\Source\HttpScheme</source_model>
-                    <comment></comment>
+                    <label>BTCPay Base Url</label>
                 </field>
 
-                <field id="host" translate="label" type="text" sortOrder="40" showInDefault="1"
-                       showInWebsite="0" showInStore="0">
-                    <label>Domain</label>
-                    <comment>Your BTCPay Server domain. Don't put "https://", just the domain. Example: mybtcpay.com</comment>
-                </field>
-
-                <field id="http_port" translate="label" type="text" sortOrder="50" showInDefault="1"
-                       showInWebsite="0" showInStore="0">
-                    <label>Override HTTP Port</label>
-                    <comment>If you want a different port, enter it here. When empty, we will use port 443 for HTTPS and port 80 for HTTP.</comment>
-                </field>
 
                 <field id="webhook_secret" translate="label" type="text" sortOrder="55" showInDefault="1"
                        showInWebsite="0" showInStore="0">
