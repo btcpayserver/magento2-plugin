@@ -25,26 +25,35 @@ namespace Storefront\BTCPay\Model\Config;
 
 use Magento\Config\Model\Config\CommentInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Framework\UrlInterface;
 use Magento\Framework\Data\Form\FormKey;
+use Magento\Framework\Url;
+use Magento\Store\Model\StoreManagerInterface;
+use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 
 class ApiKeyComment implements CommentInterface
 {
+    private $storeManager;
+
+    private $btcPayService;
+
     private $urlBuilder;
 
     private $scopeConfig;
 
     private $formKey;
 
-    public function __construct(UrlInterface $urlBuilder, ScopeConfigInterface $scopeConfig, FormKey $formKey)
+    public function __construct(Url $urlBuilder, ScopeConfigInterface $scopeConfig, FormKey $formKey, BTCPayService $btcPayService, StoreManagerInterface $storeManager)
     {
         $this->scopeConfig = $scopeConfig;
         $this->urlBuilder = $urlBuilder;
         $this->formKey = $formKey;
+        $this->btcPayService = $btcPayService;
+        $this->storeManager = $storeManager;
     }
 
     public function getCommentText($elementValue)
     {
+
         // TODO build a dynamic link to get the API key with the needed permissions: https://docs.btcpayserver.org/API/Greenfield/v1/#tag/Authorization/paths/~1api-keys~1authorize/get
 
         $magentoRootDomain = $this->scopeConfig->getValue('web/secure/base_url', 'store', 0);
@@ -52,17 +61,16 @@ class ApiKeyComment implements CommentInterface
         $magentoRootDomain = str_replace(['http://', 'https://'], '', $magentoRootDomain);
         $magentoRootDomain = rtrim($magentoRootDomain, '/');
 
-        $redirectToUrlAfterCreation = $this->urlBuilder->getUrl('btcpay/api/save', ['form_key' => $this->formKey->getFormKey()]);
+        $storeId = (int)$this->storeManager->getStore()->getId();
+        $redirectToUrlAfterCreation = $this->btcPayService->getReceiveApikeyUrl($storeId);
 
         $applicationIdentifier = 'magento2';
 
-        $baseUrl = $this->scopeConfig->getValue('payment/btcpay/btcpay_base_url');
+        $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl();
         if ($baseUrl) {
             $authorizeUrl = \BTCPayServer\Client\ApiKey::getAuthorizeUrl($baseUrl, \Storefront\BTCPay\Helper\Data::REQUIRED_API_PERMISSIONS, 'Magento 2 @ ' . $magentoRootDomain, true, true, $redirectToUrlAfterCreation, $applicationIdentifier);
             $r = '<a target="_blank" href="' . $authorizeUrl . '">Generate API key</a>, but be sure to save any changes first.';
         } else {
-
-
             $r = 'Make sure you configure the <strong>VTCPay Base Url</strong> above';
         }
         return $r;
