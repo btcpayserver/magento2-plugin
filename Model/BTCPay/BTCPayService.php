@@ -41,6 +41,9 @@ use RuntimeException;
 use Storefront\BTCPay\Model\BTCPay\Exception\ForbiddenException;
 use Storefront\BTCPay\Model\BTCPay\Exception\InvoiceNotFoundException;
 use Storefront\BTCPay\Model\Invoice;
+use Magento\Framework\Url;
+use Magento\Store\Model\StoreManagerInterface;
+
 
 class BTCPayService
 {
@@ -68,13 +71,25 @@ class BTCPayService
      */
     private $logger;
 
-    public function __construct(ResourceConnection $resource, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger)
+    /**
+     * @var Url $urlBuilder
+     */
+    private $urlBuilder;
+
+    /**
+     * @var StoreManagerInterface $storeManager
+     */
+    private $storeManager;
+
+    public function __construct(ResourceConnection $resource, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger, Url $urlBuider, StoreManagerInterface $storeManager)
     {
         $this->scopeConfig = $scopeConfig;
         $this->db = $resource->getConnection();
         $this->orderRepository = $orderRepository;
         $this->transaction = $transaction;
         $this->logger = $logger;
+        $this->urlBuilder = $urlBuider;
+        $this->storeManager = $storeManager;
     }
 
 
@@ -93,8 +108,11 @@ class BTCPayService
         return $client;
     }
 
-    private function getBtcPayServerBaseUrl(int $storeId): ?string
+    public function getBtcPayServerBaseUrl($storeId = null): ?string
     {
+        if (!$storeId) {
+            $storeId = $this->getCurrentStoreId();
+        }
 
         $r = $this->getStoreConfig('payment/btcpay/btcpay_base_url', $storeId);
         return $r;
@@ -396,6 +414,8 @@ class BTCPayService
 
     public function getInvoiceDetailUrl(int $storeId, string $invoiceId): string
     {
+
+        //TODO: replace with getBaseUrl()
         $host = $this->getHost($storeId);
         $scheme = $this->getScheme($storeId);
         $port = $this->getPort($storeId);
@@ -431,19 +451,18 @@ class BTCPayService
 
     public function getApiKeyPermissions(int $magentoStoreId): ?array
     {
-        $response = $this->doRequest($magentoStoreId, 'api/v1/api-keys/current', 'GET');
-        $status = $response->getStatusCode();
-        $body = (string)$response->getBody();
 
-        if ($status === 200) {
-            // No problems
-            $data = \json_decode($body, true, 512, \JSON_THROW_ON_ERROR);
+        try{
+            $client = new \BTCPayServer\Client\ApiKey($this->getBtcPayServerBaseUrl(), $this->getApiKey($magentoStoreId));
+
+            $data = $client->getCurrent();
+            $data = $data->getData();
             $currentPermissions = $data['permissions'];
             sort($currentPermissions);
-
             return $currentPermissions;
+        } catch (\Exception $e){
+            return null;
         }
-        return null;
     }
 
     private function doRequest(int $magentoStoreId, string $url, string $method, array $postData = null): ResponseInterface
@@ -574,6 +593,11 @@ class BTCPayService
         if ($status === 200) {
             $data = \json_decode($body, true, 512, \JSON_THROW_ON_ERROR);
             return $data;
+
+            //TODO: save webhook here
+
+
+
         } else {
             throw new \Storefront\BTCPay\Model\BTCPay\Exception\CannotCreateWebhook($data, $status, $body);
         }
@@ -588,5 +612,16 @@ class BTCPayService
         return $url;
     }
 
+    public function getReceiveApikeyUrl(int $magentoStoreId): string
+    {
+        $url = $this->getStoreConfig('web/secure/base_url', $magentoStoreId);
+        $url .= 'btcpay/apikey/save';
+        return $url;
+    }
+
+    public function getCurrentStoreId(): int
+    {
+        return (int)$this->storeManager->getStore()->getId();
+    }
 
 }
