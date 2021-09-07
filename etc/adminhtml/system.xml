@@ -35,8 +35,8 @@
                     <comment model="Storefront\BTCPay\Model\Config\ApiKeyComment" />
                 </field>
 
-                <field id="btcpay_store_id" translate="label" type="select" sortOrder="70" showInDefault="1"
-                       showInWebsite="1" showInStore="1">
+                <field id="btcpay_store_id" translate="label" type="select" sortOrder="70" showInDefault="0"
+                       showInWebsite="0" showInStore="1">
                     <label>Store</label>
                     <source_model>Storefront\BTCPay\Model\Config\Source\BtcPayStore</source_model>
                     <comment>Select the BTCPay Server Store to use.</comment>
