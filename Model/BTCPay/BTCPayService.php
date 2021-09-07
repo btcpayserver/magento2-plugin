@@ -528,18 +528,19 @@ class BTCPayService
         return $config[self::CONFIG_API_KEY];
     }
 
-    private function getConfigWithoutCache($path): array
+    private function getConfigWithoutCache($path, $scope, $scopeId): ?string
     {
-
         $dataCollection = $this->configValueFactory->create()->getCollection();
         $dataCollection->addFieldToFilter('path', ['like' => $path . '%']);
+        $dataCollection->addFieldToFilter('scope', ['like' => $scope . '%']);
+        $dataCollection->addFieldToFilter('scope_id', ['like' => $scopeId . '%']);
 
-        $config = [];
+        $config = null;
         foreach ($dataCollection as $row) {
             $config[$row->getPath()] = $row->getValue();
         }
 
-        return $config;
+        return $config[$path];
     }
 
 
