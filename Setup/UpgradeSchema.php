@@ -39,14 +39,6 @@ class UpgradeSchema implements UpgradeSchemaInterface
                 'after' => 'id'
             ]);
 
-            // Put a random value to use as webhook secret
-            $this->configResource->saveConfig(
-                'payment/btcpay/webhook_secret',
-                sha1(mt_rand() . time()),
-                ScopeConfigInterface::SCOPE_TYPE_DEFAULT,
-                Store::DEFAULT_STORE_ID
-            );
-
             // Update invoice status. Since the v1, they now start with a capital letter.
             $setup->getConnection()->query('update btcpay_invoices set status = CONCAT(UPPER(SUBSTRING(status,1,1)),LOWER(SUBSTRING(status,2)))');
         }
