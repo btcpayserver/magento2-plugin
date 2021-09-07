@@ -19,24 +19,18 @@
 
 
                 <field id="btcpay_base_url" translate="label" type="text" sortOrder="50" showInDefault="1"
-                       showInWebsite="1" showInStore="1">
+                       showInWebsite="0" showInStore="0">
                     <label>BTCPay Base Url</label>
                 </field>
 
-
                 <field id="webhook_secret" translate="label" type="text" sortOrder="55" showInDefault="1"
-                       showInWebsite="1" showInStore="1">
+                       showInWebsite="0" showInStore="0">
                     <label>Webhook Secret</label>
                     <comment>This secret is used by the BTCPay Server Webhook. No need to worry about it. Webhooks are installed automatically.</comment>
                 </field>
 
-                <field id="secret" translate="label" type="text" sortOrder="57" showInDefault="1"
-                       showInWebsite="1" showInStore="1">
-                    <label>Secret</label>
-                </field>
-
-                <field id="api_key" translate="label" type="text" sortOrder="60" showInDefault="1"
-                       showInWebsite="1" showInStore="1">
+                <field id="api_key" translate="label" type="text" sortOrder="60" showInDefault="0"
+                       showInWebsite="0" showInStore="1">
                     <label>API Key</label>
                     <comment model="Storefront\BTCPay\Model\Config\ApiKeyComment" />
                 </field>
