@@ -50,7 +50,7 @@ class Data
         $this->scopeConfig = $scopeConfig;
     }
 
-    public function getSecret(): ?string
+    public function getWebhookSecret(): ?string
     {
         $this->scopeConfig->getValue('payment/btcpay/webhook_secret', ScopeInterface::SCOPE_STORE, 0);
     }
@@ -67,6 +67,10 @@ class Data
         }
 
         if ($errors === false) {
+
+            $secret = $this->btcPayService->getWebhookSecret($magentoStoreId);
+
+
             $errors = [];
 
             $myPermissions = $this->btcPayService->getApiKeyPermissions($magentoStoreId);
@@ -126,6 +130,7 @@ class Data
                     } else {
                         $errors[] = __('Please select a BTCPay Server Store to use.');
                     }
+
                 } else {
                     // You either have too many permissions or too few!
                     $missingPermissions = array_diff($neededPermissions, $myPermissions);
@@ -146,7 +151,7 @@ class Data
                 if ($useCache) {
                     $this->cache->save(\json_encode($errors, JSON_THROW_ON_ERROR), $cacheKey, [Config::CACHE_TAG], 15 * 60);
                 }
-            }else {
+            } else {
                 $errors[] = __('No permissions, please check if your API key is valid.');
             }
         }
@@ -166,7 +171,8 @@ class Data
         if ($webhookData === null) {
             if ($autoCreateIfNeeded) {
                 try {
-                    $this->btcPayService->createWebhook($magentoStoreId);
+                    //TODO: create webhook
+/*                                        $this->btcPayService->createWebhook($magentoStoreId);*/
                     return true;
                 } catch (CannotCreateWebhook $e) {
                     $this->logger->error($e);
@@ -204,5 +210,6 @@ class Data
         }
 
     }
+
 
 }
