@@ -30,6 +30,11 @@
                     <comment>This secret is used by the BTCPay Server Webhook. No need to worry about it. Webhooks are installed automatically.</comment>
                 </field>
 
+                <field id="secret" translate="label" type="text" sortOrder="57" showInDefault="1"
+                       showInWebsite="1" showInStore="1">
+                    <label>Secret</label>
+                </field>
+
                 <field id="api_key" translate="label" type="text" sortOrder="60" showInDefault="1"
                        showInWebsite="1" showInStore="1">
                     <label>API Key</label>
