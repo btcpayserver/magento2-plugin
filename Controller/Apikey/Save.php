@@ -65,7 +65,7 @@ class Save extends Action implements CsrfAwareActionInterface
                 $client->getCurrent();
 
                 // Save API key to config settings
-                $this->configWriter->save('payment/btcpay/api_key', $apiKey, 'store', $magentoStoreId);
+                $this->configWriter->save('payment/btcpay/api_key', $apiKey, 'stores', $magentoStoreId);
 
                 echo ___('exact_online.connection_succeeded_close_window', 'Success! You can now close this window.');
             } catch (\Exception $e) {
