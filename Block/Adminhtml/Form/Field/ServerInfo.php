@@ -34,8 +34,8 @@ class ServerInfo extends \Magento\Config\Block\System\Config\Form\Field
      */
     public function render(\Magento\Framework\Data\Form\Element\AbstractElement $element)
     {
-        // TODO support different API keys per store
-        $storeId = 0;
+        
+        $storeId = $this->btcPayService->getCurrentMagentoStoreId();
 
         $html = $this->getErrorHtml($storeId);
 

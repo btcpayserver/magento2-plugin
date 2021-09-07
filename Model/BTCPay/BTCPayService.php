@@ -636,10 +636,14 @@ class BTCPayService
         return $url . '?secret=' . urlencode($hashedSecret);
     }
 
-    public function getCurrentMagentoStoreId(): int
+    public function getCurrentMagentoStoreId(): ?int
     {
-        $storeId = (int)$this->storeManager->getStore()->getId();
-        return $storeId;
+        $storeId = $this->request->getParam('store');
+        if(!$storeId){
+            return null;
+        }
+        return (int)$storeId;
+
     }
 
     public function getWebhookSecret(int $magentoStoreId): string

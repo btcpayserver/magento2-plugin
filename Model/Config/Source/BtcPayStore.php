@@ -40,8 +40,8 @@ class BtcPayStore implements \Magento\Framework\Data\OptionSourceInterface
     {
         $r = [];
 
-        $magentoStoreId = 0;
-        // TODO if looking at another scope in Magento admin, use that store ID
+        $magentoStoreId = $this->btcPayService->getCurrentMagentoStoreId();
+
         $stores = $this->btcPayService->getStores($magentoStoreId);
 
         $r[] = '';
