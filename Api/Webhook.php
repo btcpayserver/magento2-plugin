@@ -51,7 +51,7 @@ class Webhook implements WebhookInterface
         $signatureHeader = $this->request->getHeader('BTCPay-Sig');
 
         if ($signatureHeader) {
-            $secret = $this->helper->getSecret();
+            $secret = $this->helper->getWebhookSecret();
             $expectedHeader = 'sha256=' . hash_hmac('sha256', $postedString, $secret);
 
             if ($expectedHeader === $signatureHeader) {
