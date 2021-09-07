@@ -522,10 +522,8 @@ class BTCPayService
 
     public function getApiKey(int $storeId): ?string
     {
-
-        $config = $this->getConfigWithoutCache(self::CONFIG_API_KEY);
-
-        return $config[self::CONFIG_API_KEY];
+        $config = $this->getConfigWithoutCache('payment/btcpay/api_key', 'stores', $storeId);
+        return $config;
     }
 
     private function getConfigWithoutCache($path, $scope, $scopeId): ?string
@@ -655,9 +653,10 @@ class BTCPayService
 
     }
 
-    public function getWebhookSecret(int $magentoStoreId): string
+    public function getWebhookSecret(int $magentoStoreId): ?string
     {
-        $secret = $this->getStoreConfig('payment/btcpay/webhook_secret', $magentoStoreId);
+
+        $secret = $this->getConfigWithoutCache('payment/btcpay/webhook_secret', 'default', 0);
         if (!$secret) {
             $secret = $this->createWebhookSecret();
 
