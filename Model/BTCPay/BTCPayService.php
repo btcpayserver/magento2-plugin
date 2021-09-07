@@ -108,12 +108,8 @@ class BTCPayService
         return $client;
     }
 
-    public function getBtcPayServerBaseUrl($storeId = null): ?string
+    public function getBtcPayServerBaseUrl(int $storeId): ?string
     {
-        if (!$storeId) {
-            $storeId = $this->getCurrentStoreId();
-        }
-
         $r = $this->getStoreConfig('payment/btcpay/btcpay_base_url', $storeId);
         return $r;
     }
@@ -452,15 +448,16 @@ class BTCPayService
     public function getApiKeyPermissions(int $magentoStoreId): ?array
     {
 
-        try{
-            $client = new \BTCPayServer\Client\ApiKey($this->getBtcPayServerBaseUrl(), $this->getApiKey($magentoStoreId));
+        try {
+
+            $client = new \BTCPayServer\Client\ApiKey($this->getBtcPayServerBaseUrl($magentoStoreId), $this->getApiKey($magentoStoreId));
 
             $data = $client->getCurrent();
             $data = $data->getData();
             $currentPermissions = $data['permissions'];
             sort($currentPermissions);
             return $currentPermissions;
-        } catch (\Exception $e){
+        } catch (\Exception $e) {
             return null;
         }
     }
@@ -619,9 +616,10 @@ class BTCPayService
         return $url;
     }
 
-    public function getCurrentStoreId(): int
+    public function getCurrentMagentoStoreId(): int
     {
-        return (int)$this->storeManager->getStore()->getId();
+        $storeId = (int)$this->storeManager->getStore()->getId();
+        return $storeId;
     }
 
 }

@@ -11,6 +11,7 @@ use Magento\Framework\App\CsrfAwareActionInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
+use Magento\Store\Model\StoreManagerInterface;
 
 class Save extends Action implements CsrfAwareActionInterface
 {
@@ -25,11 +26,17 @@ class Save extends Action implements CsrfAwareActionInterface
      */
     private $configWriter;
 
-    public function __construct(Context $context, BTCPayService $btcService, WriterInterface $configWriter)
+    /**
+     * @var StoreManagerInterface $storeManager
+     */
+    private $storeManager;
+
+    public function __construct(Context $context, BTCPayService $btcService, WriterInterface $configWriter, StoreManagerInterface $storeManager)
     {
         parent::__construct($context);
         $this->btcService = $btcService;
-        $this->configWriter=$configWriter;
+        $this->configWriter = $configWriter;
+        $this->storeManager = $storeManager;
     }
 
     public function execute()
@@ -37,7 +44,9 @@ class Save extends Action implements CsrfAwareActionInterface
         $apiKey = $this->getRequest()->getParam('apiKey');
 
         try {
-            $baseUrl = $this->btcService->getBtcPayServerBaseUrl();
+
+            $magentoStoreId = $this->btcService->getCurrentMagentoStoreId();
+            $baseUrl = $this->btcService->getBtcPayServerBaseUrl($magentoStoreId);
 
             // Safety check
             $client = new \BTCPayServer\Client\ApiKey($baseUrl, $apiKey);

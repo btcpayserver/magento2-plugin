@@ -66,7 +66,8 @@ class ApiKeyComment implements CommentInterface
 
         $applicationIdentifier = 'magento2';
 
-        $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl();
+        $magentoStoreId = $this->btcPayService->getCurrentMagentoStoreId();
+        $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl($magentoStoreId);
         if ($baseUrl) {
             $authorizeUrl = \BTCPayServer\Client\ApiKey::getAuthorizeUrl($baseUrl, \Storefront\BTCPay\Helper\Data::REQUIRED_API_PERMISSIONS, 'Magento 2 @ ' . $magentoRootDomain, true, true, $redirectToUrlAfterCreation, $applicationIdentifier);
             $r = '<a target="_blank" href="' . $authorizeUrl . '">Generate API key</a>, but be sure to save any changes first.';
