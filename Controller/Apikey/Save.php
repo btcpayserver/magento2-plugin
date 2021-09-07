@@ -12,6 +12,7 @@ use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 use Magento\Store\Model\StoreManagerInterface;
+use Psr\Log\LoggerInterface;
 
 class Save extends Action implements CsrfAwareActionInterface
 {
@@ -19,7 +20,6 @@ class Save extends Action implements CsrfAwareActionInterface
      * @var BTCPayService $btcService
      */
     private $btcService;
-
 
     /**
      * @var WriterInterface $configWriter
@@ -31,12 +31,18 @@ class Save extends Action implements CsrfAwareActionInterface
      */
     private $storeManager;
 
-    public function __construct(Context $context, BTCPayService $btcService, WriterInterface $configWriter, StoreManagerInterface $storeManager)
+    /**
+     * @var LoggerInterface $logger
+     */
+    private $logger;
+
+    public function __construct(Context $context, BTCPayService $btcService, WriterInterface $configWriter, StoreManagerInterface $storeManager, LoggerInterface $logger)
     {
         parent::__construct($context);
         $this->btcService = $btcService;
         $this->configWriter = $configWriter;
         $this->storeManager = $storeManager;
+        $this->logger = $logger;
     }
 
     public function execute()
@@ -57,6 +63,7 @@ class Save extends Action implements CsrfAwareActionInterface
 
             echo ___('exact_online.connection_succeeded_close_window', 'Success! You can now close this window.');
         } catch (\Exception $e) {
+            $this->logger->error($e);
             echo ___('exact_online.connection_succeeded_close_window', 'Something went wrong. Please try again.');
         }
     }
