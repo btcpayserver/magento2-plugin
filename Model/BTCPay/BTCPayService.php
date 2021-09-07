@@ -46,6 +46,8 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\App\Config\ValueFactory;
 use Magento\Config\Model\ResourceModel\Config\Data\CollectionFactory;
+use Magento\Framework\App\RequestInterface;
+
 
 class BTCPayService
 {
@@ -100,7 +102,12 @@ class BTCPayService
      */
     private $configCollectionFactory;
 
-    public function __construct(ResourceConnection $resource, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger, Url $urlBuider, StoreManagerInterface $storeManager, WriterInterface $configWriter, ValueFactory $configValueFactory, CollectionFactory $configCollectionFactory)
+    /**
+     * @var RequestInterface $request
+     */
+    private $request;
+
+    public function __construct(ResourceConnection $resource, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger, Url $urlBuider, StoreManagerInterface $storeManager, WriterInterface $configWriter, ValueFactory $configValueFactory, CollectionFactory $configCollectionFactory, RequestInterface $request)
     {
         $this->scopeConfig = $scopeConfig;
         $this->db = $resource->getConnection();
@@ -112,6 +119,7 @@ class BTCPayService
         $this->configWriter = $configWriter;
         $this->configValueFactory = $configValueFactory;
         $this->configCollectionFactory = $configCollectionFactory;
+        $this->request=$request;
     }
 
 
