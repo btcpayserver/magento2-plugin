@@ -47,25 +47,36 @@ class Save extends Action implements CsrfAwareActionInterface
 
     public function execute()
     {
+        $magentoStoreId = $this->btcService->getCurrentMagentoStoreId();
+
         $apiKey = $this->getRequest()->getParam('apiKey');
 
-        try {
+        $givenSecret = $this->getRequest()->getParam('secret');
 
-            $magentoStoreId = $this->btcService->getCurrentMagentoStoreId();
-            $baseUrl = $this->btcService->getBtcPayServerBaseUrl($magentoStoreId);
+        $secret = $this->btcService->hashSecret($magentoStoreId);
+        if($givenSecret===$secret){
 
-            // Safety check
-            $client = new \BTCPayServer\Client\ApiKey($baseUrl, $apiKey);
-            $client->getCurrent();
+            try {
 
-            // Save API key to config settings
-            $this->configWriter->save('payment/btcpay/api_key', $apiKey, $scope = ScopeConfigInterface::SCOPE_TYPE_DEFAULT, $scopeId = 0);
+                $baseUrl = $this->btcService->getBtcPayServerBaseUrl($magentoStoreId);
 
-            echo ___('exact_online.connection_succeeded_close_window', 'Success! You can now close this window.');
-        } catch (\Exception $e) {
-            $this->logger->error($e);
-            echo ___('exact_online.connection_succeeded_close_window', 'Something went wrong. Please try again.');
+                // Safety check
+                $client = new \BTCPayServer\Client\ApiKey($baseUrl, $apiKey);
+                $client->getCurrent();
+
+                // Save API key to config settings
+                $this->configWriter->save('payment/btcpay/api_key', $apiKey, 'store', $magentoStoreId);
+
+                echo ___('exact_online.connection_succeeded_close_window', 'Success! You can now close this window.');
+            } catch (\Exception $e) {
+                $this->logger->error($e);
+                echo ___('exact_online.connection_failed_close_window', 'Something went wrong. Please try again.');
+            }
+        } else {
+            echo ___('exact_online.connection_access_denied_close_window', 'Forbidden.');
         }
+
+
     }
 
     public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
