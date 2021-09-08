@@ -31,8 +31,6 @@ class ApiKeys extends \Magento\Config\Block\System\Config\Form\Field
     public function render(AbstractElement $element)
     {
 
-        //TODO: check if base url is configured
-
         $html = $this->getApiKeyInfoPerStore();
 
         $r = '<tr>
