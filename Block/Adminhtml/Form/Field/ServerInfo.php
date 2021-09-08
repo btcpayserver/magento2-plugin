@@ -34,9 +34,11 @@ class ServerInfo extends \Magento\Config\Block\System\Config\Form\Field
      */
     public function render(\Magento\Framework\Data\Form\Element\AbstractElement $element)
     {
-        
-        $storeId = $this->btcPayService->getCurrentMagentoStoreId();
 
+        $storeId = $this->btcPayService->getCurrentMagentoStoreId();
+        if (!$storeId){
+            return '';
+        }
         $html = $this->getErrorHtml($storeId);
 
         $r = '<tr><td class="label"><label><span>' . $this->escapeHtml(__('Connection Status')) . '</span></label></td><td class="value">' . $html . '</span></p></td><td class=""></td></tr>';
