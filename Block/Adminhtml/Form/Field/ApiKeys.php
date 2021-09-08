@@ -19,7 +19,7 @@ class ApiKeys extends \Magento\Config\Block\System\Config\Form\Field
     public function __construct(Context $context, Data $helper, array $data = [], ?SecureHtmlRenderer $secureRenderer = null)
     {
         parent::__construct($context, $data, $secureRenderer);
-        $this->helper=$helper;
+        $this->helper = $helper;
     }
 
     /**
@@ -37,7 +37,7 @@ class ApiKeys extends \Magento\Config\Block\System\Config\Form\Field
 
         $r = '<tr>
 <td class="label">
-<label><span>' . $this->escapeHtml(__('Api Keys')) . '</span></label>
+<label><span>' . $this->escapeHtml(__('API Keys')) . '</span></label>
 </td>
 <td class="value">' . $html . '
 </td>
@@ -55,35 +55,30 @@ class ApiKeys extends \Magento\Config\Block\System\Config\Form\Field
     {
         $isBaseUrlSet = $this->helper->isBtcPayBaseUrlSet();
 
-        if(!$isBaseUrlSet){
+        if (!$isBaseUrlSet) {
             return __('Save the BTCPay Base Url first.');
         }
 
 
-        $html ='<table>
+        $html = '<table>
   <tr>
-    <th style="text-align: left; width: 60px">Store</th>
-    <th style="text-align: left">API Key</th>
+    <th style="text-align: left; width: 60px">' . __('Store') . '</th>
+    <th style="text-align: left">' . __('API Key') . '</th>
     <th></th>
   </tr>';
 
 
-
-
         $magentoStoreViewsWithApiKeyInfo = $this->helper->getStoreViewsWithApiKeyInfo();
 
-        foreach ($magentoStoreViewsWithApiKeyInfo as $store=>$info){
+        foreach ($magentoStoreViewsWithApiKeyInfo as $store => $info) {
 
-
-            $html=$html.'<tr>
-    <td>'.$store.'</td>
-    <td>'.$info['api_key'].'</td>
-    <td><a target="_blank" href="'.$info['generate_url'].'\">'. __('Generate API Key') .'</a></td>
+            $html = $html . '<tr>
+    <td>' . $store . '</td>
+    <td>' . $info['api_key'] . '</td>
+    <td><a target="_blank" href="' . $info['generate_url'] . '\">' . __('Generate API Key') . '</a></td>
   </tr>';
         }
-
-        return $html.'</table>';
-
+        return $html . '</table>';
     }
 
 }

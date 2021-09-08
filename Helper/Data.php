@@ -224,7 +224,7 @@ class Data
             $apiKey = $this->btcPayService->getApiKey($storeId);
 
             if (!$apiKey) {
-                $apiKey = '<span style="color: red">' . __('No API key generated for this store yet.') . '</span>';
+                $apiKey = '<span style="color: red">' . __('No API key yet.') . '</span>';
             }
             $magentoStoreViewsWithApiKeyInfo[$storeName]['api_key'] = $apiKey;
 
