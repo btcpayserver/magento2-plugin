@@ -35,13 +35,9 @@ class ServerInfo extends \Magento\Config\Block\System\Config\Form\Field
     public function render(\Magento\Framework\Data\Form\Element\AbstractElement $element)
     {
 
-        $storeId = $this->btcPayService->getCurrentMagentoStoreId();
-        if (!$storeId){
-            return '';
-        }
-        $html = $this->getErrorHtml($storeId);
+        $html = $this->getConnectionStatusPerStore();
 
-        $r = '<tr><td class="label"><label><span>' . $this->escapeHtml(__('Connection Status')) . '</span></label></td><td class="value">' . $html . '</span></p></td><td class=""></td></tr>';
+        $r = '<tr><td class="label"><label><span>' . $this->escapeHtml(__('Connection Statuses')) . '</span></label></td><td class="value">' . $html . '</span></p></td><td class=""></td></tr>';
         return $r;
     }
 
@@ -60,6 +56,32 @@ class ServerInfo extends \Magento\Config\Block\System\Config\Form\Field
             $r = '<span style="font-weight: bold; color: green;">OK</span>';
         }
         return $r;
+    }
+
+    public function getConnectionStatusPerStore(){
+
+        $html = '<table>
+  <tr>
+    <th style="text-align: left; width: 60px">' . __('Store') . '</th>
+    <th style="text-align: left">' . __('Feedback') . '</th>
+  </tr>';
+
+        $magentoStores = $this->helper->getAllMagentoStoreViews();
+
+        foreach ($magentoStores as $magentoStore){
+            $storeId = (int)$magentoStore->getId();
+
+            $html = $html. '  <tr>
+    <td>' . $magentoStore->getName()  . '</td>
+    <td>' . $this->getErrorHtml($storeId). '</td>
+  </tr>';
+            
+        }
+
+        return $html.'</table>';
+
+        //TODO: foreach store get errorHtml
+
     }
 
 }
