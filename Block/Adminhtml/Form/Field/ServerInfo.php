@@ -58,7 +58,8 @@ class ServerInfo extends \Magento\Config\Block\System\Config\Form\Field
         return $r;
     }
 
-    public function getConnectionStatusPerStore(){
+    public function getConnectionStatusPerStore()
+    {
 
         $html = '<table>
   <tr>
@@ -68,19 +69,16 @@ class ServerInfo extends \Magento\Config\Block\System\Config\Form\Field
 
         $magentoStores = $this->helper->getAllMagentoStoreViews();
 
-        foreach ($magentoStores as $magentoStore){
+        foreach ($magentoStores as $magentoStore) {
             $storeId = (int)$magentoStore->getId();
 
-            $html = $html. '  <tr>
-    <td>' . $magentoStore->getName()  . '</td>
-    <td>' . $this->getErrorHtml($storeId). '</td>
+            $html = $html . '  <tr>
+    <td>' . $magentoStore->getName() . '</td>
+    <td>' . $this->getErrorHtml($storeId) . '</td>
   </tr>';
-            
+
         }
-
-        return $html.'</table>';
-
-        //TODO: foreach store get errorHtml
+        return $html . '</table>';
 
     }
 
