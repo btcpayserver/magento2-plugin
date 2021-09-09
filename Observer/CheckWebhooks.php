@@ -6,6 +6,8 @@ namespace Storefront\BTCPay\Observer;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Storefront\BTCPay\Helper\Data;
+use \Magento\Store\Model\StoresConfig;
+
 
 class CheckWebhooks implements ObserverInterface
 {
@@ -15,9 +17,15 @@ class CheckWebhooks implements ObserverInterface
      */
     private $helper;
 
-    public function __construct(Data $helper)
+    /**
+     * @var StoresConfig $storesConfig
+     */
+    private $storesConfig;
+
+    public function __construct(Data $helper, StoresConfig $storesConfig)
     {
         $this->helper = $helper;
+        $this->storesConfig = $storesConfig;
     }
 
     /**
@@ -31,17 +39,34 @@ class CheckWebhooks implements ObserverInterface
         foreach ($changedPaths as $changedPath) {
             if ($changedPath === "payment/btcpay/btcpay_store_id") {
 
+                $storeId = $this->helper->getCurrentStoreId();
+                $webhook = $this->helper->installWebhookIfNeeded($storeId, true);
+
                 $magentoStoreViews = $this->helper->getAllMagentoStoreViews();
+                $allBtcPayStores = $this->helper->getAllBtcPayStores();
 
                 foreach ($magentoStoreViews as $magentoStoreView) {
-
                     $storeId = (int)$magentoStoreView->getId();
+                    $btcPayStoreId = $this->helper->getSelectedBtcPayStoreForMagentoStore($storeId);
 
-                    $webhook = $this->helper->installWebhookIfNeeded($storeId, true);
-
-                    if (!$webhook) {
-                        //TODO: handle this
+                    $i = array_key_exists($btcPayStoreId, $allBtcPayStores);
+                    if ($i) {
+                        unset($allBtcPayStores[$btcPayStoreId]);
                     }
+                }
+
+                foreach ($allBtcPayStores as $btcPayStoreNotLinkedToMagentoStore) {
+
+                    $storeId = $this->helper->getCurrentStoreId();
+                    $apiKey = $this->helper->getApiKeyForStoreView($storeId);
+
+/*                    $availableApiKeys = array_filter($this->storesConfig->getStoresConfigByPath('payment/btcpay/api_key'));*/
+
+                    $btcPayStoreId = $btcPayStoreNotLinkedToMagentoStore['id'];
+
+                    $deleted = $this->helper->deleteWebhookIfNeeded($storeId, $apiKey, $btcPayStoreId);
+
+
                 }
 
 
