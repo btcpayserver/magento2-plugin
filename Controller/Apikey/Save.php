@@ -77,6 +77,7 @@ class Save extends Action implements CsrfAwareActionInterface
                     $btcStoreId = $btcStores[0]['id'];
                     if ($btcStoreId) {
                         $this->configResource->saveConfig('payment/btcpay/btcpay_store_id', $btcStoreId, 'stores', $magentoStoreId);
+                        //TODO check webhooks for saved BTCStore (or throw event?)
                     }
                 }
 
