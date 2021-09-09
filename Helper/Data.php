@@ -277,4 +277,45 @@ class Data
         }
         return false;
     }
+
+    public function getAllBtcPayStores(): array
+    {
+        $btcStoreArray = [];
+        $magentoStoreId = (int)$this->btcPayService->getCurrentMagentoStoreId();
+        $btcStores = $this->btcPayService->getStores($magentoStoreId);
+
+        foreach ($btcStores as $btcStore) {
+
+            $btcStoreId = $btcStore['id'];
+            $btcStoreArray[$btcStoreId] = $btcStore;
+
+        }
+        return $btcStoreArray;
+    }
+
+    public function getSelectedBtcPayStoreForMagentoStore($magentoStoreId)
+    {
+        return $this->btcPayService->getBtcPayStore($magentoStoreId);
+    }
+
+    public function deleteWebhookIfNeeded($storeId, $apiKey, $btcPayStoreId)
+    {
+        $webhook = $this->btcPayService->getWebhooksForStore($storeId, $btcPayStoreId, $apiKey);
+
+        if ($webhook) {
+            $webhookId = $webhook['id'];
+            $deleted = $this->btcPayService->deleteWebhook($storeId, $btcPayStoreId, $webhookId, $apiKey);
+        }
+        return true;
+    }
+
+    public function getCurrentStoreId()
+    {
+        return $this->btcPayService->getCurrentMagentoStoreId();
+    }
+
+    public function getApiKeyForStoreView($storeId)
+    {
+        return $this->btcPayService->getApiKey($storeId);
+    }
 }
