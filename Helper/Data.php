@@ -124,7 +124,7 @@ class Data
                     $btcPayStoreId = $this->btcPayService->getBtcPayStore($magentoStoreId);
 
                     if ($btcPayStoreId) {
-                        if ($this->checkWebhook($magentoStoreId, true)) {
+                        if ($this->installWebhookIfNeeded($magentoStoreId, true)) {
                             // There are no errors...
 
                             // TODO check if the store has any actual payment methods we can use. The store may still be misconfigured (i.e. no wallet is configured). To check this, we need a new API call, but we don't have it yet.
@@ -162,12 +162,12 @@ class Data
         return $errors;
     }
 
-    public function checkWebhook(int $magentoStoreId, bool $autoCreateIfNeeded): bool
+    public function installWebhookIfNeeded(int $magentoStoreId, bool $autoCreateIfNeeded): bool
     {
-        $apiKey=$this->btcPayService->getApiKey($magentoStoreId);
+        $apiKey = $this->btcPayService->getApiKey($magentoStoreId);
 
         try {
-            $webhookData = $this->btcPayService->getWebhookForStore($magentoStoreId, $apiKey);
+            $webhookData = $this->btcPayService->getWebhooksForStore($magentoStoreId, $apiKey);
         } catch (ForbiddenException $e) {
             // Bad configuration
             return false;
@@ -208,7 +208,6 @@ class Data
                 }
             }
 
-            // TODO delete the webhook and create a new one with the required data...
             return false;
         }
     }
@@ -260,7 +259,7 @@ class Data
         return $authorizeUrl;
     }
 
-    public function isBtcPayBaseUrlSet():bool
+    public function isBtcPayBaseUrlSet(): bool
     {
         if ($this->btcPayService->getBtcPayServerBaseUrl(0)) {
             return true;

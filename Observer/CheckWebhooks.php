@@ -37,7 +37,7 @@ class CheckWebhooks implements ObserverInterface
 
                     $storeId = (int)$magentoStoreView->getId();
 
-                    $webhook = $this->helper->checkWebhook($storeId, true);
+                    $webhook = $this->helper->installWebhookIfNeeded($storeId, true);
 
                     if (!$webhook) {
                         //TODO: handle this

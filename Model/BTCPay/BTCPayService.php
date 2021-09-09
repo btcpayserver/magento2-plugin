@@ -577,21 +577,8 @@ class BTCPayService
         return $btcPayStoreId;
     }
 
-    public function getWebhooksForStore(string $btcPayStoreId, int $magentoStoreId): array
-    {
-        $response = $this->doRequest($magentoStoreId, 'api/v1/stores/' . $btcPayStoreId . '/webhooks', 'GET');
-        $status = $response->getStatusCode();
-        $body = (string)$response->getBody();
 
-        if ($status === 200) {
-            $data = \json_decode($body, true, 512, \JSON_THROW_ON_ERROR);
-            return $data;
-        } else {
-            // TODO handle this
-        }
-    }
-
-    public function getWebhookForStore(int $magentoStoreId, string $apiKey): ?array
+    public function getWebhooksForStore(int $magentoStoreId, string $apiKey): ?array
     {
         $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
         $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
@@ -609,14 +596,15 @@ class BTCPayService
         return null;
     }
 
-
     public function createWebhook(int $magentoStoreId, $apiKey): ?array
     {
-            $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
-            $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
-            $url = $this->getWebhookUrl($magentoStoreId);
-            $data = $client->createWebhook($btcPayStoreId, $url, null, $this->getWebhookSecret($magentoStoreId));
-            return $data->getData();
+
+
+        $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
+        $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
+        $url = $this->getWebhookUrl($magentoStoreId);
+        $data = $client->createWebhook($btcPayStoreId, $url, null, $this->getWebhookSecret($magentoStoreId));
+        return $data->getData()->blabla;
     }
 
     public function getWebhookUrl(int $magentoStoreId): string
