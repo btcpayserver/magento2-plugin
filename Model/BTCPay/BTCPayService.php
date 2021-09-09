@@ -119,7 +119,7 @@ class BTCPayService
         $this->configWriter = $configWriter;
         $this->configValueFactory = $configValueFactory;
         $this->configCollectionFactory = $configCollectionFactory;
-        $this->request=$request;
+        $this->request = $request;
     }
 
 
@@ -593,6 +593,8 @@ class BTCPayService
 
     public function getWebhookForStore(int $magentoStoreId): ?array
     {
+        //TODO: use client
+
         $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
         $response = $this->doRequest($magentoStoreId, 'api/v1/stores/' . $btcPayStoreId . '/webhooks', 'GET');
         $status = $response->getStatusCode();
@@ -616,16 +618,15 @@ class BTCPayService
 
     public function createWebhook(int $magentoStoreId, $apiKey): array
     {
-
         $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
         $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
         $url = $this->getWebhookUrl($magentoStoreId);
 
 
-        $data = $client->createWebhook($btcPayStoreId, $url);
+        $data = $client->createWebhook($btcPayStoreId, $url, null, $this->getWebhookSecret($magentoStoreId));
 
         $data = $data->getData();
-
+        return $data;
     }
 
     public function getWebhookUrl(int $magentoStoreId): string
@@ -640,13 +641,13 @@ class BTCPayService
         $url = $this->getStoreConfig('web/secure/base_url', $magentoStoreId);
         $url .= 'btcpay/apikey/save';
         $hashedSecret = $this->hashSecret($magentoStoreId);
-        return $url . '?secret=' . urlencode($hashedSecret).'&store='.$magentoStoreId;
+        return $url . '?secret=' . urlencode($hashedSecret) . '&store=' . $magentoStoreId;
     }
 
     public function getCurrentMagentoStoreId(): ?int
     {
         $storeId = $this->request->getParam('store');
-        if(!$storeId){
+        if (!$storeId) {
             return null;
         }
         return (int)$storeId;
