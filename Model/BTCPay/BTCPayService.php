@@ -578,10 +578,10 @@ class BTCPayService
     }
 
 
-    public function getWebhooksForStore(int $magentoStoreId, string $apiKey): ?array
+    public function getWebhooksForStore(int $magentoStoreId, $btcPayStoreId, string $apiKey): ?array
     {
         $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
-        $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
+
         $webhooks = $client->getWebhooks($btcPayStoreId);
 
         $url = $this->getWebhookUrl($magentoStoreId);
@@ -599,12 +599,14 @@ class BTCPayService
     public function createWebhook(int $magentoStoreId, $apiKey): ?array
     {
 
-
         $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
         $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
-        $url = $this->getWebhookUrl($magentoStoreId);
-        $data = $client->createWebhook($btcPayStoreId, $url, null, $this->getWebhookSecret($magentoStoreId));
-        return $data->getData()->blabla;
+        if ($btcPayStoreId) {
+            $url = $this->getWebhookUrl($magentoStoreId);
+            $data = $client->createWebhook($btcPayStoreId, $url, null, $this->getWebhookSecret($magentoStoreId));
+            return $data->getData();
+        }
+        return null;
     }
 
     public function getWebhookUrl(int $magentoStoreId): string
@@ -657,6 +659,19 @@ class BTCPayService
         $secret = $this->getWebhookSecret($magentoStoreId);
         $salt = (string)$magentoStoreId;
         return sha1($secret . $salt);
+    }
+
+    public function deleteWebhook($magentoStoreId, $btcStoreId, $webhookId, $apiKey)
+    {
+        $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
+
+        try {
+            $client->deleteWebhook($btcStoreId, $webhookId);
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+
     }
 
 }
