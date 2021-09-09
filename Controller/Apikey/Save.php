@@ -13,6 +13,7 @@ use Magento\Framework\App\RequestInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
+use Storefront\BTCPay\Helper\Data;
 
 class Save extends Action implements CsrfAwareActionInterface
 {
@@ -41,7 +42,12 @@ class Save extends Action implements CsrfAwareActionInterface
      */
     private $reinitableConfig;
 
-    public function __construct(Context $context, BTCPayService $btcService, StoreManagerInterface $storeManager, LoggerInterface $logger, Config $configResource, ReinitableConfigInterface $reinitableConfig)
+    /**
+     * @var Data $helper
+     */
+    private $helper;
+
+    public function __construct(Context $context, BTCPayService $btcService, StoreManagerInterface $storeManager, LoggerInterface $logger, Config $configResource, ReinitableConfigInterface $reinitableConfig, Data $helper)
     {
         parent::__construct($context);
         $this->btcService = $btcService;
@@ -49,6 +55,7 @@ class Save extends Action implements CsrfAwareActionInterface
         $this->logger = $logger;
         $this->configResource = $configResource;
         $this->reinitableConfig = $reinitableConfig;
+        $this->helper = $helper;
     }
 
     public function execute()
@@ -77,7 +84,10 @@ class Save extends Action implements CsrfAwareActionInterface
                     $btcStoreId = $btcStores[0]['id'];
                     if ($btcStoreId) {
                         $this->configResource->saveConfig('payment/btcpay/btcpay_store_id', $btcStoreId, 'stores', $magentoStoreId);
-                        //TODO check webhooks for saved BTCStore (or throw event?)
+
+                        // Create webhook as well
+                        $storeId = $this->helper->getCurrentStoreId();
+                        $webhook = $this->helper->installWebhookIfNeeded($storeId, true);
                     }
                 }
 
