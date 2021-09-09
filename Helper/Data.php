@@ -164,53 +164,64 @@ class Data
 
     public function installWebhookIfNeeded(int $magentoStoreId, bool $autoCreateIfNeeded): bool
     {
-        $apiKey = $this->btcPayService->getApiKey($magentoStoreId);
 
         try {
-            $webhookData = $this->btcPayService->getWebhooksForStore($magentoStoreId, $apiKey);
+            $apiKey = $this->btcPayService->getApiKey($magentoStoreId);
+            if ($apiKey) {
+                $btcPayStoreId = $this->btcPayService->getBtcPayStore($magentoStoreId);
+                if ($btcPayStoreId) {
+                    $webhookData = $this->btcPayService->getWebhooksForStore($magentoStoreId, $btcPayStoreId, $apiKey);
+
+                    if ($webhookData === null) {
+                        if ($autoCreateIfNeeded) {
+                            try {
+                                $this->btcPayService->createWebhook($magentoStoreId, $apiKey);
+                                return true;
+                            } catch (CannotCreateWebhook $e) {
+                                $this->logger->error($e);
+                                return false;
+                            }
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        // Example: {
+                        //  "id": "8kR8zG81EERX59FGav5WWo",
+                        //  "enabled": true,
+                        //  "automaticRedelivery": true,
+                        //  "url": "http:\/\/mybtcpay.com\/admin\/V1\/btcpay\/webhook\/key\/8c7982460d83d57fb3e351ade2335aa88c42f5654eeee282a4e70e5751422dab\/",
+                        //  "authorizedEvents": {
+                        //    "everything": true,
+                        //    "specificEvents": []
+                        //  }
+                        //}
+
+                        if ($webhookData['enabled'] === true) {
+                            if ($webhookData['automaticRedelivery'] === true) {
+                                if ($webhookData['authorizedEvents']['everything'] === true) {
+                                    $url = $this->btcPayService->getWebhookUrl($magentoStoreId);
+                                    if ($webhookData['url'] === $url) {
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+
+                        return false;
+                    }
+                }
+
+
+            }
+            return false;
         } catch (ForbiddenException $e) {
             // Bad configuration
             return false;
         }
 
-        if ($webhookData === null) {
-            if ($autoCreateIfNeeded) {
-                try {
-                    $this->btcPayService->createWebhook($magentoStoreId, $apiKey);
-                    return true;
-                } catch (CannotCreateWebhook $e) {
-                    $this->logger->error($e);
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        } else {
-            // Example: {
-            //  "id": "8kR8zG81EERX59FGav5WWo",
-            //  "enabled": true,
-            //  "automaticRedelivery": true,
-            //  "url": "http:\/\/mybtcpay.com\/admin\/V1\/btcpay\/webhook\/key\/8c7982460d83d57fb3e351ade2335aa88c42f5654eeee282a4e70e5751422dab\/",
-            //  "authorizedEvents": {
-            //    "everything": true,
-            //    "specificEvents": []
-            //  }
-            //}
 
-            if ($webhookData['enabled'] === true) {
-                if ($webhookData['automaticRedelivery'] === true) {
-                    if ($webhookData['authorizedEvents']['everything'] === true) {
-                        $url = $this->btcPayService->getWebhookUrl($magentoStoreId);
-                        if ($webhookData['url'] === $url) {
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
     }
+
 
     public function getStoreViewsWithApiKeyInfo()
     {
