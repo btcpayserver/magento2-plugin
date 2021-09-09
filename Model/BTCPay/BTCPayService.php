@@ -591,42 +591,32 @@ class BTCPayService
         }
     }
 
-    public function getWebhookForStore(int $magentoStoreId): ?array
-    {
-        //TODO: use client
-
-        $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
-        $response = $this->doRequest($magentoStoreId, 'api/v1/stores/' . $btcPayStoreId . '/webhooks', 'GET');
-        $status = $response->getStatusCode();
-        $body = (string)$response->getBody();
-
-        $url = $this->getWebhookUrl($magentoStoreId);
-
-        if ($status === 200) {
-            $webhooks = \json_decode($body, true, 512, \JSON_THROW_ON_ERROR);
-
-            foreach ($webhooks as $webhook) {
-                if ($webhook['url'] === $url) {
-                    return $webhook;
-                }
-            }
-            return null;
-        } else {
-            throw new \Storefront\BTCPay\Model\BTCPay\Exception\UnexpectedSituation();
-        }
-    }
-
-    public function createWebhook(int $magentoStoreId, $apiKey): array
+    public function getWebhookForStore(int $magentoStoreId, string $apiKey): ?array
     {
         $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
         $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
+        $webhooks = $client->getWebhooks($btcPayStoreId);
+
         $url = $this->getWebhookUrl($magentoStoreId);
 
+        foreach ($webhooks as $webhook) {
+            $data = $webhook->getData();
+            if ($data['url'] === $url) {
+                return $data;
+            }
+        }
 
-        $data = $client->createWebhook($btcPayStoreId, $url, null, $this->getWebhookSecret($magentoStoreId));
+        return null;
+    }
 
-        $data = $data->getData();
-        return $data;
+
+    public function createWebhook(int $magentoStoreId, $apiKey): ?array
+    {
+            $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
+            $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
+            $url = $this->getWebhookUrl($magentoStoreId);
+            $data = $client->createWebhook($btcPayStoreId, $url, null, $this->getWebhookSecret($magentoStoreId));
+            return $data->getData();
     }
 
     public function getWebhookUrl(int $magentoStoreId): string

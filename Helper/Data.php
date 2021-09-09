@@ -164,8 +164,10 @@ class Data
 
     public function checkWebhook(int $magentoStoreId, bool $autoCreateIfNeeded): bool
     {
+        $apiKey=$this->btcPayService->getApiKey($magentoStoreId);
+
         try {
-            $webhookData = $this->btcPayService->getWebhookForStore($magentoStoreId);
+            $webhookData = $this->btcPayService->getWebhookForStore($magentoStoreId, $apiKey);
         } catch (ForbiddenException $e) {
             // Bad configuration
             return false;
@@ -174,8 +176,7 @@ class Data
         if ($webhookData === null) {
             if ($autoCreateIfNeeded) {
                 try {
-                    $apiKey=$this->btcPayService->getApiKey($magentoStoreId);
-                    $data=$this->btcPayService->createWebhook($magentoStoreId, $apiKey);
+                    $this->btcPayService->createWebhook($magentoStoreId, $apiKey);
                     return true;
                 } catch (CannotCreateWebhook $e) {
                     $this->logger->error($e);
