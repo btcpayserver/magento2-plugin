@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace Storefront\BTCPay\Model\BTCPay;
 
+use BTCPayServer\Client\InvoiceCheckoutOptions;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use Magento\Framework\App\Config\ReinitableConfigInterface;
@@ -169,12 +170,16 @@ class BTCPayService
      */
     public function createInvoice(Order $order): array
     {
+
         $magentoStoreId = (int)$order->getStoreId();
         $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
         if (!$btcPayStoreId) {
             throw new \Storefront\BTCPay\Model\BTCPay\Exception\NoBtcPayStoreConfigured();
         }
         $orderId = (int)$order->getId();
+
+        $client = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl($magentoStoreId), $this->getApiKey($magentoStoreId));
+
 
         // TODO make these configurable
         //$speedPolicy = 'HighSpeed';
@@ -205,11 +210,10 @@ class BTCPayService
         $sa = $order->getShippingAddress();
 
         $postData = [];
-        $postData['amount'] = $order->getGrandTotal();
+        $postData['amount'] = new \BTCPayServer\Util\PreciseNumber((string)$order->getGrandTotal());
         $postData['currency'] = $order->getOrderCurrencyCode();
-        $postData['metadata']['orderId'] = $order->getIncrementId();
         $postData['metadata']['buyerName'] = trim($order->getBillingAddress()->getCompany() . ', ' . $order->getCustomerName(), ', ');
-        $postData['metadata']['buyerEmail'] = $order->getCustomerEmail();
+/*        $postData['metadata']['buyerEmail'] = $order->getCustomerEmail();*/
         $postData['metadata']['buyerCountry'] = $sa->getCountryId();
         $postData['metadata']['buyerZip'] = $sa->getPostcode();
         $postData['metadata']['buyerCity'] = $sa->getCity();
@@ -223,7 +227,6 @@ class BTCPayService
         //$postData['metadata']['posData'] = null;
         // $postData['metadata']['itemCode'] = '';
         // $postData['metadata']['itemDesc'] = '';
-
         // $postData['checkout']['speedPolicy'] = $speedPolicy;
         // $btcpayInvoice['checkout']['paymentMethods'] = $paymentMethods;
         // $btcpayInvoice['checkout']['expirationMinutes'] = $expirationMinutes;
@@ -242,66 +245,52 @@ class BTCPayService
         $postData['metadata']['buyerMiddlename'] = $order->getCustomerMiddlename();
         $postData['metadata']['buyerLastname'] = $order->getCustomerLastname();
 
+        $checkoutOptions = InvoiceCheckoutOptions::create(null, null, null, null, null, $returnUrl, true, $defaultLanguage);
 
-        $response = $this->doRequest($magentoStoreId, '/api/v1/stores/' . $btcPayStoreId . '/invoices', 'POST', $postData);
+        $data = $client->createInvoice($btcPayStoreId, $postData['amount'], $postData['currency'], $order->getIncrementId(), $order->getCustomerEmail(), $postData['metadata'], $checkoutOptions);
 
-        $status = $response->getStatusCode();
-        $body = (string)$response->getBody();
+        return $data->getData();
 
-        if ($status === 200) {
-            $data = \json_decode($body, true, 512, \JSON_THROW_ON_ERROR);
+        // Example:
+        // {
+        //  "id": "7ePcu635UAV9CiGBKDDQvr",
+        //  "checkoutLink": "https:\/\/mybtcpay.com\/i\/7ePcu635UAV9CiGBKDDQvr",
+        //  "status": "New",
+        //  "additionalStatus": "None",
+        //  "monitoringExpiration": 1622043882,
+        //  "expirationTime": 1622040282,
+        //  "createdTime": 1622039382,
+        //  "amount": "166.0000",
+        //  "currency": "EUR",
+        //  "metadata": {
+        //    "orderId": "1",
+        //    "buyerName": "ACME Corp, Test Tester",
+        //    "buyerEmail": "test.tester@acme.com",
+        //    "buyerCountry": "US",
+        //    "buyerZip": "1000",
+        //    "buyerCity": "Test City",
+        //    "buyerState": "TE",
+        //    "buyerAddress1": "Test Street",
+        //    "buyerAddress2": "100",
+        //    "buyerPhone": "+123456789101",
+        //    "physical": true,
+        //    "taxIncluded": false,
+        //    "orderIncrementId": "000000001"
+        //  },
+        //  "checkout": {
+        //    "speedPolicy": "MediumSpeed",
+        //    "paymentMethods": [
+        //      "BTC"
+        //    ],
+        //    "expirationMinutes": 15,
+        //    "monitoringMinutes": 60,
+        //    "paymentTolerance": 0,
+        //    "redirectURL": "http:\/\/domain.com\/btcpay\/redirect\/returnafterpayment\/orderId\/1\/invoiceId\/%7BInvoiceId%7D\/hash\/ab49d6c0a6696e17cffc9ae6386be83997741a4f\/",
+        //    "redirectAutomatically": true,
+        //    "defaultLanguage": "en"
+        //  }
+        //}
 
-            // Example:
-            // {
-            //  "id": "7ePcu635UAV9CiGBKDDQvr",
-            //  "checkoutLink": "https:\/\/mybtcpay.com\/i\/7ePcu635UAV9CiGBKDDQvr",
-            //  "status": "New",
-            //  "additionalStatus": "None",
-            //  "monitoringExpiration": 1622043882,
-            //  "expirationTime": 1622040282,
-            //  "createdTime": 1622039382,
-            //  "amount": "166.0000",
-            //  "currency": "EUR",
-            //  "metadata": {
-            //    "orderId": "1",
-            //    "buyerName": "ACME Corp, Test Tester",
-            //    "buyerEmail": "test.tester@acme.com",
-            //    "buyerCountry": "US",
-            //    "buyerZip": "1000",
-            //    "buyerCity": "Test City",
-            //    "buyerState": "TE",
-            //    "buyerAddress1": "Test Street",
-            //    "buyerAddress2": "100",
-            //    "buyerPhone": "+123456789101",
-            //    "physical": true,
-            //    "taxIncluded": false,
-            //    "orderIncrementId": "000000001"
-            //  },
-            //  "checkout": {
-            //    "speedPolicy": "MediumSpeed",
-            //    "paymentMethods": [
-            //      "BTC"
-            //    ],
-            //    "expirationMinutes": 15,
-            //    "monitoringMinutes": 60,
-            //    "paymentTolerance": 0,
-            //    "redirectURL": "http:\/\/domain.com\/btcpay\/redirect\/returnafterpayment\/orderId\/1\/invoiceId\/%7BInvoiceId%7D\/hash\/ab49d6c0a6696e17cffc9ae6386be83997741a4f\/",
-            //    "redirectAutomatically": true,
-            //    "defaultLanguage": "en"
-            //  }
-            //}
-
-            $tableName = $this->db->getTableName('btcpay_invoices');
-            $this->db->insert($tableName, [
-                'order_id' => $orderId,
-                'btcpay_store_id' => $btcPayStoreId,
-                'invoice_id' => $data['id'],
-                'status' => $data['status']
-            ]);
-            return $data;
-        } else {
-            throw new \Storefront\BTCPay\Model\BTCPay\Exception\CannotCreateInvoice($status, $body, $postData);
-        }
     }
 
 
