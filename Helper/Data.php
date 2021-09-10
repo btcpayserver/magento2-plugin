@@ -296,19 +296,11 @@ class Data
         return false;
     }
 
-    public function getAllBtcPayStores(): array
+    public function getAllBtcPayStoresAssociative($magentoStoreId): array
     {
-        $btcStoreArray = [];
-        $magentoStoreId = (int)$this->btcPayService->getCurrentMagentoStoreId();
-        $btcStores = $this->btcPayService->getStores($magentoStoreId);
-
-        foreach ($btcStores as $btcStore) {
-
-            $btcStoreId = $btcStore['id'];
-            $btcStoreArray[$btcStoreId] = $btcStore;
-
-        }
-        return $btcStoreArray;
+        $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl($magentoStoreId);
+        $apiKey = $this->btcPayService->getApiKey($magentoStoreId);
+        return $this->btcPayService->getAllBtcPayStoresAssociative($baseUrl, $apiKey);
     }
 
     public function getSelectedBtcPayStoreForMagentoStore(int $magentoStoreId)

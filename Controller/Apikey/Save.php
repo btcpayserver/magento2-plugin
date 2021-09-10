@@ -79,9 +79,10 @@ class Save extends Action implements CsrfAwareActionInterface
                 $this->configResource->saveConfig('payment/btcpay/api_key', $apiKey, 'stores', $magentoStoreId);
 
                 // When only 1 BTCStore, save immediately
-                $btcStores = $this->btcService->getStores($magentoStoreId);
-                if ($btcStores && count($btcStores) === 1) {
-                    $btcStoreId = $btcStores[0]['id'];
+                $allBtcStores = $this->btcService->getAllBtcPayStores($baseUrl, $apiKey);
+
+                if ($allBtcStores && count($allBtcStores) === 1) {
+                    $btcStoreId = $allBtcStores[0]['id'];
                     if ($btcStoreId) {
                         $this->configResource->saveConfig('payment/btcpay/btcpay_store_id', $btcStoreId, 'stores', $magentoStoreId);
 

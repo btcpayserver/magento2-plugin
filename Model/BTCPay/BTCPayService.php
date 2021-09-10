@@ -574,18 +574,13 @@ class BTCPayService
         }
     }
 
-    public function getStores(int $magentoStoreId): ?array
+    public function getAllBtcPayStores($baseUrl, $apiKey): ?array
     {
-        $response = $this->doRequest($magentoStoreId, 'api/v1/stores', 'GET');
-        $status = $response->getStatusCode();
-        $body = (string)$response->getBody();
+        $client = new \BTCPayServer\Client\Store($baseUrl, $apiKey);
 
-        if ($status === 200) {
-            $data = \json_decode($body, true, 512, \JSON_THROW_ON_ERROR);
-            return $data;
-        } else {
-            return null;
-        }
+        $stores = $client->getStores();
+
+        return $stores;
     }
 
     public function getBtcPayStore(int $magentoStoreId): ?string
@@ -603,7 +598,7 @@ class BTCPayService
         $baseUrl = $this->getBtcPayServerBaseUrl($magentoStoreId);
         $apiKey = $this->getApiKey($magentoStoreId);
 
-        $allActiveBtcPayStores = $this->getAllBtcPayStores($baseUrl, $apiKey);
+        $allActiveBtcPayStores = $this->getAllBtcPayStoresAssociative($baseUrl, $apiKey);
 
         foreach ($storedBtcPayStores as $storedBtcPayStore) {
             $storeStillExists = array_key_exists($storedBtcPayStore, $allActiveBtcPayStores);
@@ -716,15 +711,11 @@ class BTCPayService
     }
 
 
-    public function getAllBtcPayStores($baseUrl, $apiKey): array
+    public function getAllBtcPayStoresAssociative($baseUrl, $apiKey): array
     {
-        $client = new \BTCPayServer\Client\Store($baseUrl, $apiKey);
-
-        $storesArray = [];
-        $stores = $client->getStores();
+        $stores = $this->getAllBtcPayStores($baseUrl, $apiKey);
 
         foreach ($stores as $store) {
-            $x = 5;
             $storeData = $store->getData();
             $storeId = $storeData['id'];
             $storesArray[$storeId] = $storeData;
