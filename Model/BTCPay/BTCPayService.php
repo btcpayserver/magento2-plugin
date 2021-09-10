@@ -54,7 +54,6 @@ class BTCPayService
 {
 
 
-
     const CONFIG_API_KEY = 'payment/btcpay/api_key';
 
     /**
@@ -137,7 +136,7 @@ class BTCPayService
         $this->configCollectionFactory = $configCollectionFactory;
         $this->request = $request;
         $this->storesConfig = $storesConfig;
-        $this->reinitableConfig=$reinitableConfig;
+        $this->reinitableConfig = $reinitableConfig;
     }
 
 
@@ -594,8 +593,6 @@ class BTCPayService
         $btcPayStoreId = $this->getStoreConfig('payment/btcpay/btcpay_store_id', $magentoStoreId);
 
         return $btcPayStoreId;
-
-        //TODO : get all active btcPay stores and check if there's maybe an old value still in magento that should be removed
     }
 
     public function checkBtcPayStores(int $magentoStoreId)
@@ -638,7 +635,6 @@ class BTCPayService
                 return $data;
             }
         }
-
         return null;
     }
 
