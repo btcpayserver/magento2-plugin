@@ -122,7 +122,7 @@ class Data
                     // Permissions are exact
 
 
-                    $btcStores = $this->btcPayService->checkBtcPayStores($magentoStoreId);
+                    $storesChecked = $this->btcPayService->checkBtcPayStores($magentoStoreId);
 
                     $btcPayStoreId = $this->btcPayService->getBtcPayStore($magentoStoreId);
 
@@ -173,9 +173,11 @@ class Data
             if ($apiKey) {
                 $btcPayStoreId = $this->btcPayService->getBtcPayStore($magentoStoreId);
                 if ($btcPayStoreId) {
+
                     $webhookData = $this->btcPayService->getWebhooksForStore($magentoStoreId, $btcPayStoreId, $apiKey);
 
-                    if ($webhookData === null) {
+
+                    if (!$webhookData) {
                         if ($autoCreateIfNeeded) {
                             try {
                                 $this->btcPayService->createWebhook($magentoStoreId, $apiKey);
@@ -188,6 +190,7 @@ class Data
                             return false;
                         }
                     } else {
+
                         // Example: {
                         //  "id": "8kR8zG81EERX59FGav5WWo",
                         //  "enabled": true,
@@ -256,6 +259,17 @@ class Data
         return $stores;
     }
 
+    public function getAllMagentoStoreViewIds(){
+        $storeIds = [];
+        $stores = $this->getAllMagentoStoreViews();
+
+        foreach ($stores as $store){
+            $storeId = $store->getId();
+            $storeIds[]=$storeId;
+        }
+        return $storeIds;
+    }
+
     public function getGenerateApiKeyUrl(int $magentoStoreId)
     {
         $magentoRootDomain = $this->scopeConfig->getValue('web/secure/base_url', 'store', 0);
@@ -304,10 +318,16 @@ class Data
     public function deleteWebhookIfNeeded(int $storeId, string $apiKey, string $btcPayStoreId)
     {
         $webhook = $this->btcPayService->getWebhooksForStore($storeId, $btcPayStoreId, $apiKey);
-
         if ($webhook) {
             $webhookId = $webhook['id'];
             $deleted = $this->btcPayService->deleteWebhook($storeId, $btcPayStoreId, $webhookId, $apiKey);
+        }
+        return true;
+    }
+
+    public function deleteWebhooksIfNeeded($storeIds, $apiKey, $btcPayStoreId){
+        foreach ($storeIds as $storeId){
+            $this->deleteWebhookIfNeeded((int) $storeId, $apiKey, $btcPayStoreId);
         }
         return true;
     }
