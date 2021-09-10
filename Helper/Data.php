@@ -259,13 +259,14 @@ class Data
         return $stores;
     }
 
-    public function getAllMagentoStoreViewIds(){
+    public function getAllMagentoStoreViewIds()
+    {
         $storeIds = [];
         $stores = $this->getAllMagentoStoreViews();
 
-        foreach ($stores as $store){
+        foreach ($stores as $store) {
             $storeId = $store->getId();
-            $storeIds[]=$storeId;
+            $storeIds[] = $storeId;
         }
         return $storeIds;
     }
@@ -325,9 +326,10 @@ class Data
         return true;
     }
 
-    public function deleteWebhooksIfNeeded($storeIds, $apiKey, $btcPayStoreId){
-        foreach ($storeIds as $storeId){
-            $this->deleteWebhookIfNeeded((int) $storeId, $apiKey, $btcPayStoreId);
+    public function deleteWebhooksIfNeeded($storeIds, $apiKey, $btcPayStoreId)
+    {
+        foreach ($storeIds as $storeId) {
+            $this->deleteWebhookIfNeeded((int)$storeId, $apiKey, $btcPayStoreId);
         }
         return true;
     }
