@@ -121,6 +121,9 @@ class Data
                 if ($myPermissions === $neededPermissions) {
                     // Permissions are exact
 
+
+                    $btcStores = $this->btcPayService->checkBtcPayStores($magentoStoreId);
+
                     $btcPayStoreId = $this->btcPayService->getBtcPayStore($magentoStoreId);
 
                     if ($btcPayStoreId) {
@@ -293,12 +296,12 @@ class Data
         return $btcStoreArray;
     }
 
-    public function getSelectedBtcPayStoreForMagentoStore($magentoStoreId)
+    public function getSelectedBtcPayStoreForMagentoStore(int $magentoStoreId)
     {
         return $this->btcPayService->getBtcPayStore($magentoStoreId);
     }
 
-    public function deleteWebhookIfNeeded($storeId, $apiKey, $btcPayStoreId)
+    public function deleteWebhookIfNeeded(int $storeId, string $apiKey, string $btcPayStoreId)
     {
         $webhook = $this->btcPayService->getWebhooksForStore($storeId, $btcPayStoreId, $apiKey);
 
@@ -314,7 +317,7 @@ class Data
         return $this->btcPayService->getCurrentMagentoStoreId();
     }
 
-    public function getApiKeyForStoreView($storeId)
+    public function getApiKeyForStoreView(int $storeId)
     {
         return $this->btcPayService->getApiKey($storeId);
     }
