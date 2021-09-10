@@ -46,7 +46,7 @@
                        showInWebsite="0" showInStore="1">
                     <label>Store</label>
                     <source_model>Storefront\BTCPay\Model\Config\Source\BtcPayStore</source_model>
-                    <comment>Select the BTCPay Server Store to use.</comment>
+                    <comment model="Storefront\BTCPay\Model\Config\BtcPayStoreComment" />
                 </field>
 
                 <field id="server_info" translate="label" sortOrder="80" showInDefault="1" showInWebsite="0" showInStore="0">
