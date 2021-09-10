@@ -56,20 +56,12 @@ class CheckWebhooks implements ObserverInterface
                 }
 
                 foreach ($allBtcPayStores as $btcPayStoreNotLinkedToMagentoStore) {
-
                     $storeId = $this->helper->getCurrentStoreId();
                     $apiKey = $this->helper->getApiKeyForStoreView($storeId);
-
-/*                    $availableApiKeys = array_filter($this->storesConfig->getStoresConfigByPath('payment/btcpay/api_key'));*/
-
                     $btcPayStoreId = $btcPayStoreNotLinkedToMagentoStore['id'];
-
-                    $deleted = $this->helper->deleteWebhookIfNeeded($storeId, $apiKey, $btcPayStoreId);
-
-
+                    $magentoStoreViewIds = $this->helper->getAllMagentoStoreViewIds();
+                    $deleted = $this->helper->deleteWebhooksIfNeeded($magentoStoreViewIds, $apiKey, $btcPayStoreId);
                 }
-
-
             }
         }
     }
