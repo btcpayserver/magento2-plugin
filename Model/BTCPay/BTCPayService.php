@@ -25,6 +25,7 @@ namespace Storefront\BTCPay\Model\BTCPay;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
+use Magento\Framework\App\Config\ReinitableConfigInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
@@ -47,10 +48,13 @@ use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\App\Config\ValueFactory;
 use Magento\Config\Model\ResourceModel\Config\Data\CollectionFactory;
 use Magento\Framework\App\RequestInterface;
-
+use Magento\Store\Model\StoresConfig;
 
 class BTCPayService
 {
+
+
+
     const CONFIG_API_KEY = 'payment/btcpay/api_key';
 
     /**
@@ -107,7 +111,19 @@ class BTCPayService
      */
     private $request;
 
-    public function __construct(ResourceConnection $resource, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger, Url $urlBuider, StoreManagerInterface $storeManager, WriterInterface $configWriter, ValueFactory $configValueFactory, CollectionFactory $configCollectionFactory, RequestInterface $request)
+    /**
+     * @var StoresConfig $storesConfig
+     */
+    private $storesConfig;
+
+
+    /**
+     * @var ReinitableConfigInterface $reinitableConfig
+     */
+    private $reinitableConfig;
+
+
+    public function __construct(ResourceConnection $resource, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger, Url $urlBuider, StoreManagerInterface $storeManager, WriterInterface $configWriter, ValueFactory $configValueFactory, CollectionFactory $configCollectionFactory, RequestInterface $request, StoresConfig $storesConfig, ReinitableConfigInterface $reinitableConfig)
     {
         $this->scopeConfig = $scopeConfig;
         $this->db = $resource->getConnection();
@@ -120,6 +136,8 @@ class BTCPayService
         $this->configValueFactory = $configValueFactory;
         $this->configCollectionFactory = $configCollectionFactory;
         $this->request = $request;
+        $this->storesConfig = $storesConfig;
+        $this->reinitableConfig=$reinitableConfig;
     }
 
 
@@ -574,7 +592,35 @@ class BTCPayService
     public function getBtcPayStore(int $magentoStoreId): ?string
     {
         $btcPayStoreId = $this->getStoreConfig('payment/btcpay/btcpay_store_id', $magentoStoreId);
+
         return $btcPayStoreId;
+
+        //TODO : get all active btcPay stores and check if there's maybe an old value still in magento that should be removed
+    }
+
+    public function checkBtcPayStores(int $magentoStoreId)
+    {
+
+        $storedBtcPayStores = array_filter($this->storesConfig->getStoresConfigByPath('payment/btcpay/btcpay_store_id'));
+
+        $baseUrl = $this->getBtcPayServerBaseUrl($magentoStoreId);
+        $apiKey = $this->getApiKey($magentoStoreId);
+
+        $allActiveBtcPayStores = $this->getAllBtcPayStores($baseUrl, $apiKey);
+
+        foreach ($storedBtcPayStores as $storedBtcPayStore) {
+            $storeStillExists = array_key_exists($storedBtcPayStore, $allActiveBtcPayStores);
+            if (!$storeStillExists) {
+
+                $tableName = 'core_config_data';
+                $whereConditions = [
+                    $this->db->quoteInto('value = ?', $storedBtcPayStore),
+                ];
+                $deleteRows = $this->db->delete($tableName, $whereConditions);
+                $this->reinitableConfig->reinit();
+            }
+        }
+        return true;
     }
 
 
@@ -598,7 +644,6 @@ class BTCPayService
 
     public function createWebhook(int $magentoStoreId, $apiKey): ?array
     {
-
         $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
         $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
         if ($btcPayStoreId) {
@@ -661,17 +706,34 @@ class BTCPayService
         return sha1($secret . $salt);
     }
 
-    public function deleteWebhook($magentoStoreId, $btcStoreId, $webhookId, $apiKey)
+    public function deleteWebhook(int $magentoStoreId, string $btcStoreId, string $webhookId, string $apiKey)
     {
         $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
 
         try {
-            $client->deleteWebhook($btcStoreId, $webhookId);
+            $deleted = $client->deleteWebhook($btcStoreId, $webhookId);
             return true;
         } catch (\Exception $e) {
             return false;
         }
 
+    }
+
+
+    public function getAllBtcPayStores($baseUrl, $apiKey): array
+    {
+        $client = new \BTCPayServer\Client\Store($baseUrl, $apiKey);
+
+        $storesArray = [];
+        $stores = $client->getStores();
+
+        foreach ($stores as $store) {
+            $x = 5;
+            $storeData = $store->getData();
+            $storeId = $storeData['id'];
+            $storesArray[$storeId] = $storeData;
+        }
+        return $storesArray;
     }
 
 }
