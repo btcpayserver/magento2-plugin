@@ -12,7 +12,6 @@ use Magento\Framework\View\Result\PageFactory;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Psr\Log\LoggerInterface;
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
-use Storefront\BTCPay\Model\Invoice;
 use Magento\Sales\Model\OrderFactory;
 use Storefront\BTCPay\Controller\Cart\Restore;
 
@@ -104,7 +103,6 @@ class ReturnAfterPayment extends Action
                 $invoice = $this->btcPayService->getInvoice($btcPayInvoiceId, $btcPayStoreId, $magentoStoreId);
                 $isInvoiceExpired = $invoice->isExpired();
                 $isInvoiceProcessing = $invoice->isProcessing();
-
                 // TODO log something?
             }
         } else {
@@ -113,18 +111,16 @@ class ReturnAfterPayment extends Action
         }
 
         if ($order && $valid) {
-            if ($isInvoiceProcessing && !$isInvoiceExpired) {
+            if ($isInvoiceProcessing) {
                 $this->checkoutSession->setLastQuoteId($order->getQuoteId());
                 $this->checkoutSession->setLastSuccessQuoteId($order->getQuoteId());
                 $this->checkoutSession->setLastOrderId($order->getId());
                 $this->checkoutSession->setLastRealOrderId($order->getIncrementId());
                 $resultRedirect->setUrl($order->getStore()->getUrl('checkout/onepage/success'));
-            } elseif ($isInvoiceExpired) {
+            }
+            if ($isInvoiceExpired) {
                 // TODO Cancel the abandoned order + create a setting for this behaviour
                 $resultRedirect->setUrl($this->url->getUrl('btcpay/cart/restore', ['order_id' => urlencode($orderId)]));
-            } else {
-                // TODO Sending the customer here is not ideal if he/she has not paid.
-                $resultRedirect->setUrl($this->url->getUrl('btcpay/payment/waiting'));
             }
         } else {
             $resultRedirect->setUrl($this->url->getUrl('checkout/cart/'));
