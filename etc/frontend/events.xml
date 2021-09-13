@@ -5,4 +5,9 @@
         <observer name="btcpay_redirect_to_payment" instance="Storefront\BTCPay\Observer\RedirectToPayment"/>
     </event>
 
+    <event name="controller_action_predispatch_checkout_cart_index">
+        <observer name="btc_check_cart_items" instance="Storefront\BTCPay\Observer\CheckOrderStatus"/>
+    </event>
+
+
 </config>
