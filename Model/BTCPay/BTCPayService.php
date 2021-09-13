@@ -242,8 +242,7 @@ class BTCPayService
         $postData['metadata']['buyerMiddlename'] = $order->getCustomerMiddlename();
         $postData['metadata']['buyerLastname'] = $order->getCustomerLastname();
 
-        //TODO set expirationMinutes back to null
-        $checkoutOptions = InvoiceCheckoutOptions::create(null, null, 1, null, null, $returnUrl, true, $defaultLanguage);
+        $checkoutOptions = InvoiceCheckoutOptions::create(null, null, null, null, null, $returnUrl, true, $defaultLanguage);
 
         $data = $client->createInvoice($btcPayStoreId, $postData['amount'], $postData['currency'], $order->getIncrementId(), $order->getCustomerEmail(), $postData['metadata'], $checkoutOptions);
 
@@ -703,6 +702,14 @@ class BTCPayService
             $storesArray[$storeId] = $storeData;
         }
         return $storesArray;
+    }
+
+    public function getInvoicesByOrderIds(int $magentoStoreId, array $orderIds): \BTCPayServer\Result\InvoiceList
+    {
+        $client = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl($magentoStoreId), $this->getApiKey($magentoStoreId));
+        $btcStoreId = $this->getBtcPayStore($magentoStoreId);
+        $invoices = $client->getInvoicesByOrderIds($btcStoreId, $orderIds);
+        return $invoices;
     }
 
 }
