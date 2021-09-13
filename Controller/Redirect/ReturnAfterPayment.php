@@ -13,6 +13,8 @@ use Magento\Sales\Api\OrderRepositoryInterface;
 use Psr\Log\LoggerInterface;
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 use Storefront\BTCPay\Model\Invoice;
+use Magento\Sales\Model\OrderFactory;
+use Storefront\BTCPay\Controller\Cart\Restore;
 
 class ReturnAfterPayment extends Action
 {
@@ -38,9 +40,14 @@ class ReturnAfterPayment extends Action
      */
     private $url;
     /**
-     * @var \Magento\Sales\Api\Data\OrderInterfaceFactory
+     * @var OrderFactory
      */
     private $orderFactory;
+
+    /**
+     * @var Restore $cartRestorer
+     */
+    private $cartRestorer;
 
     /**
      * Constructor
@@ -51,8 +58,9 @@ class ReturnAfterPayment extends Action
      * @param BTCPayService $btcPayService
      * @param OrderRepositoryInterface $orderRepository
      * @param \Magento\Checkout\Model\Session $checkoutSession
+     * @param Restore $cartRestorer
      */
-    public function __construct(Context $context, LoggerInterface $logger, PageFactory $resultPageFactory, BTCPayService $btcPayService, \Magento\Sales\Api\Data\OrderInterfaceFactory $orderFactory, \Magento\Checkout\Model\Session $checkoutSession, UrlInterface $url)
+    public function __construct(Context $context, LoggerInterface $logger, PageFactory $resultPageFactory, BTCPayService $btcPayService, OrderFactory $orderFactory, \Magento\Checkout\Model\Session $checkoutSession, UrlInterface $url, Restore $cartRestorer)
     {
         $this->resultPageFactory = $resultPageFactory;
         $this->logger = $logger;
@@ -60,6 +68,7 @@ class ReturnAfterPayment extends Action
         $this->orderFactory = $orderFactory;
         $this->checkoutSession = $checkoutSession;
         $this->url = $url;
+        $this->cartRestorer = $cartRestorer;
         parent:: __construct($context);
     }
 
@@ -72,16 +81,17 @@ class ReturnAfterPayment extends Action
     public function execute()
     {
         $request = $this->getRequest();
-        $orderIncrementId = $request->getParam('orderId');
+        $orderId = $request->getParam('orderId');
         $btcPayInvoiceId = $request->getParam('invoiceId');
         $hash = $request->getParam('hash');
 
+        $isInvoiceProcessing = false;
         $valid = false;
         $isInvoiceExpired = false;
 
         $resultRedirect = $this->resultRedirectFactory->create();
 
-        $order = $this->orderFactory->create()->loadByIncrementId($orderIncrementId);
+        $order = $this->orderFactory->create()->load($orderId);
         if ($order->getId()) {
             $correctHash = $this->btcPayService->getOrderHash($order);
 
@@ -92,8 +102,8 @@ class ReturnAfterPayment extends Action
                 $btcPayStoreId = $this->btcPayService->getBtcPayStore($magentoStoreId);
 
                 $invoice = $this->btcPayService->getInvoice($btcPayInvoiceId, $btcPayStoreId, $magentoStoreId);
-                $isInvoiceExpired = $invoice['status'] === Invoice::STATUS_EXPIRED;
-                $isInvoicePaid = $invoice['status'] === Invoice::STATUS_PAID;
+                $isInvoiceExpired = $invoice->isExpired();
+                $isInvoiceProcessing = $invoice->isProcessing();
 
                 // TODO log something?
             }
@@ -103,17 +113,15 @@ class ReturnAfterPayment extends Action
         }
 
         if ($order && $valid) {
-            if ($isInvoicePaid) {
+            if ($isInvoiceProcessing && !$isInvoiceExpired) {
                 $this->checkoutSession->setLastQuoteId($order->getQuoteId());
                 $this->checkoutSession->setLastSuccessQuoteId($order->getQuoteId());
                 $this->checkoutSession->setLastOrderId($order->getId());
                 $this->checkoutSession->setLastRealOrderId($order->getIncrementId());
-
                 $resultRedirect->setUrl($order->getStore()->getUrl('checkout/onepage/success'));
             } elseif ($isInvoiceExpired) {
-                // TODO Restore the contents of the shopping cart so the customer can buy again. Start using \Storefront\BTCPay\Controller\Cart\Restore for this
                 // TODO Cancel the abandoned order + create a setting for this behaviour
-                $resultRedirect->setUrl($this->url->getUrl('checkout/cart/'));
+                $resultRedirect->setUrl($this->url->getUrl('btcpay/cart/restore', ['order_id' => urlencode($orderId)]));
             } else {
                 // TODO Sending the customer here is not ideal if he/she has not paid.
                 $resultRedirect->setUrl($this->url->getUrl('btcpay/payment/waiting'));
