@@ -176,8 +176,6 @@ class BTCPayService
         if (!$btcPayStoreId) {
             throw new \Storefront\BTCPay\Model\BTCPay\Exception\NoBtcPayStoreConfigured();
         }
-        $orderId = (int)$order->getId();
-
         $client = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl($magentoStoreId), $this->getApiKey($magentoStoreId));
 
 
@@ -213,7 +211,7 @@ class BTCPayService
         $postData['amount'] = new \BTCPayServer\Util\PreciseNumber((string)$order->getGrandTotal());
         $postData['currency'] = $order->getOrderCurrencyCode();
         $postData['metadata']['buyerName'] = trim($order->getBillingAddress()->getCompany() . ', ' . $order->getCustomerName(), ', ');
-/*        $postData['metadata']['buyerEmail'] = $order->getCustomerEmail();*/
+        /*        $postData['metadata']['buyerEmail'] = $order->getCustomerEmail();*/
         $postData['metadata']['buyerCountry'] = $sa->getCountryId();
         $postData['metadata']['buyerZip'] = $sa->getPostcode();
         $postData['metadata']['buyerCity'] = $sa->getCity();
@@ -229,7 +227,6 @@ class BTCPayService
         // $postData['metadata']['itemDesc'] = '';
         // $postData['checkout']['speedPolicy'] = $speedPolicy;
         // $btcpayInvoice['checkout']['paymentMethods'] = $paymentMethods;
-        // $btcpayInvoice['checkout']['expirationMinutes'] = $expirationMinutes;
         // $btcpayInvoice['checkout']['monitoringMinutes'] = 90;
         // $btcpayInvoice['checkout']['paymentTolerance'] = 0;
         $postData['checkout']['redirectURL'] = $returnUrl;
@@ -245,7 +242,8 @@ class BTCPayService
         $postData['metadata']['buyerMiddlename'] = $order->getCustomerMiddlename();
         $postData['metadata']['buyerLastname'] = $order->getCustomerLastname();
 
-        $checkoutOptions = InvoiceCheckoutOptions::create(null, null, null, null, null, $returnUrl, true, $defaultLanguage);
+        //TODO set expirationMinutes back to null
+        $checkoutOptions = InvoiceCheckoutOptions::create(null, null, 1, null, null, $returnUrl, true, $defaultLanguage);
 
         $data = $client->createInvoice($btcPayStoreId, $postData['amount'], $postData['currency'], $order->getIncrementId(), $order->getCustomerEmail(), $postData['metadata'], $checkoutOptions);
 
@@ -548,19 +546,14 @@ class BTCPayService
     }
 
 
-    public function getInvoice(string $invoiceId, string $btcpayStoreId, int $magentoStoreId): array
+    public function getInvoice(string $invoiceId, string $btcpayStoreId, int $magentoStoreId): \BTCPayServer\Result\Invoice
     {
-        $url = '/api/v1/stores/' . $btcpayStoreId . '/invoices/' . $invoiceId;
-        $response = $this->doRequest($magentoStoreId, $url, 'GET');
-        $status = $response->getStatusCode();
-        $body = (string)$response->getBody();
+        $client = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl($magentoStoreId), $this->getApiKey($magentoStoreId));
 
-        if ($status === 200) {
-            $data = \json_decode($body, true, 512, \JSON_THROW_ON_ERROR);
-            return $data;
-        } else {
-            throw new InvoiceNotFoundException($invoiceId, $btcpayStoreId, $magentoStoreId);
-        }
+        $invoice = $client->getInvoice($btcpayStoreId, $invoiceId);
+
+        return $invoice;
+
     }
 
     public function getAllBtcPayStores($baseUrl, $apiKey): ?array
