@@ -43,7 +43,7 @@ class CheckWebhooks implements ObserverInterface
                 $webhook = $this->helper->installWebhookIfNeeded($storeId, true);
 
                 $magentoStoreViews = $this->helper->getAllMagentoStoreViews();
-                $allBtcPayStores = $this->helper->getAllBtcPayStoresAssociative();
+                $allBtcPayStores = $this->helper->getAllBtcPayStoresAssociative($storeId);
 
                 foreach ($magentoStoreViews as $magentoStoreView) {
                     $storeId = (int)$magentoStoreView->getId();
