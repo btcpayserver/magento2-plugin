@@ -208,7 +208,8 @@ class BTCPayService
         $sa = $order->getShippingAddress();
 
         $postData = [];
-        $postData['amount'] = new \BTCPayServer\Util\PreciseNumber((string)$order->getGrandTotal());
+        $postData['amount'] = PreciseNumber::parseFloat((float)$order->getGrandTotal());
+
         $postData['currency'] = $order->getOrderCurrencyCode();
         $postData['metadata']['buyerName'] = trim($order->getBillingAddress()->getCompany() . ', ' . $order->getCustomerName(), ', ');
         /*        $postData['metadata']['buyerEmail'] = $order->getCustomerEmail();*/
@@ -244,9 +245,9 @@ class BTCPayService
 
         $checkoutOptions = InvoiceCheckoutOptions::create(null, null, null, null, null, $returnUrl, true, $defaultLanguage);
 
-        $data = $client->createInvoice($btcPayStoreId, $postData['amount'], $postData['currency'], $order->getIncrementId(), $order->getCustomerEmail(), $postData['metadata'], $checkoutOptions);
+        $invoice = $client->createInvoice($btcPayStoreId, $postData['currency'], $postData['amount'], $order->getIncrementId(), $order->getCustomerEmail(), $postData['metadata'], $checkoutOptions);
 
-        return $data->getData();
+        return $invoice->getData();
 
         // Example:
         // {
