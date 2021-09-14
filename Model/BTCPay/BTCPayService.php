@@ -312,7 +312,7 @@ class BTCPayService
             /* @var $order Order */
             $order = $this->orderRepository->get($orderId);
 
-            $magentoStoreId = $order->getStoreId();
+            $magentoStoreId = (int)$order->getStoreId();
 
             $invoice = $this->getInvoice($invoiceId, $btcPayStoreId, $magentoStoreId);
 
