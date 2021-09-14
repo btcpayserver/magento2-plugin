@@ -713,4 +713,20 @@ class BTCPayService
         return $invoices;
     }
 
+    public function saveInvoiceInDb($invoice): bool
+    {
+        $tableName = $this->db->getTableName('btcpay_invoices');
+
+        $magentoOrderId = $invoice['metadata']['magentoOrderId'];
+        $invoiceId = $invoice['id'];
+        $status = $invoice['status'];
+        $btcPayStoreId = $invoice['storeId'];
+
+        $affectedRows = $this->db->insert($tableName, ['order_id' => $magentoOrderId, 'invoice_id' => $invoiceId, 'status' => $status, 'btcpay_store_id' => $btcPayStoreId]);
+
+        if ($affectedRows > 0) {
+            return true;
+        }
+        return false;
+    }
 }

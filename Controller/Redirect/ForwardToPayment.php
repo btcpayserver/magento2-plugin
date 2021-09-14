@@ -23,7 +23,8 @@ use Magento\Sales\Model\OrderRepository;
 use Psr\Log\LoggerInterface;
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 
-class ForwardToPayment extends Action {
+class ForwardToPayment extends Action
+{
 
     /**
      * @var CustomerSession
@@ -53,7 +54,8 @@ class ForwardToPayment extends Action {
     private $checkoutSession;
 
 
-    public function __construct(Context $context, Session $checkoutSession, CookieManagerInterface $cookieManager, CookieMetadataFactory $cookieMetadataFactory, SessionManagerInterface $sessionManager, \Storefront\BTCPay\Model\BTCPay\BTCPayService $btcPayService, CustomerSession $customerSession) {
+    public function __construct(Context $context, Session $checkoutSession, CookieManagerInterface $cookieManager, CookieMetadataFactory $cookieMetadataFactory, SessionManagerInterface $sessionManager, \Storefront\BTCPay\Model\BTCPay\BTCPayService $btcPayService, CustomerSession $customerSession)
+    {
         parent::__construct($context);
         $this->checkoutSession = $checkoutSession;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
@@ -71,7 +73,8 @@ class ForwardToPayment extends Action {
 //    }
 
 
-    private function setCookie($name, $value, $duration) {
+    private function setCookie($name, $value, $duration)
+    {
         $path = $this->sessionManager->getCookiePath();
         $domain = $this->sessionManager->getCookieDomain();
 
@@ -81,15 +84,18 @@ class ForwardToPayment extends Action {
     }
 
 
-    public function execute() {
+    public function execute()
+    {
         $order = $this->checkoutSession->getLastRealOrder();
         $resultRedirect = $this->resultRedirectFactory->create();
 
         if ($order) {
             $btcpayInvoice = $this->btcPayService->createInvoice($order);
             $invoiceId = $btcpayInvoice['id'];
-
             if ($invoiceId) {
+
+                $savedInvoiceInDb = $this->btcPayService->saveInvoiceInDb($btcpayInvoice);
+
                 if (!$this->customerSession->isLoggedIn()) {
                     // Set cookies for the order/returns page
                     $duration = 30 * 24 * 60 * 60;
