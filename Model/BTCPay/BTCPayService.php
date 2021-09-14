@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace Storefront\BTCPay\Model\BTCPay;
 
 use BTCPayServer\Client\InvoiceCheckoutOptions;
+use BTCPayServer\Util\PreciseNumber;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use Magento\Framework\App\Config\ReinitableConfigInterface;
