@@ -694,6 +694,7 @@ class BTCPayService
 
     public function getAllBtcPayStoresAssociative($baseUrl, $apiKey): array
     {
+        $storesArray=[];
         $stores = $this->getAllBtcPayStores($baseUrl, $apiKey);
 
         foreach ($stores as $store) {
