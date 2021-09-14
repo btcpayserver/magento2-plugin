@@ -3,31 +3,30 @@ declare(strict_types=1);
 
 namespace Storefront\BTCPay\Api;
 
-use Magento\Framework\App\HttpRequestInterface;
 use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\Webapi\Rest\Request;
 use RuntimeException;
+use Storefront\BTCPay\Helper\Data;
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 
 class Webhook implements WebhookInterface
 {
-
-
     /**
      * @var BTCPayService
      */
     private $btcPayService;
     /**
-     * @var HttpRequestInterface
+     * @var Request
      */
     private $request;
     /**
-     * @var \Storefront\BTCPay\Helper\Data
+     * @var Data
      */
     private $helper;
 
-    public function __construct(BTCPayService $btcPayService, \Magento\Framework\App\HttpRequestInterface $request, \Storefront\BTCPay\Helper\Data $helper)
+    public function __construct(BTCPayService $btcPayService, Request $request, Data $helper)
     {
         $this->btcPayService = $btcPayService;
         $this->request = $request;
@@ -42,7 +41,7 @@ class Webhook implements WebhookInterface
      */
     public function process(): bool
     {
-        $postedString = file_get_contents('php://input');
+        $postedString = $this->request->getContent();
         if (!$postedString) {
             throw new RuntimeException('No data posted. Cannot process BTCPay Server Webhook.');
         }
