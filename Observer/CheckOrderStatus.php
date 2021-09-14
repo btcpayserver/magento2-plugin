@@ -50,23 +50,25 @@ class CheckOrderStatus implements ObserverInterface
             $paymentMethod = $order->getPayment()->getMethod();
             if ($paymentMethod === 'btcpay') {
 
-
                 $currentStoreId = (int)$this->storeManager->getStore()->getId();
                 //Check Order Status
                 $invoices = $this->btcService->getInvoicesByOrderIds($currentStoreId, $orderIdArr);
 
-                $invoice = $invoices->getInvoices()[0];
+                $invoices = $invoices->getInvoices();
+                if (count($invoices) !== 0) {
+                    $invoice = $invoices[0];
 
-                $status = $invoice->getStatus();
+                    $status = $invoice->getStatus();
 
-                if ($status === 'New' || $status === 'Expired'){
-                    //Cancel Order
-                    $order->cancel();
-                    $order->addCommentToStatusHistory(__('The customer left the payment page. Not paid.'));
-                    $order->save();
+                    if ($status === 'New' || $status === 'Expired') {
+                        //Cancel Order
+                        $order->cancel();
+                        $order->addCommentToStatusHistory(__('The customer left the payment page. Not paid.'));
+                        $order->save();
 
-                    //Restore Quote
-                    $this->checkoutSession->restoreQuote();
+                        //Restore Quote
+                        $this->checkoutSession->restoreQuote();
+                    }
                 }
             }
         }
