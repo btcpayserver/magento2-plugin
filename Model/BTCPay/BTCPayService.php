@@ -327,7 +327,7 @@ class BTCPayService
 
             if ($rowsChanged === 1) {
                 switch ($invoiceStatus) {
-                    case Invoice::STATUS_PAID:
+                    case Invoice::STATUS_PROCESSING:
                         // 1) Payments have been made to the invoice for the requested amount but the invoice has not been confirmed yet. We also don't know if the amount is enough.
                         $paidNotConfirmedStatus = $this->getStoreConfig('payment/btcpay/payment_paid_status', $magentoStoreId);
                         if (!$paidNotConfirmedStatus) {

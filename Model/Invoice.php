@@ -32,6 +32,7 @@ class Invoice extends \Magento\Framework\Model\AbstractModel
 
     const STATUS_NEW = 'New';
     const STATUS_PAID = 'Paid';
+    const STATUS_PROCESSING = 'Processing';
     const STATUS_CONFIRMED = 'Confirmed';
     const STATUS_UNCONFIRMED = 'Unconfirmed';
     const STATUS_COMPLETE = 'Complete';
