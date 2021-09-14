@@ -3,24 +3,48 @@ declare(strict_types=1);
 
 namespace Storefront\BTCPay\Setup;
 
-use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\Config\ConfigResource\ConfigInterface;
 use Magento\Framework\DB\Ddl\Table;
 use Magento\Framework\Setup\ModuleContextInterface;
 use Magento\Framework\Setup\SchemaSetupInterface;
 use Magento\Framework\Setup\UpgradeSchemaInterface;
-use Magento\Store\Model\Store;
+use Magento\Framework\Exception\AlreadyExistsException;
+use Magento\Sales\Model\Order;
+use Magento\Sales\Model\Order\Status;
+use Magento\Sales\Model\Order\StatusFactory;
+use Magento\Sales\Model\ResourceModel\Order\Status as StatusResource;
+use Magento\Sales\Model\ResourceModel\Order\StatusFactory as StatusResourceFactory;
+
+use Storefront\BTCPay\Model\OrderStatuses;
 
 class UpgradeSchema implements UpgradeSchemaInterface
 {
 
+
     /**
-     * @var \Magento\Framework\App\Config\ConfigResource\ConfigInterface
+     * Status Factory
+     *
+     * @var StatusFactory
+     */
+    protected $statusFactory;
+    /**
+     * Status Resource Factory
+     *
+     * @var StatusResourceFactory
+     */
+    protected $statusResourceFactory;
+
+
+    /**
+     * @var ConfigInterface
      */
     private $configResource;
 
-    public function __construct(\Magento\Framework\App\Config\ConfigResource\ConfigInterface $configResource)
+    public function __construct(ConfigInterface $configResource, StatusFactory $statusFactory, StatusResourceFactory $statusResourceFactory)
     {
         $this->configResource = $configResource;
+        $this->statusFactory = $statusFactory;
+        $this->statusResourceFactory = $statusResourceFactory;
     }
 
     /**
@@ -43,7 +67,29 @@ class UpgradeSchema implements UpgradeSchemaInterface
             $setup->getConnection()->query('update btcpay_invoices set status = CONCAT(UPPER(SUBSTRING(status,1,1)),LOWER(SUBSTRING(status,2)))');
         }
 
+        if (version_compare($context->getVersion(), "3.0.0", "<")) {
+            $this->addNewStatusToState(Order::STATE_PAYMENT_REVIEW, ['status' => OrderStatuses::STATUS_CODE_FEE_TOO_LOW, 'label' => OrderStatuses::STATUS_LABEL_FEE_TOO_LOW]);
+            $this->addNewStatusToState(Order::STATE_PAYMENT_REVIEW, ['status' => OrderStatuses::STATUS_CODE_UNDERPAID, 'label' => OrderStatuses::STATUS_LABEL_UNDERPAID]);
+            $this->addNewStatusToState(Order::STATE_PROCESSING, ['status' => OrderStatuses::STATUS_CODE_PAID_CORRECTLY, 'label' => OrderStatuses::STATUS_LABEL_PAID_CORRECTLY]);
+            $this->addNewStatusToState(Order::STATE_PAYMENT_REVIEW, ['status' => OrderStatuses::STATUS_CODE_OVERPAID, 'label' => OrderStatuses::STATUS_LABEL_OVERPAID]);
+        }
+
         $setup->endSetup();
 
+    }
+
+    protected function addNewStatusToState($state, $statusData): void
+    {
+        /** @var StatusResource $statusResource */
+        $statusResource = $this->statusResourceFactory->create();
+        /** @var Status $status */
+        $status = $this->statusFactory->create();
+        $status->setData($statusData);
+        try {
+            $statusResource->save($status);
+        } catch (AlreadyExistsException $exception) {
+            return;
+        }
+        $status->assignState($state, false, false);
     }
 }
