@@ -62,7 +62,7 @@ class Data
 
     public function getWebhookSecret(): ?string
     {
-        $this->scopeConfig->getValue('payment/btcpay/webhook_secret', ScopeInterface::SCOPE_STORE, 0);
+        return $this->scopeConfig->getValue('payment/btcpay/webhook_secret', ScopeInterface::SCOPE_STORE, 0);
     }
 
     public function getInstallationErrors(int $magentoStoreId, bool $useCache): array
