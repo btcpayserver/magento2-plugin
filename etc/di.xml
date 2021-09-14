@@ -18,7 +18,7 @@
         </arguments>
     </type>
 
-    <preference for="Storefront\BTCPay\Api\WebhookInterface" type="\Storefront\BTCPay\Api\Webhook" />
+    <preference for="Storefront\BTCPay\Api\WebhookInterface" type="Storefront\BTCPay\Api\Webhook" />
 
 
     <!-- Commands -->
