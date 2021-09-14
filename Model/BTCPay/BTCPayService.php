@@ -317,7 +317,7 @@ class BTCPayService
 
             $invoice = $this->getInvoice($invoiceId, $btcPayStoreId, $magentoStoreId);
 
-            if ($order->getIncrementId() !== $invoice->getOrderId()) {
+            if ($order->getIncrementId() !== $invoice->getData()['metadata']['orderId']) {
                 throw new RuntimeException('The supplied order "' . $orderId . '"" does not match BTCPay Invoice "' . $invoiceId . '"". Cannot process BTCPay Server Webhook.');
             }
 
@@ -696,7 +696,7 @@ class BTCPayService
 
     public function getAllBtcPayStoresAssociative($baseUrl, $apiKey): array
     {
-        $storesArray=[];
+        $storesArray = [];
         $stores = $this->getAllBtcPayStores($baseUrl, $apiKey);
 
         foreach ($stores as $store) {
@@ -731,4 +731,5 @@ class BTCPayService
         }
         return false;
     }
+
 }
