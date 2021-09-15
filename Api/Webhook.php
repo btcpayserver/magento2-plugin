@@ -86,6 +86,7 @@ class Webhook implements WebhookInterface
                 // TODO support "overPaid" true/false
                 // TODO support "manuallyMarked" true/false
 
+                //TODO what to do with paid too late?
                 $btcpayInvoiceId = $data['invoiceId'] ?? null;
                 $btcpayStoreId = $data['storeId'] ?? null;
 
