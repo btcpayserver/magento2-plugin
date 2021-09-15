@@ -68,7 +68,7 @@ class UpgradeSchema implements UpgradeSchemaInterface
 
             // Add new order statuses and assign them to states
             $this->addNewStatusToState(Order::STATE_PENDING_PAYMENT, ['status' => OrderStatuses::STATUS_CODE_PENDING_PAYMENT, 'label' => OrderStatuses::STATUS_LABEL_PENDING_PAYMENT]);
-            $this->addNewStatusToState(Order::STATE_PAYMENT_REVIEW, ['status' => OrderStatuses::STATUS_CODE_FEE_TOO_LOW, 'label' => OrderStatuses::STATUS_LABEL_FEE_TOO_LOW]);
+            $this->addNewStatusToState(Order::STATE_PAYMENT_REVIEW, ['status' => OrderStatuses::STATUS_CODE_INVALID, 'label' => OrderStatuses::STATUS_LABEL_INVALID]);
             $this->addNewStatusToState(Order::STATE_PAYMENT_REVIEW, ['status' => OrderStatuses::STATUS_CODE_UNDERPAID, 'label' => OrderStatuses::STATUS_LABEL_UNDERPAID]);
             $this->addNewStatusToState(Order::STATE_PROCESSING, ['status' => OrderStatuses::STATUS_CODE_PAID_CORRECTLY, 'label' => OrderStatuses::STATUS_LABEL_PAID_CORRECTLY]);
             $this->addNewStatusToState(Order::STATE_PAYMENT_REVIEW, ['status' => OrderStatuses::STATUS_CODE_OVERPAID, 'label' => OrderStatuses::STATUS_LABEL_OVERPAID]);
@@ -90,6 +90,6 @@ class UpgradeSchema implements UpgradeSchemaInterface
         } catch (AlreadyExistsException $exception) {
             return;
         }
-        $status->assignState($state, false, false);
+        $status->assignState($state, false, true);
     }
 }
