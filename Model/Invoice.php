@@ -29,16 +29,6 @@ use Storefront\BTCPay\Api\Data\InvoiceInterfaceFactory;
 
 class Invoice extends \Magento\Framework\Model\AbstractModel
 {
-
-    const STATUS_NEW = 'New';
-    const STATUS_PAID = 'Paid';
-    const STATUS_PROCESSING = 'Processing';
-    const STATUS_CONFIRMED = 'Confirmed';
-    const STATUS_UNCONFIRMED = 'Unconfirmed';
-    const STATUS_COMPLETE = 'Complete';
-    const STATUS_INVALID = 'Invalid';
-    const STATUS_EXPIRED = 'Expired';
-
     protected $invoiceDataFactory;
 
     protected $dataObjectHelper;
