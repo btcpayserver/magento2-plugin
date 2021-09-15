@@ -22,6 +22,7 @@ use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\OrderRepository;
 use Psr\Log\LoggerInterface;
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
+use Storefront\BTCPay\Model\OrderStatuses;
 
 class ForwardToPayment extends Action
 {
@@ -95,6 +96,10 @@ class ForwardToPayment extends Action
             if ($invoiceId) {
 
                 $savedInvoiceInDb = $this->btcPayService->saveInvoiceInDb($btcpayInvoice);
+
+                $pendingPaymentStatus = OrderStatuses::STATUS_CODE_PENDING_PAYMENT;
+                $order->addCommentToStatusHistory('Pending BTC payment', $pendingPaymentStatus);
+                $order->save();
 
                 if (!$this->customerSession->isLoggedIn()) {
                     // Set cookies for the order/returns page
