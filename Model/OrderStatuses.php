@@ -19,6 +19,9 @@ class OrderStatuses extends \Magento\Framework\Model\AbstractModel
     const STATUS_CODE_OVERPAID = 'btcpay_overpaid';
     const STATUS_LABEL_OVERPAID = 'Overpaid with BTCPay';
 
+    const STATUS_CODE_PENDING_PAYMENT ='btcpay_pending_payment';
+    const STATUS_LABEL_PENDING_PAYMENT ='Pending BTCPay payment';
+
     public function __construct(Context $context, \Magento\Framework\Registry $registry, ResourceModel\AbstractResource $resource = null, \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null, array $data = [])
     {
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);
