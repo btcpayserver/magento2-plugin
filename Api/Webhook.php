@@ -46,7 +46,6 @@ class Webhook implements WebhookInterface
             throw new RuntimeException('No data posted. Cannot process BTCPay Server Webhook.');
         }
         $data = \json_decode($postedString, true);
-
         $signatureHeader = $this->request->getHeader('BTCPay-Sig');
 
         if ($signatureHeader) {
@@ -69,7 +68,7 @@ class Webhook implements WebhookInterface
                 // Event "Invoice expired"
                 // Same as "Invoice created", but contains an extra field: "partiallyPaid" true/false
 
-                // Event "Payment received"
+                // Event "InvoiceReceivedPayment"
                 // Same as "Invoice created", but contains an extra field: "afterExpiration" true/false
 
                 // Event "Invoice processing"
@@ -87,15 +86,16 @@ class Webhook implements WebhookInterface
                 // TODO support "manuallyMarked" true/false
 
                 //TODO what to do with paid too late?
+
+
                 $btcpayInvoiceId = $data['invoiceId'] ?? null;
                 $btcpayStoreId = $data['storeId'] ?? null;
+                $dataType=$data['type'];
 
                 // Only use the "id" field from the POSTed data and discard the rest. We are not trusting the other posted data.
                 unset($data);
-                // TODO support "secret" checking. This way we could trust the sender.
-
                 if ($btcpayInvoiceId) {
-                    $this->btcPayService->updateInvoice($btcpayStoreId, $btcpayInvoiceId);
+                    $this->btcPayService->updateInvoice($btcpayStoreId, $btcpayInvoiceId, $dataType);
                     return true;
                 }
 

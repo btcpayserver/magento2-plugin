@@ -53,6 +53,8 @@ use Magento\Framework\App\RequestInterface;
 use Magento\Store\Model\StoresConfig;
 use Storefront\BTCPay\Model\OrderStatuses;
 use BTCPayServer\Result\Invoice as BTCPayServerInvoice;
+use Magento\Framework\Pricing\Helper\Data;
+
 
 class BTCPayService
 {
@@ -125,8 +127,13 @@ class BTCPayService
      */
     private $reinitableConfig;
 
+    /**
+     * @var Data $priceHelper
+     */
+    private $priceHelper;
 
-    public function __construct(ResourceConnection $resource, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger, Url $urlBuider, StoreManagerInterface $storeManager, WriterInterface $configWriter, ValueFactory $configValueFactory, CollectionFactory $configCollectionFactory, RequestInterface $request, StoresConfig $storesConfig, ReinitableConfigInterface $reinitableConfig)
+
+    public function __construct(ResourceConnection $resource, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger, Url $urlBuider, StoreManagerInterface $storeManager, WriterInterface $configWriter, ValueFactory $configValueFactory, CollectionFactory $configCollectionFactory, RequestInterface $request, StoresConfig $storesConfig, ReinitableConfigInterface $reinitableConfig, Data $priceHelper)
     {
         $this->scopeConfig = $scopeConfig;
         $this->db = $resource->getConnection();
@@ -141,6 +148,7 @@ class BTCPayService
         $this->request = $request;
         $this->storesConfig = $storesConfig;
         $this->reinitableConfig = $reinitableConfig;
+        $this->priceHelper = $priceHelper;
     }
 
 
@@ -246,7 +254,7 @@ class BTCPayService
         $postData['metadata']['buyerMiddlename'] = $order->getCustomerMiddlename();
         $postData['metadata']['buyerLastname'] = $order->getCustomerLastname();
 
-        $checkoutOptions = InvoiceCheckoutOptions::create(null, null, 1, null, null, $returnUrl, true, $defaultLanguage);
+        $checkoutOptions = InvoiceCheckoutOptions::create(null, null, null, null, null, $returnUrl, true, $defaultLanguage);
 
         $invoice = $client->createInvoice($btcPayStoreId, $postData['currency'], $postData['amount'], $order->getIncrementId(), $order->getCustomerEmail(), $postData['metadata'], $checkoutOptions);
 
@@ -325,10 +333,21 @@ class BTCPayService
 
             $invoiceStatus = $invoice->getStatus();
 
-            //TODO: log every payment
+            if ($dataType === 'InvoiceReceivedPayment') {
+                $paymentInfo = $this->getPaymentInfo($magentoStoreId, $btcPayStoreId, $invoiceId, $invoice);
 
-            if($dataType==='InvoiceReceivedPayment'){
-                $order->addCommentToStatusHistory('Incoming payment:');
+                $comment = 'Incoming payment: <br> Total invoice amount in ' . $paymentInfo['invoice_amount']
+                    . '<br> Received : ' . $paymentInfo['amount_paid_store_currency'] . ' - ' . $paymentInfo['amount_received'] . $paymentInfo['currency']
+                    . '<br> Due : ' . $paymentInfo['amount_due_store_currency']
+                    . '<br> Rate at time of payment: 1' . $paymentInfo['currency'] . '=' . $paymentInfo['rate'] . $paymentInfo['store_currency'];
+
+                $status = false;
+                if ($invoice->isPartiallyPaid()) {
+                    // paid partially
+                    $status = OrderStatuses::STATUS_CODE_UNDERPAID;
+                }
+                $order->addCommentToStatusHistory($comment, $status, true);
+                $order->save();
             }
 
             // TODO refactor to use the model instead of direct SQL reading
@@ -342,25 +361,31 @@ class BTCPayService
                         if ($invoice->isOverpaid()) {
                             // overpaid
                             $overPaidStatus = OrderStatuses::STATUS_CODE_OVERPAID;
-                            $order->addCommentToStatusHistory('Overpaid.', $overPaidStatus, true);
-
-                        } elseif ($invoice->isPartiallyPaid()) {
-                            // paid partially
-                            $underPaidStatus = OrderStatuses::STATUS_CODE_UNDERPAID;
-                            $order->addCommentToStatusHistory('Paid partially.', $underPaidStatus, true);
+                            $order->addCommentToStatusHistory('Payment underway: overpaid. Not confirmed yet.', $overPaidStatus, true);
 
                         } else {
                             // paid correctly
                             $paidCorrectlyStatus = OrderStatuses::STATUS_CODE_PAID_CORRECTLY;
-                            $order->addCommentToStatusHistory('Payment underway, but not sure about the amount and also not confirmed yet', $paidCorrectlyStatus, true);
+                            $order->addCommentToStatusHistory('Payment underway: paid correctly. Not confirmed yet.', $paidCorrectlyStatus, true);
                         }
                         break;
                     case BTCPayServerInvoice::STATUS_SETTLED:
                         // 2) Payments are settled (marked or not)
                         $settledStatus = \Magento\Sales\Model\Order::STATE_COMPLETE;
-                        if ($order->canInvoice()) {
-                            $order->addCommentToStatusHistory('Payment complete', $settledStatus, true);
 
+                        if ($invoice->isOverpaid()) {
+                            $order->addCommentToStatusHistory('Payment confirmed: overpaid.');
+
+                        } elseif ($order->canInvoice()) {
+
+                            // You can't be sure of the amount, when marked manually the additionalStatus is set to 'Marked' and has priority over 'Overpaid'
+                            $comment = 'Payment confirmed.';
+
+                            $marked = $invoice->isMarked();
+                            if ($marked) {
+                                $comment .= ' Marked manually.';
+                            }
+                            $order->addCommentToStatusHistory($comment, $settledStatus, true);
                             $invoice = $order->prepareInvoice();
                             $invoice->setRequestedCaptureCase(Order\Invoice::CAPTURE_OFFLINE);
                             $invoice->register();
@@ -371,24 +396,34 @@ class BTCPayService
                             $invoiceSave = $this->transaction->addObject($invoice)->addObject($invoice->getOrder());
                             $invoiceSave->save();
                         }
+
                         break;
                     case BTCPayServerInvoice::STATUS_INVALID:
                         // 3) Payment invalid (marked or not)
+
+                        //When invalid you can't be sure of the amount either..
+
                         $invalidStatus = OrderStatuses::STATUS_CODE_INVALID;
-                        $order->addCommentToStatusHistory('Failed to confirm the order. The order will automatically update when the status changes.', $invalidStatus, true);
+                        $comment = 'Failed to confirm the order. The order will automatically update when the status changes.';
+                        $marked = $invoice->isMarked();
+                        if ($marked) {
+                            $comment .= ' Marked manually.';
+                        }
+                        $order->addCommentToStatusHistory($comment, $invalidStatus, true);
                         break;
                     case BTCPayServerInvoice::STATUS_EXPIRED:
-                        // Invoice expired - let's do nothing?
                         // TODO support auto-canceling, but only when the last invoice for the order is expired. 1 order can have multiple invoices :S
 
+                        if($invoice->isPartiallyPaid()){
+                            //Customer underpaid and the payment has been expired.
+                            $order->addCommentToStatusHistory(('Payment is expired.'));
 
-                        //TODO: what if partially paid?
+                        } else {
+                            //Cancel Order
+                            $order->cancel();
+                            $order->addCommentToStatusHistory(('Payment is expired. Order is canceled'));
+                        }
 
-
-
-                        //Cancel Order
-                        $order->cancel();
-                        $order->addCommentToStatusHistory(('Payment is expired.'));
 
                         // TODO: restore cart
                         break;
@@ -748,5 +783,73 @@ class BTCPayService
             return true;
         }
         return false;
+    }
+
+    public function getPaymentInfo($magentoStoreId, $btcPayStoreId, $btcPayInvoiceId, $invoice)
+    {
+        $r = [];
+
+        $btcPayInvoiceClient = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl($magentoStoreId), $this->getApiKey($magentoStoreId));
+        $paymentMethods = $btcPayInvoiceClient->getPaymentMethods($btcPayStoreId, $btcPayInvoiceId);
+
+        bcscale(16);
+
+        $btcAddress = null;
+        $btcRates = [];
+        $usedPaymentCurrencies = [];
+
+        foreach ($paymentMethods as $paymentMethod) {
+
+            $pmData = $paymentMethod->getData();
+            $totalPaid = $paymentMethod->getTotalPaid();
+            $due = $paymentMethod->getDue();
+
+            //TODO: remove hardcoded currency
+            $currency = 'BTC';
+
+            if (!in_array($currency, $usedPaymentCurrencies, true)) {
+                // There can only be paid in 1 currency for now
+                $usedPaymentCurrencies[] = $currency;
+                if (count($usedPaymentCurrencies) > 1) {
+                    throw new \Exception('Only 1 currency supported. Used currencies:' . implode(',', $usedPaymentCurrencies));
+                }
+            }
+            $btcRates[$invoice->getData()['currency']] = $pmData['rate'];
+
+        }
+
+        if (bccomp($totalPaid, '0') === 1) {
+            $r['amount_received'] = $totalPaid;
+            $r['amount_due'] = $due;
+            $r['currency'] = $currency;
+            $r['rate'] = $pmData['rate'];
+
+            $storeCurrency = $invoice->getData()['currency'];
+            $r['store_currency'] = $storeCurrency;
+
+            $invoiceAmount = $invoice->getData()['amount'];
+            $invoiceAmountConverted = $this->getFormattedPrice((int)$magentoStoreId, (float)$invoiceAmount);
+            $r['invoice_amount'] = $invoiceAmountConverted;
+
+            $amountPaid = bcmul($btcRates[$storeCurrency], $totalPaid);
+            $amountPaidConverted = $this->getFormattedPrice((int)$magentoStoreId, (float)$amountPaid);
+            $r['amount_paid_store_currency'] = $amountPaidConverted;
+
+            $amountDue = bcsub($invoiceAmount, $amountPaid);
+            $amountDueConverted = $this->getFormattedPrice((int)$magentoStoreId, (float)$amountDue);
+            $r['amount_due_store_currency'] = $amountDueConverted;
+
+            $percentPaid = bcdiv($amountPaid, $invoiceAmount);
+            $r['percent_paid'] = $percentPaid;
+
+            $r['paid_at'] = date('Y-m-d H:i:s', $invoice->getData()['createdTime']);
+        }
+
+        return $r;
+    }
+
+    public function getFormattedPrice(int $storeId, float $price)
+    {
+        return $this->priceHelper->currencyByStore($price, $storeId, true, false);
     }
 }
