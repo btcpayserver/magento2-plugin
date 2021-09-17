@@ -180,7 +180,10 @@ class Data
                     if (!$webhookData) {
                         if ($autoCreateIfNeeded) {
                             try {
-                                $this->btcPayService->createWebhook($magentoStoreId, $apiKey);
+                                $webhook = $this->btcPayService->createWebhook($magentoStoreId, $apiKey);
+                               if(count($webhook)===0){
+                                   return false;
+                               }
                                 return true;
                             } catch (CannotCreateWebhook $e) {
                                 $this->logger->error($e);
