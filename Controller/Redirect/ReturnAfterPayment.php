@@ -103,7 +103,6 @@ class ReturnAfterPayment extends Action
                 $invoice = $this->btcPayService->getInvoice($btcPayInvoiceId, $btcPayStoreId, $magentoStoreId);
                 $isInvoiceExpired = $invoice->isExpired();
                 $isInvoiceProcessing = $invoice->isProcessing();
-                // TODO log something?
             }
         } else {
             // Order cannot be found
@@ -119,8 +118,7 @@ class ReturnAfterPayment extends Action
                 $resultRedirect->setUrl($order->getStore()->getUrl('checkout/onepage/success'));
             }
             if ($isInvoiceExpired) {
-                // TODO Cancel the abandoned order + create a setting for this behaviour
-                $resultRedirect->setUrl($this->url->getUrl('btcpay/cart/restore', ['order_id' => urlencode($orderId)]));
+                $resultRedirect->setUrl($this->url->getUrl('btcpay/cart/restore', ['order_id' => $orderId]));
             }
         } else {
             $resultRedirect->setUrl($this->url->getUrl('checkout/cart/'));
