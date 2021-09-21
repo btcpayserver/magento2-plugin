@@ -350,7 +350,6 @@ class BTCPayService
                 $order->save();
             }
 
-            // TODO refactor to use the model instead of direct SQL reading
             $where = $this->db->quoteInto('order_id = ?', $orderId) . ' and ' . $this->db->quoteInto('invoice_id = ?', $invoiceId);
             $rowsChanged = $this->db->update($tableName, ['status' => $invoiceStatus], $where);
 
@@ -362,7 +361,6 @@ class BTCPayService
                             // overpaid
                             $overPaidStatus = OrderStatuses::STATUS_CODE_OVERPAID;
                             $order->addCommentToStatusHistory('Payment underway: overpaid. Not confirmed yet.', $overPaidStatus, true);
-
                         } else {
                             // paid correctly
                             $paidCorrectlyStatus = OrderStatuses::STATUS_CODE_PAID_CORRECTLY;
@@ -375,7 +373,6 @@ class BTCPayService
 
                         if ($invoice->isOverpaid()) {
                             $order->addCommentToStatusHistory('Payment confirmed: overpaid.');
-
                         } elseif ($order->canInvoice()) {
 
                             // You can't be sure of the amount, when marked manually the additionalStatus is set to 'Marked' and has priority over 'Overpaid'
@@ -389,9 +386,6 @@ class BTCPayService
                             $invoice = $order->prepareInvoice();
                             $invoice->setRequestedCaptureCase(Order\Invoice::CAPTURE_OFFLINE);
                             $invoice->register();
-
-                            // TODO we really need to save the invoice first as we are saving it again in this invoice? Leaving it out for now.
-                            //$invoice->save();
 
                             $invoiceSave = $this->transaction->addObject($invoice)->addObject($invoice->getOrder());
                             $invoiceSave->save();
@@ -444,15 +438,12 @@ class BTCPayService
 //                    $order->save();
 //
 //                    break;
-//
-//                // TODO what about partial refunds, partial payments and overpayment?
 
                 return $order;
             } else {
                 // Nothing was changed
                 return null;
             }
-
         } else {
             // No invoice record found
             return null;
@@ -595,7 +586,6 @@ class BTCPayService
         return $config[$path];
     }
 
-
     public function getInvoice(string $invoiceId, string $btcpayStoreId, int $magentoStoreId): \BTCPayServer\Result\Invoice
     {
         $client = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl($magentoStoreId), $this->getApiKey($magentoStoreId));
@@ -603,7 +593,6 @@ class BTCPayService
         $invoice = $client->getInvoice($btcpayStoreId, $invoiceId);
 
         return $invoice;
-
     }
 
     public function getAllBtcPayStores($baseUrl, $apiKey): ?array
@@ -622,7 +611,7 @@ class BTCPayService
         return $btcPayStoreId;
     }
 
-    public function removeUnusedBtcPayStores(int $magentoStoreId)
+    public function removeDeletedBtcPayStores(int $magentoStoreId)
     {
         $storedBtcPayStores = array_filter($this->storesConfig->getStoresConfigByPath('payment/btcpay/btcpay_store_id'));
 
@@ -634,7 +623,6 @@ class BTCPayService
         foreach ($storedBtcPayStores as $storedBtcPayStore) {
             $storeStillExists = array_key_exists($storedBtcPayStore, $allActiveBtcPayStores);
             if (!$storeStillExists) {
-
                 $tableName = 'core_config_data';
                 $whereConditions = [
                     $this->db->quoteInto('value = ?', $storedBtcPayStore),
@@ -645,7 +633,6 @@ class BTCPayService
         }
         return true;
     }
-
 
     public function getWebhooksForStore(int $magentoStoreId, $btcPayStoreId, string $apiKey): ?array
     {
@@ -698,12 +685,10 @@ class BTCPayService
             return null;
         }
         return (int)$storeId;
-
     }
 
     public function getWebhookSecret(int $magentoStoreId): ?string
     {
-
         $secret = $this->getConfigWithoutCache('payment/btcpay/webhook_secret', 'default', 0);
         if (!$secret) {
             $secret = $this->createWebhookSecret();
@@ -722,7 +707,6 @@ class BTCPayService
 
     public function hashSecret(int $magentoStoreId)
     {
-
         $secret = $this->getWebhookSecret($magentoStoreId);
         $salt = (string)$magentoStoreId;
         return sha1($secret . $salt);
@@ -738,9 +722,7 @@ class BTCPayService
         } catch (\Exception $e) {
             return false;
         }
-
     }
-
 
     public function getAllBtcPayStoresAssociative($baseUrl, $apiKey): array
     {
