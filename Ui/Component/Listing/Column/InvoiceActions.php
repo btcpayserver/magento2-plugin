@@ -66,13 +66,14 @@ class InvoiceActions extends \Magento\Ui\Component\Listing\Columns\Column {
             foreach ($dataSource['data']['items'] as & $item) {
                 if (isset($item['invoice_id'])) {
 
-                    // TODO add view URL
+
+                    // TODO add view URL + add multi store support
                     $viewUrl = $this->btcPayService->getInvoiceDetailUrl(0, $item['invoice_id']);
 
                     $item[$this->getData('name')] = [
                         'update' => [
                             'href' => $this->urlBuilder->getUrl(static::URL_PATH_UPDATE, [
-                                'invoice_id' => $item['id']
+                                'invoice_id' => $item['id'], 'btcpay_store_id' => $item['btcpay_store_id']
                             ]),
                             'label' => __('Update')
                         ],

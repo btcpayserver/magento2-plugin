@@ -24,42 +24,38 @@ declare(strict_types=1);
 namespace Storefront\BTCPay\Model\BTCPay;
 
 use BTCPayServer\Client\InvoiceCheckoutOptions;
+use BTCPayServer\Result\Invoice as BTCPayServerInvoice;
 use BTCPayServer\Util\PreciseNumber;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
+use Magento\Config\Model\ResourceModel\Config\Data\CollectionFactory;
 use Magento\Framework\App\Config\ReinitableConfigInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\Config\Storage\WriterInterface;
+use Magento\Framework\App\Config\ValueFactory;
+use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Transaction;
 use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\Pricing\Helper\Data;
+use Magento\Framework\Url;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\OrderRepository;
 use Magento\Store\Model\ScopeInterface;
+use Magento\Store\Model\StoreManagerInterface;
+use Magento\Store\Model\StoresConfig;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Storefront\BTCPay\Model\BTCPay\Exception\ForbiddenException;
-use Storefront\BTCPay\Model\BTCPay\Exception\InvoiceNotFoundException;
 use Storefront\BTCPay\Model\Invoice;
-use Magento\Framework\Url;
-use Magento\Store\Model\StoreManagerInterface;
-use Magento\Framework\App\Config\Storage\WriterInterface;
-use Magento\Framework\App\Config\ValueFactory;
-use Magento\Config\Model\ResourceModel\Config\Data\CollectionFactory;
-use Magento\Framework\App\RequestInterface;
-use Magento\Store\Model\StoresConfig;
 use Storefront\BTCPay\Model\OrderStatuses;
-use BTCPayServer\Result\Invoice as BTCPayServerInvoice;
-use Magento\Framework\Pricing\Helper\Data;
-
 
 class BTCPayService
 {
-
-
     const CONFIG_API_KEY = 'payment/btcpay/api_key';
 
     /**
@@ -121,7 +117,6 @@ class BTCPayService
      */
     private $storesConfig;
 
-
     /**
      * @var ReinitableConfigInterface $reinitableConfig
      */
@@ -150,7 +145,6 @@ class BTCPayService
         $this->reinitableConfig = $reinitableConfig;
         $this->priceHelper = $priceHelper;
     }
-
 
     /**
      * @param int $storeId
@@ -181,7 +175,6 @@ class BTCPayService
      */
     public function createInvoice(Order $order): array
     {
-
         $magentoStoreId = (int)$order->getStoreId();
         $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
         if (!$btcPayStoreId) {
@@ -189,16 +182,10 @@ class BTCPayService
         }
         $client = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl($magentoStoreId), $this->getApiKey($magentoStoreId));
 
-
-        // TODO make these configurable
-        //$speedPolicy = 'HighSpeed';
-        // Other values: 'MediumSpeed', 'LowSpeed','LowMediumSpeed'
-
         // TODO limit payment methods. By default all methods are shown.
         $paymentMethods = null;
         // Example: array with 'BTC', 'BTC-LightningNetwork'
 
-        // TODO config setting to override the expiration time. Defaults to the store's setting in BTCPay Server
         $expirationMinutes = null;
 
         $invoiceIdPlaceholder = 'INVOICE_ID';
@@ -244,7 +231,6 @@ class BTCPayService
         $postData['checkout']['redirectURL'] = $returnUrl;
         $postData['checkout']['redirectAutomatically'] = true;
         $postData['checkout']['defaultLanguage'] = $defaultLanguage;
-
 
         // Some extra fields not part of the BTCPay Server spec, but we are including them anyway
         $postData['metadata']['magentoOrderId'] = $order->getId();
@@ -299,20 +285,32 @@ class BTCPayService
         //    "defaultLanguage": "en"
         //  }
         //}
-
     }
 
+    public function getBtcPayInvoiceIdFromMagentoId(int $magentoInvoiceId): ?string
+    {
+        $tableName = $this->db->getTableName('btcpay_invoices');
+        $select = $this->db->select()->from($tableName, ['invoice_id'])->where('id = ?', $magentoInvoiceId)->limit(1);
+
+        $btcPayInvoiceId = $this->db->fetchOne($select);
+        if ($btcPayInvoiceId) {
+            return $btcPayInvoiceId;
+        } else {
+            return null;
+        }
+    }
 
     /**
      * @param string $btcPayStoreId
      * @param string $invoiceId
+     * @param bool|null $logPayment
      * @return Order|null
      * @throws InputException
      * @throws LocalizedException
      * @throws NoSuchEntityException
      * @throws \JsonException
      */
-    public function updateInvoice(string $btcPayStoreId, string $invoiceId, string $dataType): ?Order
+    public function updateInvoice(string $btcPayStoreId, string $invoiceId, $logPayment = false): ?Order
     {
         $tableName = $this->db->getTableName('btcpay_invoices');
         $select = $this->db->select()->from($tableName)->where('invoice_id = ?', $invoiceId)->where('btcpay_store_id = ?', $btcPayStoreId)->limit(1);
@@ -333,13 +331,13 @@ class BTCPayService
 
             $invoiceStatus = $invoice->getStatus();
 
-            if ($dataType === 'InvoiceReceivedPayment') {
+            if ($logPayment) {
                 $paymentInfo = $this->getPaymentInfo($magentoStoreId, $btcPayStoreId, $invoiceId, $invoice);
 
                 $comment = 'Incoming payment: <br> Total invoice amount in ' . $paymentInfo['invoice_amount']
-                    . '<br> Received : ' . $paymentInfo['amount_paid_store_currency'] . ' - ' . $paymentInfo['amount_received'] . $paymentInfo['currency']
-                    . '<br> Due : ' . $paymentInfo['amount_due_store_currency']
-                    . '<br> Rate at time of payment: 1' . $paymentInfo['currency'] . '=' . $paymentInfo['rate'] . $paymentInfo['store_currency'];
+                    . '<br> Received: ' . $paymentInfo['amount_paid_store_currency'] . ' - ' . $paymentInfo['amount_received'] . $paymentInfo['currency']
+                    . '<br> Rate at time of payment: 1 ' . $paymentInfo['currency'] . ' = ' . $paymentInfo['rate'] . ' ' . $paymentInfo['store_currency']
+                    . '<br> Payment received: ' . $paymentInfo['paid_at'];
 
                 $status = false;
                 if ($invoice->isPartiallyPaid()) {
@@ -408,18 +406,28 @@ class BTCPayService
                     case BTCPayServerInvoice::STATUS_EXPIRED:
                         // TODO support auto-canceling, but only when the last invoice for the order is expired. 1 order can have multiple invoices :S
 
-                        if($invoice->isPartiallyPaid()){
+                        if ($invoice->isPartiallyPaid()) {
                             //Customer underpaid and the payment has been expired.
                             $order->addCommentToStatusHistory(('Payment is expired.'));
-
                         } else {
-                            //Cancel Order
-                            $order->cancel();
-                            $order->addCommentToStatusHistory(('Payment is expired. Order is canceled'));
+                            // TODO test this
+                            $btcpayInvoices = $this->getInvoicesByOrderIds($magentoStoreId, [$order->getIncrementId()]);
+                            $isEverythingExpired = true;
+                            foreach ($btcpayInvoices->getInvoices() as $invoice) {
+                                if (!$invoice->isExpired()) {
+                                    $isEverythingExpired = false;
+                                    break;
+                                }
+                            }
+
+                            if ($isEverythingExpired) {
+                                //Cancel Order
+                                $order->cancel();
+                                $order->addCommentToStatusHistory(('Payment is expired. Order is canceled'));
+                            }
                         }
 
-
-                        // TODO: restore cart
+                        // TODO: Restore cart the cart even though the customer is not around. Can (s)he recover his/her cart withouh session?
                         break;
                     default:
                         $order->addCommentToStatusHistory('Invoice status: ' . $invoiceStatus);
@@ -778,11 +786,17 @@ class BTCPayService
         foreach ($paymentMethods as $paymentMethod) {
 
             $pmData = $paymentMethod->getData();
-            $totalPaid = $paymentMethod->getTotalPaid();
-            $due = $paymentMethod->getDue();
 
-            //TODO: remove hardcoded currency
-            $currency = 'BTC';
+            //TODO: getTotalPaid is the total, fees included. Maybe it is possible later to get the exact amount the shopkeeper will receive
+            $totalPaid = $paymentMethod->getTotalPaid();
+
+            //TODO: get due (amount left to be paid to shopkeeper, not actual amount that customer has to pay with fees included)
+
+            //$due = $paymentMethod->getDue();
+            //$amountOfTransactions = count($paymentMethod->getPayments());
+
+            $currency = explode('-', $paymentMethod->getPaymentMethod())[0];
+
 
             if (!in_array($currency, $usedPaymentCurrencies, true)) {
                 // There can only be paid in 1 currency for now
@@ -792,12 +806,11 @@ class BTCPayService
                 }
             }
             $btcRates[$invoice->getData()['currency']] = $pmData['rate'];
-
         }
 
         if (bccomp($totalPaid, '0') === 1) {
             $r['amount_received'] = $totalPaid;
-            $r['amount_due'] = $due;
+            //$r['amount_due'] = $due;
             $r['currency'] = $currency;
             $r['rate'] = $pmData['rate'];
 
@@ -812,10 +825,7 @@ class BTCPayService
             $amountPaidConverted = $this->getFormattedPrice((int)$magentoStoreId, (float)$amountPaid);
             $r['amount_paid_store_currency'] = $amountPaidConverted;
 
-            $amountDue = bcsub($invoiceAmount, $amountPaid);
-            $amountDueConverted = $this->getFormattedPrice((int)$magentoStoreId, (float)$amountDue);
-            $r['amount_due_store_currency'] = $amountDueConverted;
-
+            //TODO: get due in store currency
             $percentPaid = bcdiv($amountPaid, $invoiceAmount);
             $r['percent_paid'] = $percentPaid;
 

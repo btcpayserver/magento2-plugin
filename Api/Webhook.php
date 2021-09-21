@@ -41,6 +41,7 @@ class Webhook implements WebhookInterface
      */
     public function process(): bool
     {
+        $logPayment = false;
         $postedString = $this->request->getContent();
         if (!$postedString) {
             throw new RuntimeException('No data posted. Cannot process BTCPay Server Webhook.');
@@ -80,22 +81,22 @@ class Webhook implements WebhookInterface
                 // Event "Invoice settled"
                 // Same as "Invoice created", but contains an extra field: "manuallyMarked" true/false
 
-                // TODO support "partiallyPaid" true/false
-                // TODO support "afterExpiration" true/false
-                // TODO support "overPaid" true/false
-                // TODO support "manuallyMarked" true/false
-
                 //TODO what to do with paid too late?
-
 
                 $btcpayInvoiceId = $data['invoiceId'] ?? null;
                 $btcpayStoreId = $data['storeId'] ?? null;
-                $dataType=$data['type'];
+                $dataType = $data['type'];
 
                 // Only use the "id" field from the POSTed data and discard the rest. We are not trusting the other posted data.
                 unset($data);
                 if ($btcpayInvoiceId) {
-                    $this->btcPayService->updateInvoice($btcpayStoreId, $btcpayInvoiceId, $dataType);
+
+                    if ($dataType === 'InvoiceReceivedPayment') {
+                        $logPayment = true;
+                    }
+
+
+                    $this->btcPayService->updateInvoice($btcpayStoreId, $btcpayInvoiceId, $logPayment);
                     return true;
                 }
 
@@ -103,7 +104,6 @@ class Webhook implements WebhookInterface
                 // TODO is there a better way to trigger a 403 Access Denied?
                 throw new RuntimeException('Access Denied');
             }
-
 
         }
         // TODO is there a better way to trigger a 400 Bad Request?

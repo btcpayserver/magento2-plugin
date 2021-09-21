@@ -25,7 +25,8 @@ namespace Storefront\BTCPay\Controller\Adminhtml\Invoice;
 use Psr\Log\LoggerInterface;
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 
-class Update extends \Magento\Backend\App\Action {
+class Update extends \Magento\Backend\App\Action
+{
 
     protected $resultPageFactory;
     /**
@@ -43,7 +44,8 @@ class Update extends \Magento\Backend\App\Action {
      * @param \Magento\Backend\App\Action\Context $context
      * @param \Magento\Framework\View\Result\PageFactory $resultPageFactory
      */
-    public function __construct(\Magento\Backend\App\Action\Context $context, \Magento\Framework\View\Result\PageFactory $resultPageFactory, BTCPayService $BTCPayService, LoggerInterface $logger) {
+    public function __construct(\Magento\Backend\App\Action\Context $context, \Magento\Framework\View\Result\PageFactory $resultPageFactory, BTCPayService $BTCPayService, LoggerInterface $logger)
+    {
         $this->resultPageFactory = $resultPageFactory;
         $this->btcPayService = $BTCPayService;
         $this->logger = $logger;
@@ -55,21 +57,28 @@ class Update extends \Magento\Backend\App\Action {
      *
      * @return \Magento\Framework\Controller\ResultInterface
      */
-    public function execute() {
+    public function execute()
+    {
         $invoiceId = $this->getRequest()->getParam('invoice_id');
+        $btcPayStoreId = $this->getRequest()->getParam('btcpay_store_id');
 
         if ($invoiceId) {
             try {
-                // TODO improve success message with the actual invoice ID, not the auto-increment field
-                $order = $this->btcPayService->updateInvoice($invoiceId);
-                if ($order) {
-                    $this->messageManager->addSuccessMessage(__('Updated BTCPay Server Invoice %1 successfully', $invoiceId));
+                $btcPayInvoiceId = $this->btcPayService->getBtcPayInvoiceIdFromMagentoId((int)$invoiceId);
+                if ($btcPayInvoiceId !== null) {
+                    //TODO: get BTCPayStore id
+                    $order = $this->btcPayService->updateInvoice($btcPayStoreId, $btcPayInvoiceId);
+                    if ($order) {
+                        $this->messageManager->addSuccessMessage(__('Updated BTCPay Server Invoice %1 successfully', $btcPayInvoiceId));
+                    } else {
+                        $this->messageManager->addSuccessMessage(__('BTCPay Server Invoice %1 hasn\'t changed.', $btcPayInvoiceId));
+                    }
                 } else {
-                    $this->messageManager->addSuccessMessage(__('BTCPay Server Invoice %1 hasn\'t changed.', $invoiceId));
+                    $this->messageManager->addErrorMessage(__('Could not find BTCPay Server Invoice with ID %1 in Magento', $invoiceId));
                 }
             } catch (\Exception $ex) {
                 $this->logger->error($ex);
-                $this->messageManager->addErrorMessage(__('Could not update BTCPay Server Invoice %1: %2', $invoiceId, $ex->getMessage()));
+                $this->messageManager->addErrorMessage(__('Could not update BTCPay Server Invoice %1: %2', $btcPayInvoiceId, $ex->getMessage()));
             }
         }
         $resultRedirect = $this->resultRedirectFactory->create();
