@@ -144,7 +144,7 @@ class Data
 
                     if (count($missingPermissions)) {
                         foreach ($missingPermissions as $missingPermission) {
-                            $errors[] = __('Your API key does not have the %1 permission. Please add it for this key.', $missingPermission);
+                            $errors[] = __('Your API key does not have the %1 permission. Please regenerate the API key.', $missingPermission);
                         }
                     }
                     if (count($superfluousPermissions)) {
@@ -286,7 +286,7 @@ class Data
         $applicationIdentifier = 'magento2';
         $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl($magentoStoreId);
 
-        $authorizeUrl = \BTCPayServer\Client\ApiKey::getAuthorizeUrl($baseUrl, \Storefront\BTCPay\Helper\Data::REQUIRED_API_PERMISSIONS, 'Magento 2 @ ' . $magentoRootDomain, true, true, $redirectToUrlAfterCreation, $applicationIdentifier);
+        $authorizeUrl = \BTCPayServer\Client\ApiKey::getAuthorizeUrl($baseUrl, \Storefront\BTCPay\Helper\Data::REQUIRED_API_PERMISSIONS, 'Magento 2 @ ' . $magentoRootDomain, true, false, $redirectToUrlAfterCreation, $applicationIdentifier);
 
         return $authorizeUrl;
     }
