@@ -122,7 +122,7 @@ class Data
                     // Permissions are exact
 
 
-                    $storesChecked = $this->btcPayService->checkBtcPayStores($magentoStoreId);
+                    $storesChecked = $this->btcPayService->removeUnusedBtcPayStores($magentoStoreId);
 
                     $btcPayStoreId = $this->btcPayService->getBtcPayStore($magentoStoreId);
 

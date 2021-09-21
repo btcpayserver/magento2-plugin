@@ -626,9 +626,8 @@ class BTCPayService
         return $btcPayStoreId;
     }
 
-    public function checkBtcPayStores(int $magentoStoreId)
+    public function removeUnusedBtcPayStores(int $magentoStoreId)
     {
-
         $storedBtcPayStores = array_filter($this->storesConfig->getStoresConfigByPath('payment/btcpay/btcpay_store_id'));
 
         $baseUrl = $this->getBtcPayServerBaseUrl($magentoStoreId);
