@@ -496,14 +496,10 @@ class BTCPayService
         return $r;
     }
 
-    public function getInvoiceDetailUrl(int $storeId, string $invoiceId): string
+    public function getInvoiceDetailUrl(int $magentoStoreId, string $invoiceId): string
     {
-
-        //TODO: replace with getBaseUrl()
-        $host = $this->getHost($storeId);
-        $scheme = $this->getScheme($storeId);
-        $port = $this->getPort($storeId);
-        $r = $scheme . '://' . $host . ':' . $port . '/invoices/' . $invoiceId;
+        $baseUrl = $this->getBtcPayServerBaseUrl($magentoStoreId);
+        $r = $baseUrl . 'invoices/' . $invoiceId;
         return $r;
     }
 
