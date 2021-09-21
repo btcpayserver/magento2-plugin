@@ -54,61 +54,8 @@
                     <frontend_model>Storefront\BTCPay\Block\Adminhtml\Form\Field\ServerInfo</frontend_model>
                 </field>
 
-                <!--TODO: can this be removed?-->
-<!--                <field id="event_InvoiceCreated" translate="label" type="select" sortOrder="90" showInDefault="1" showInWebsite="0"
-                       showInStore="0">
-                    <label>When a BTC Pay Invoice is created</label>
-                    <comment></comment>
-                    <source_model>Storefront\BTCPay\Model\Config\Source\Event\InvoiceCreated</source_model>
-                </field>-->
-
-<!--                <field id="event_InvoiceReceivedPayment" translate="label" type="select" sortOrder="91" showInDefault="1" showInWebsite="0"
-                       showInStore="0">
-                    <label>When a BTC Pay Invoice receives a payment</label>
-                    <comment>The payment can be for any amount, so do not assume you can start processing the order just yet.</comment>
-                    <source_model>Storefront\BTCPay\Model\Config\Source\Event\InvoiceReceivedPayment</source_model>
-                </field>-->
-
-<!--                <field id="event_InvoiceProcessing" translate="label" type="select" sortOrder="92" showInDefault="1" showInWebsite="0"
-                       showInStore="0">
-                    <label>When a BTC Pay Invoice is processing</label>
-                    <comment></comment>
-                    <source_model>Storefront\BTCPay\Model\Config\Source\Event\InvoiceProcessing</source_model>
-                </field>-->
-
-<!--                <field id="event_InvoiceExpired" translate="label" type="select" sortOrder="93" showInDefault="1" showInWebsite="0"
-                       showInStore="0">
-                    <label>When a BTC Pay Invoice expires</label>
-                    <comment></comment>
-                    <source_model>Storefront\BTCPay\Model\Config\Source\Event\InvoiceExpired</source_model>
-                </field>-->
-
-<!--                <field id="event_InvoiceSettled" translate="label" type="select" sortOrder="94" showInDefault="1" showInWebsite="0"
-                       showInStore="0">
-                    <label>When a BTC Pay Invoice is settled</label>
-                    <comment>Once "settled" you can be certain that your have received your payment.</comment>
-                    <source_model>Storefront\BTCPay\Model\Config\Source\Event\InvoiceSettled</source_model>
-                </field>-->
-
-<!--                <field id="event_InvoiceInvalid" translate="label" type="select" sortOrder="95" showInDefault="1" showInWebsite="0"
-                       showInStore="0">
-                    <label>When a BTC Pay Invoice becomes invalid</label>
-                    <comment></comment>
-                    <source_model>Storefront\BTCPay\Model\Config\Source\Event\InvoiceInvalid</source_model>
-                </field>-->
-
                 <!--
-                TODO flatten payment methods or expand every payment method
-                -->
-
-                <!--
-                TODO should we still use this?
-                <field id="auto_cancel" translate="label" type="select" sortOrder="130" showInDefault="1" showInWebsite="0"
-                       showInStore="0">
-                    <label>Auto-Cancel Orders</label>
-                    <comment></comment>
-                    <source_model>Storefront\BTCPay\Model\Config\Source\AutoCancel</source_model>
-                </field>
+                TODO Add support for flattened payment methods in checkout (multiple radio buttons instead of just 1)
                 -->
 
                 <field id="sort_order" translate="label" type="text" sortOrder="140" showInDefault="1" showInWebsite="1"
