@@ -72,10 +72,14 @@ class UpgradeSchema implements UpgradeSchemaInterface
             $this->addNewStatusToState(Order::STATE_PAYMENT_REVIEW, ['status' => OrderStatuses::STATUS_CODE_UNDERPAID, 'label' => OrderStatuses::STATUS_LABEL_UNDERPAID]);
             $this->addNewStatusToState(Order::STATE_PROCESSING, ['status' => OrderStatuses::STATUS_CODE_PAID_CORRECTLY, 'label' => OrderStatuses::STATUS_LABEL_PAID_CORRECTLY]);
             $this->addNewStatusToState(Order::STATE_PAYMENT_REVIEW, ['status' => OrderStatuses::STATUS_CODE_OVERPAID, 'label' => OrderStatuses::STATUS_LABEL_OVERPAID]);
+
+            // Alter btc_invoices(oder_id) to be compatible
+            $setup->getConnection()->query("ALTER TABLE btcpay_invoices CHANGE order_id order_id INT(10) UNSIGNED NOT NULL COMMENT 'Order ID'");
+            // Add foreign key from btcpay_invoices to sales_order table for the order entity ID. On delete restrict + On update cascade.
+            $setup->getConnection()->query('ALTER TABLE btcpay_invoices ADD CONSTRAINT BTCPAY_INVOICES_ORDER_ID_SALES_ORDER_ID FOREIGN KEY (order_id) REFERENCES sales_order(entity_id) ON DELETE RESTRICT ON UPDATE CASCADE');
         }
 
         $setup->endSetup();
-
     }
 
     protected function addNewStatusToState($state, $statusData): void
