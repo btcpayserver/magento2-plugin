@@ -5,11 +5,13 @@ namespace Storefront\BTCPay\Block\Adminhtml\Form\Field;
 
 
 use Magento\Backend\Block\Template\Context;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Config\Scope;
 use Magento\Framework\Data\Form\Element\AbstractElement;
 use Magento\Framework\View\Helper\SecureHtmlRenderer;
 use Storefront\BTCPay\Helper\Data;
 
-class ApiKeys extends \Magento\Config\Block\System\Config\Form\Field
+class ApiKey extends \Magento\Config\Block\System\Config\Form\Field
 {
     /**
      * @var Data $helper
@@ -31,11 +33,11 @@ class ApiKeys extends \Magento\Config\Block\System\Config\Form\Field
     public function render(AbstractElement $element)
     {
 
-        $html = $this->getApiKeyInfoPerStore();
+        $html = $this->getApiKeyInfo();
 
         $r = '<tr>
 <td class="label">
-<label><span>' . $this->escapeHtml(__('API Keys')) . '</span></label>
+<label><span data-config-scope="[GLOBAL]">' . $this->escapeHtml(__('API Key')) . '</span></label>
 </td>
 <td class="value">' . $html . '
 </td>
@@ -49,7 +51,7 @@ class ApiKeys extends \Magento\Config\Block\System\Config\Form\Field
 
     }
 
-    private function getApiKeyInfoPerStore()
+    private function getApiKeyInfo()
     {
         $isBaseUrlSet = $this->helper->isBtcPayBaseUrlSet();
 
@@ -57,25 +59,14 @@ class ApiKeys extends \Magento\Config\Block\System\Config\Form\Field
             return __('Save the BTCPay Base Url first.');
         }
 
+        $html = '<div style="display: flex; justify-content: space-between; align-items:center">';
 
-        $html = '<table>
-  <tr>
-    <th style="text-align: left; width: 60px">' . __('Store') . '</th>
-    <th style="text-align: left">' . __('API Key') . '</th>
-    <th></th>
-  </tr>';
+        $apiKeyInfo = $this->helper->getApiKeyInfo('default', 0);
 
+        $html = $html . '
+    <div style="font-weight: normal">' . $apiKeyInfo['api_key'] . '</div>
+    <div><a class="action-default" target="_blank" href="' . $apiKeyInfo['generate_url'] . '\">' . __('Generate API Key') . '</a></div>';
 
-        $magentoStoreViewsWithApiKeyInfo = $this->helper->getStoreViewsWithApiKeyInfo();
-
-        foreach ($magentoStoreViewsWithApiKeyInfo as $store => $info) {
-
-            $html = $html . '<tr>
-    <td>' . $store . '</td>
-    <td>' . $info['api_key'] . '</td>
-    <td><a target="_blank" href="' . $info['generate_url'] . '\">' . __('Generate API Key') . '</a></td>
-  </tr>';
-        }
         return $html . '</table>';
     }
 

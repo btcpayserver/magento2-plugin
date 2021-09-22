@@ -161,9 +161,10 @@ class BTCPayService
         return $client;
     }
 
-    public function getBtcPayServerBaseUrl(int $storeId): ?string
+    public function getBtcPayServerBaseUrl(): ?string
     {
-        $r = $this->getStoreConfig('payment/btcpay/btcpay_base_url', $storeId);
+
+        $r = $this->getStoreConfig('payment/btcpay/btcpay_base_url', 0);
         return $r;
     }
 
@@ -180,7 +181,7 @@ class BTCPayService
         if (!$btcPayStoreId) {
             throw new \Storefront\BTCPay\Model\BTCPay\Exception\NoBtcPayStoreConfigured();
         }
-        $client = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl($magentoStoreId), $this->getApiKey($magentoStoreId));
+        $client = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl(), $this->getApiKey('default', 0));
 
         // TODO limit payment methods. By default all methods are shown.
         $paymentMethods = null;
@@ -422,6 +423,7 @@ class BTCPayService
                             }
 
                             if ($isEverythingExpired) {
+                                //TODO: auto-cancel should be a config setting
                                 //Cancel Order
                                 $order->cancel();
                                 $order->addCommentToStatusHistory(('Payment is expired. Order is canceled'));
@@ -498,7 +500,7 @@ class BTCPayService
 
     public function getInvoiceDetailUrl(int $magentoStoreId, string $invoiceId): string
     {
-        $baseUrl = $this->getBtcPayServerBaseUrl($magentoStoreId);
+        $baseUrl = $this->getBtcPayServerBaseUrl();
         $r = $baseUrl . 'invoices/' . $invoiceId;
         return $r;
     }
@@ -529,12 +531,12 @@ class BTCPayService
         return $r;
     }
 
-    public function getApiKeyPermissions(int $magentoStoreId): ?array
+    public function getApiKeyPermissions($scope, $scopeId): ?array
     {
         try {
-            $apiKey = $this->getApiKey($magentoStoreId);
+            $apiKey = $this->getApiKey($scope, $scopeId);
             if ($apiKey) {
-                $client = new \BTCPayServer\Client\ApiKey($this->getBtcPayServerBaseUrl($magentoStoreId), $this->getApiKey($magentoStoreId));
+                $client = new \BTCPayServer\Client\ApiKey($this->getBtcPayServerBaseUrl(), $apiKey);
                 $data = $client->getCurrent();
                 $data = $data->getData();
                 $currentPermissions = $data['permissions'];
@@ -549,7 +551,7 @@ class BTCPayService
 
     private function doRequest(int $magentoStoreId, string $url, string $method, array $postData = null): ResponseInterface
     {
-        $apiKey = $this->getApiKey($magentoStoreId);
+        $apiKey = $this->getApiKey('default', 0);
         $client = $this->getClient($magentoStoreId);
         $options = [
             'headers' => [
@@ -574,9 +576,9 @@ class BTCPayService
         return $r;
     }
 
-    public function getApiKey(int $storeId): ?string
+    public function getApiKey($scope, $scopeId): ?string
     {
-        $config = $this->getConfigWithoutCache('payment/btcpay/api_key', 'stores', $storeId);
+        $config = $this->getConfigWithoutCache('payment/btcpay/api_key', $scope, $scopeId);
         return $config;
     }
 
@@ -597,7 +599,7 @@ class BTCPayService
 
     public function getInvoice(string $invoiceId, string $btcpayStoreId, int $magentoStoreId): \BTCPayServer\Result\Invoice
     {
-        $client = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl($magentoStoreId), $this->getApiKey($magentoStoreId));
+        $client = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl(), $this->getApiKey('default', 0));
 
         $invoice = $client->getInvoice($btcpayStoreId, $invoiceId);
 
@@ -620,12 +622,12 @@ class BTCPayService
         return $btcPayStoreId;
     }
 
-    public function removeDeletedBtcPayStores(int $magentoStoreId)
+    public function removeDeletedBtcPayStores()
     {
         $storedBtcPayStores = array_filter($this->storesConfig->getStoresConfigByPath('payment/btcpay/btcpay_store_id'));
 
-        $baseUrl = $this->getBtcPayServerBaseUrl($magentoStoreId);
-        $apiKey = $this->getApiKey($magentoStoreId);
+        $baseUrl = $this->getBtcPayServerBaseUrl();
+        $apiKey = $this->getApiKey('default', 0);
 
         $allActiveBtcPayStores = $this->getAllBtcPayStoresAssociative($baseUrl, $apiKey);
 
@@ -645,7 +647,7 @@ class BTCPayService
 
     public function getWebhooksForStore(int $magentoStoreId, $btcPayStoreId, string $apiKey): ?array
     {
-        $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
+        $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl(), $apiKey);
 
         $webhooks = $client->getWebhooks($btcPayStoreId);
 
@@ -662,7 +664,7 @@ class BTCPayService
 
     public function createWebhook(int $magentoStoreId, $apiKey): ?array
     {
-        $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
+        $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl(), $apiKey);
         $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
         if ($btcPayStoreId) {
             $url = $this->getWebhookUrl($magentoStoreId);
@@ -723,7 +725,7 @@ class BTCPayService
 
     public function deleteWebhook(int $magentoStoreId, string $btcStoreId, string $webhookId, string $apiKey)
     {
-        $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl($magentoStoreId), $apiKey);
+        $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl(), $apiKey);
 
         try {
             $deleted = $client->deleteWebhook($btcStoreId, $webhookId);
@@ -748,7 +750,7 @@ class BTCPayService
 
     public function getInvoicesByOrderIds(int $magentoStoreId, array $orderIds): \BTCPayServer\Result\InvoiceList
     {
-        $client = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl($magentoStoreId), $this->getApiKey($magentoStoreId));
+        $client = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl(), $this->getApiKey('default', 0));
         $btcStoreId = $this->getBtcPayStore($magentoStoreId);
         $invoices = $client->getInvoicesByOrderIds($btcStoreId, $orderIds);
         return $invoices;
@@ -776,7 +778,7 @@ class BTCPayService
     {
         $r = [];
 
-        $btcPayInvoiceClient = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl($magentoStoreId), $this->getApiKey($magentoStoreId));
+        $btcPayInvoiceClient = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl(), $this->getApiKey('default', 0));
         $paymentMethods = $btcPayInvoiceClient->getPaymentMethods($btcPayStoreId, $btcPayInvoiceId);
 
         bcscale(16);

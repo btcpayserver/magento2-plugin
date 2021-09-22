@@ -55,7 +55,7 @@ class ApiKeyComment implements CommentInterface
     {
         $r = '';
         $magentoStoreId = $this->btcPayService->getCurrentMagentoStoreId();
-        $apiKey = $this->btcPayService->getApiKey($magentoStoreId);
+        $apiKey = $this->btcPayService->getApiKey('default', 0);
         if (!$apiKey) {
             $magentoRootDomain = $this->scopeConfig->getValue('web/secure/base_url', 'store', 0);
             $magentoRootDomain = parse_url($magentoRootDomain, PHP_URL_HOST);
@@ -66,7 +66,7 @@ class ApiKeyComment implements CommentInterface
 
             $applicationIdentifier = 'magento2';
 
-            $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl($magentoStoreId);
+            $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl();
             if ($baseUrl) {
                 $authorizeUrl = \BTCPayServer\Client\ApiKey::getAuthorizeUrl($baseUrl, \Storefront\BTCPay\Helper\Data::REQUIRED_API_PERMISSIONS, 'Magento 2 @ ' . $magentoRootDomain, true, false, $redirectToUrlAfterCreation, $applicationIdentifier);
                 $r = '<a target="_blank" href="' . $authorizeUrl . '">Generate API key</a>, but be sure to save any changes first.';

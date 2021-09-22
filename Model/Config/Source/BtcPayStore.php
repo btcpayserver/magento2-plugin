@@ -42,8 +42,8 @@ class BtcPayStore implements \Magento\Framework\Data\OptionSourceInterface
 
         $magentoStoreId = $this->btcPayService->getCurrentMagentoStoreId();
 
-        $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl($magentoStoreId);
-        $apiKey = $this->btcPayService->getApiKey($magentoStoreId);
+        $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl();
+        $apiKey = $this->btcPayService->getApiKey('default', 0);
         $stores = $this->btcPayService->getAllBtcPayStores($baseUrl, $apiKey);
 
         $r[] = '';

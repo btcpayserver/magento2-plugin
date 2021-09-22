@@ -29,9 +29,9 @@
                     <comment>This secret is used by the BTCPay Server Webhook. No need to worry about it. Webhooks are installed automatically.</comment>
                 </field>
 
-                <field id="api_keys" translate="label" sortOrder="57" showInDefault="1" showInWebsite="0" showInStore="0">
-                    <label>API Keys</label>
-                    <frontend_model>Storefront\BTCPay\Block\Adminhtml\Form\Field\ApiKeys</frontend_model>
+                <field id="api_key" translate="label" sortOrder="57" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>API Key</label>
+                    <frontend_model>Storefront\BTCPay\Block\Adminhtml\Form\Field\ApiKey</frontend_model>
                 </field>
 
 <!--

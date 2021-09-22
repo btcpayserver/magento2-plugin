@@ -60,7 +60,7 @@ class Save extends Action implements CsrfAwareActionInterface
 
     public function execute()
     {
-        $magentoStoreId = $this->btcService->getCurrentMagentoStoreId();
+        $magentoStoreId = 0;
 
         $apiKey = $this->getRequest()->getParam('apiKey');
 
@@ -69,14 +69,14 @@ class Save extends Action implements CsrfAwareActionInterface
         $secret = $this->btcService->hashSecret($magentoStoreId);
         if ($givenSecret === $secret) {
             try {
-                $baseUrl = $this->btcService->getBtcPayServerBaseUrl($magentoStoreId);
+                $baseUrl = $this->btcService->getBtcPayServerBaseUrl();
 
                 // Safety check
                 $client = new \BTCPayServer\Client\ApiKey($baseUrl, $apiKey);
                 $client->getCurrent();
 
                 // Save API key to config settings
-                $this->configResource->saveConfig('payment/btcpay/api_key', $apiKey, 'stores', $magentoStoreId);
+                $this->configResource->saveConfig('payment/btcpay/api_key', $apiKey);
 
                 // When only 1 BTCStore, save immediately
                 $allBtcStores = $this->btcService->getAllBtcPayStores($baseUrl, $apiKey);
@@ -87,8 +87,14 @@ class Save extends Action implements CsrfAwareActionInterface
                         $this->configResource->saveConfig('payment/btcpay/btcpay_store_id', $btcStoreId, 'stores', $magentoStoreId);
 
                         // Create webhook as well
-                        $storeId = $this->helper->getCurrentStoreId();
-                        $webhook = $this->helper->installWebhookIfNeeded($storeId, true);
+                        //TODO: CREATE WEBHOOK(s) for every magento2 store
+
+                        $allMagentoStoreViews = $this->helper->getAllMagentoStoreViewIds();
+
+                        foreach ($allMagentoStoreViews as $magentoStoreView){
+                            $webhook = $this->helper->installWebhookIfNeeded($magentoStoreView, true);
+                        }
+
                     }
                 }
 

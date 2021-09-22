@@ -81,7 +81,7 @@ class Data
 
             $errors = [];
 
-            $myPermissions = $this->btcPayService->getApiKeyPermissions($magentoStoreId);
+            $myPermissions = $this->btcPayService->getApiKeyPermissions('default', 0);
             $permissionsSeparator = ':';
 
             $specificStores = [];
@@ -122,7 +122,7 @@ class Data
                     // Permissions are exact
 
 
-                    $this->btcPayService->removeDeletedBtcPayStores($magentoStoreId);
+                    $this->btcPayService->removeDeletedBtcPayStores();
 
                     $btcPayStoreId = $this->btcPayService->getBtcPayStore($magentoStoreId);
 
@@ -169,7 +169,7 @@ class Data
     {
 
         try {
-            $apiKey = $this->btcPayService->getApiKey($magentoStoreId);
+            $apiKey = $this->btcPayService->getApiKey('default', 0);
             if ($apiKey) {
                 $btcPayStoreId = $this->btcPayService->getBtcPayStore($magentoStoreId);
                 if ($btcPayStoreId) {
@@ -181,9 +181,9 @@ class Data
                         if ($autoCreateIfNeeded) {
                             try {
                                 $webhook = $this->btcPayService->createWebhook($magentoStoreId, $apiKey);
-                               if(count($webhook)===0){
-                                   return false;
-                               }
+                                if (count($webhook) === 0) {
+                                    return false;
+                                }
                                 return true;
                             } catch (CannotCreateWebhook $e) {
                                 $this->logger->error($e);
@@ -227,33 +227,23 @@ class Data
             // Bad configuration
             return false;
         }
-
-
+        
     }
 
-
-    public function getStoreViewsWithApiKeyInfo()
+    public function getApiKeyInfo($scope, $scopeId)
     {
-        $magentoStoreViews = $this->getAllMagentoStoreViews();
-
-        $magentoStoreViewsWithApiKeyInfo = [];
-        foreach ($magentoStoreViews as $magentoStoreView) {
-            $storeId = (int)$magentoStoreView->getId();
-            $storeName = $magentoStoreView->getName();
-
-            $apiKey = $this->btcPayService->getApiKey($storeId);
-
-            if (!$apiKey) {
-                $apiKey = '<span style="color: red">' . __('No API key yet.') . '</span>';
-            }
-            $magentoStoreViewsWithApiKeyInfo[$storeName]['api_key'] = $apiKey;
-
-            $generateUrl = $this->getGenerateApiKeyUrl($storeId);
-
-            $magentoStoreViewsWithApiKeyInfo[$storeName]['generate_url'] = $generateUrl;
+        $apiCreated = true;
+        $apiKeyInfo = [];
+        $apiKey = $this->btcPayService->getApiKey($scope, $scopeId);
+        if (!$apiKey) {
+            $apiKey = '<span style="color: red">' . __('No API key yet.') . '</span>';
+            $apiCreated = false;
         }
-
-        return $magentoStoreViewsWithApiKeyInfo;
+        $generateUrl = $this->getGenerateApiKeyUrl($scopeId);
+        $apiKeyInfo['api_created'] = $apiCreated;
+        $apiKeyInfo['api_key'] = $apiKey;
+        $apiKeyInfo['generate_url'] = $generateUrl;
+        return $apiKeyInfo;
     }
 
     public function getAllMagentoStoreViews()
@@ -276,15 +266,16 @@ class Data
 
     public function getGenerateApiKeyUrl(int $magentoStoreId)
     {
-        $magentoRootDomain = $this->scopeConfig->getValue('web/secure/base_url', 'store', 0);
+        $magentoRootDomain = $this->scopeConfig->getValue('web/secure/base_url', 'default', 0);
         $magentoRootDomain = parse_url($magentoRootDomain, PHP_URL_HOST);
         $magentoRootDomain = str_replace(['http://', 'https://'], '', $magentoRootDomain);
         $magentoRootDomain = rtrim($magentoRootDomain, '/');
 
-        $redirectToUrlAfterCreation = $this->btcPayService->getReceiveApikeyUrl($magentoStoreId);
+        //TODO: remove later XDEBUG_SESSION query
+        $redirectToUrlAfterCreation = $this->btcPayService->getReceiveApikeyUrl($magentoStoreId) . '?XDEBUG_SESSION_START=1';
 
         $applicationIdentifier = 'magento2';
-        $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl($magentoStoreId);
+        $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl();
 
         $authorizeUrl = \BTCPayServer\Client\ApiKey::getAuthorizeUrl($baseUrl, \Storefront\BTCPay\Helper\Data::REQUIRED_API_PERMISSIONS, 'Magento 2 @ ' . $magentoRootDomain, true, false, $redirectToUrlAfterCreation, $applicationIdentifier);
 
@@ -293,7 +284,7 @@ class Data
 
     public function isBtcPayBaseUrlSet(): bool
     {
-        if ($this->btcPayService->getBtcPayServerBaseUrl(0)) {
+        if ($this->btcPayService->getBtcPayServerBaseUrl()) {
             return true;
         }
         return false;
@@ -301,8 +292,8 @@ class Data
 
     public function getAllBtcPayStoresAssociative($magentoStoreId): array
     {
-        $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl($magentoStoreId);
-        $apiKey = $this->btcPayService->getApiKey($magentoStoreId);
+        $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl();
+        $apiKey = $this->btcPayService->getApiKey('default', 0);
         return $this->btcPayService->getAllBtcPayStoresAssociative($baseUrl, $apiKey);
     }
 
@@ -334,8 +325,8 @@ class Data
         return $this->btcPayService->getCurrentMagentoStoreId();
     }
 
-    public function getApiKeyForStoreView(int $storeId)
+    public function getApiKey($scope, $scopeId)
     {
-        return $this->btcPayService->getApiKey($storeId);
+        return $this->btcPayService->getApiKey($scope, $scopeId);
     }
 }
