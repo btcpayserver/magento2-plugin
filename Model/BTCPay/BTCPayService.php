@@ -239,6 +239,7 @@ class BTCPayService
         $postData['metadata']['buyerFirstname'] = $order->getCustomerFirstname();
         $postData['metadata']['buyerMiddlename'] = $order->getCustomerMiddlename();
         $postData['metadata']['buyerLastname'] = $order->getCustomerLastname();
+        $postData['metadata']['magentoStoreId'] = $magentoStoreId;
 
         $checkoutOptions = InvoiceCheckoutOptions::create(null, null, null, null, null, $returnUrl, true, $defaultLanguage);
 
@@ -757,12 +758,13 @@ class BTCPayService
     {
         $tableName = $this->db->getTableName('btcpay_invoices');
 
+        $magentoStoreId = $invoice['metadata']['magentoStoreId'];
         $magentoOrderId = $invoice['metadata']['magentoOrderId'];
         $invoiceId = $invoice['id'];
         $status = $invoice['status'];
         $btcPayStoreId = $invoice['storeId'];
 
-        $affectedRows = $this->db->insert($tableName, ['order_id' => $magentoOrderId, 'invoice_id' => $invoiceId, 'status' => $status, 'btcpay_store_id' => $btcPayStoreId]);
+        $affectedRows = $this->db->insert($tableName, ['order_id' => $magentoOrderId, 'invoice_id' => $invoiceId, 'status' => $status, 'btcpay_store_id' => $btcPayStoreId, 'magento_store_id' => $magentoStoreId]);
 
         if ($affectedRows > 0) {
             return true;

@@ -77,6 +77,10 @@ class UpgradeSchema implements UpgradeSchemaInterface
             $setup->getConnection()->query("ALTER TABLE btcpay_invoices CHANGE order_id order_id INT(10) UNSIGNED NOT NULL COMMENT 'Order ID'");
             // Add foreign key from btcpay_invoices to sales_order table for the order entity ID. On delete restrict + On update cascade.
             $setup->getConnection()->query('ALTER TABLE btcpay_invoices ADD CONSTRAINT BTCPAY_INVOICES_ORDER_ID_SALES_ORDER_ID FOREIGN KEY (order_id) REFERENCES sales_order(entity_id) ON DELETE RESTRICT ON UPDATE CASCADE');
+
+            // Add magento_store_id column to table btcpay_invoice, and a foreign key to the store table
+
+            $setup->getConnection()->query("ALTER TABLE btcpay_invoices ADD magento_store_id SMALLINT(5) UNSIGNED NOT NULL, ADD CONSTRAINT BTCPAY_INVOICES_MAGENTO_STORE_ID_STORE_ID FOREIGN KEY (magento_store_id) REFERENCES store(store_id) ON DELETE RESTRICT ON UPDATE CASCADE");
         }
 
         $setup->endSetup();

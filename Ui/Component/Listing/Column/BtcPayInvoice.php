@@ -50,9 +50,8 @@ class BtcPayInvoice extends \Magento\Ui\Component\Listing\Columns\Column {
             foreach ($dataSource['data']['items'] as & $item) {
                 if (isset($item[$fieldName])) {
                     $invoiceId = $item[$fieldName];
-                    // TODO store ID is hard coded since we don't have multi-BTCPay Server support
-                    $storeId = 0;
-                    $url = $this->btcPayService->getInvoiceDetailUrl($storeId, $invoiceId);
+                    $magentoStoreId = $item['magento_store_id'];
+                    $url = $this->btcPayService->getInvoiceDetailUrl((int)$magentoStoreId, $invoiceId);
                     $html = '<a href="' . $url . '" target="_blank">';
                     $html .= $invoiceId;
                     $html .= '</a>';

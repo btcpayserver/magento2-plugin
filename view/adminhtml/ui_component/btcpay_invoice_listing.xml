@@ -140,6 +140,13 @@
 				-->
 			</settings>
 		</column>
+        <!--TODO: use class for magento_store_id so it's linked to the store view-->
+        <column name="magento_store_id">
+            <settings>
+                <filter>number</filter>
+                <label translate="true">Magento Store Id</label>
+            </settings>
+        </column>
         <column name="created_at" class="Magento\Ui\Component\Listing\Columns\Date" component="Magento_Ui/js/grid/columns/date">
             <settings>
                 <filter>dateRange</filter>
