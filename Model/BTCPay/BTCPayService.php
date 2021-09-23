@@ -865,4 +865,24 @@ class BTCPayService
     {
         return (bool)$this->scopeConfig->getValue('payment/btcpay/auto_cancel');
     }
+
+    public function markBtcPayInvoice(string $orderId, string $markInvoiceAs): array
+    {
+        // ONLY MARK MOST RECENT BTCPay Invoice
+        $tableName = $this->db->getTableName('btcpay_invoices');
+        $select = $this->db->select()->from($tableName);
+        $select->where('order_id = ?', $orderId);
+        $select->order('created_at DESC');
+        $select->limit(1);
+
+        $btcPayInvoice = $this->db->fetchAll($select)[0];
+
+        $btcPayStoreId = $btcPayInvoice['btcpay_store_id'];
+        $btcPayinvoiceId = $btcPayInvoice['invoice_id'];
+
+        $client = new \BTCPayServer\Client\Invoice($this->getBtcPayServerBaseUrl(), $this->getApiKey('default', 0));
+
+        $invoice = $client->markInvoiceStatus($btcPayStoreId, $btcPayinvoiceId, $markInvoiceAs);
+        return $invoice->getData();
+    }
 }

@@ -31,4 +31,12 @@
         </arguments>
     </type>
 
+    <type name="Magento\Sales\Block\Adminhtml\Order\View">
+        <plugin name="markOrder" type="Storefront\BTCPay\Plugin\MarkOrder"/>
+    </type>
+
+    <type name="Magento\Sales\Block\Adminhtml\Order\View">
+        <plugin name="markOrder" type="Storefront\BTCPay\Plugin\Block\Adminhtml\Order\Mark" sortOrder="10" disabled="false"/>
+    </type>
+
 </config>
