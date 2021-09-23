@@ -67,7 +67,7 @@ class ApiKey extends \Magento\Config\Block\System\Config\Form\Field
     <div style="font-weight: normal">' . $apiKeyInfo['api_key'] . '</div>
     <div><a class="action-default" target="_blank" href="' . $apiKeyInfo['generate_url'] . '\">' . __('Generate API Key') . '</a></div>';
 
-        return $html . '</table>';
+        return $html;
     }
 
 }
