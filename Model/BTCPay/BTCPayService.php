@@ -674,8 +674,12 @@ class BTCPayService
         $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
         if ($btcPayStoreId) {
             $url = $this->getWebhookUrl($magentoStoreId);
-            $data = $client->createWebhook($btcPayStoreId, $url, null, $this->getWebhookSecret($magentoStoreId));
-            return $data->getData();
+            try {
+                $data = $client->createWebhook($btcPayStoreId, $url, null, $this->getWebhookSecret($magentoStoreId));
+                return $data->getData();
+            } catch (\Exception $e) {
+                return null;
+            }
         }
         return null;
     }
