@@ -81,8 +81,6 @@ class Webhook implements WebhookInterface
                 // Event "Invoice settled"
                 // Same as "Invoice created", but contains an extra field: "manuallyMarked" true/false
 
-                //TODO what to do with paid too late?
-
                 $btcpayInvoiceId = $data['invoiceId'] ?? null;
                 $btcpayStoreId = $data['storeId'] ?? null;
                 $dataType = $data['type'];
