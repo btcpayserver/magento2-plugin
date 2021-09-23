@@ -406,7 +406,6 @@ class BTCPayService
                         $order->addCommentToStatusHistory($comment, $invalidStatus, true);
                         break;
                     case BTCPayServerInvoice::STATUS_EXPIRED:
-                        // TODO support auto-canceling, but only when the last invoice for the order is expired. 1 order can have multiple invoices :S
 
                         if ($invoice->isPartiallyPaid()) {
                             //Customer underpaid and the payment has been expired.
@@ -416,7 +415,6 @@ class BTCPayService
                             // Auto-cancel on Expiry
                             $autoCancel = $this->autoCancelOnExpiry();
                             if ($autoCancel) {
-                                // TODO test this
                                 $btcpayInvoices = $this->getInvoicesByOrderIds($magentoStoreId, [$order->getIncrementId()]);
                                 $isEverythingExpired = true;
                                 foreach ($btcpayInvoices->getInvoices() as $invoice) {
@@ -436,7 +434,7 @@ class BTCPayService
                             }
                         }
 
-                        // TODO: Restore cart the cart even though the customer is not around. Can (s)he recover his/her cart withouh session?
+                        // TODO: Restore cart the cart even though the customer is not around. Can (s)he recover his/her cart without session?
                         break;
                     default:
                         $order->addCommentToStatusHistory('Invoice status: ' . $invoiceStatus);
