@@ -412,21 +412,27 @@ class BTCPayService
                             //Customer underpaid and the payment has been expired.
                             $order->addCommentToStatusHistory(('Payment is expired.'));
                         } else {
-                            // TODO test this
-                            $btcpayInvoices = $this->getInvoicesByOrderIds($magentoStoreId, [$order->getIncrementId()]);
-                            $isEverythingExpired = true;
-                            foreach ($btcpayInvoices->getInvoices() as $invoice) {
-                                if (!$invoice->isExpired()) {
-                                    $isEverythingExpired = false;
-                                    break;
-                                }
-                            }
 
-                            if ($isEverythingExpired) {
-                                //TODO: auto-cancel should be a config setting
-                                //Cancel Order
-                                $order->cancel();
-                                $order->addCommentToStatusHistory(('Payment is expired. Order is canceled'));
+                            // Auto-cancel on Expiry
+                            $autoCancel = $this->autoCancelOnExpiry();
+                            if ($autoCancel) {
+                                // TODO test this
+                                $btcpayInvoices = $this->getInvoicesByOrderIds($magentoStoreId, [$order->getIncrementId()]);
+                                $isEverythingExpired = true;
+                                foreach ($btcpayInvoices->getInvoices() as $invoice) {
+                                    if (!$invoice->isExpired()) {
+                                        $isEverythingExpired = false;
+                                        break;
+                                    }
+                                }
+
+                                if ($isEverythingExpired) {
+                                    //Cancel Order
+                                    $order->cancel();
+                                    $order->addCommentToStatusHistory(('Payment is expired. Order is canceled'));
+                                }
+                            } else {
+                                $order->addCommentToStatusHistory('Payment is expired.');
                             }
                         }
 
@@ -849,5 +855,10 @@ class BTCPayService
         $btcPayInvoiceClient = new \BTCPayServer\Client\StorePaymentMethod($this->getBtcPayServerBaseUrl(), $this->getApiKey('default', 0));
 
         return $btcPayInvoiceClient->getPaymentMethods($btcStoreId);
+    }
+
+    public function autoCancelOnExpiry(): bool
+    {
+        return (bool)$this->scopeConfig->getValue('payment/btcpay/auto_cancel');
     }
 }
