@@ -37,7 +37,7 @@ class ServerInfo extends \Magento\Config\Block\System\Config\Form\Field
 
         $html = $this->getConnectionStatusPerStore();
 
-        $r = '<tr><td class="label"><label><span>' . $this->escapeHtml(__('Connection Statuses')) . '</span></label></td><td class="value">' . $html . '</span></p></td><td class=""></td></tr>';
+        $r = '<tr><td class="label"><label><span>' . $this->escapeHtml(__('BTCPay Server Status')) . '</span></label></td><td class="value">' . $html . '</span></p></td><td class=""></td></tr>';
         return $r;
     }
 
