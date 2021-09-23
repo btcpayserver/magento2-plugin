@@ -843,4 +843,11 @@ class BTCPayService
     {
         return $this->priceHelper->currencyByStore($price, $storeId, true, false);
     }
+
+    public function getBtcPayStorePaymentMethods(string $btcStoreId): array
+    {
+        $btcPayInvoiceClient = new \BTCPayServer\Client\StorePaymentMethod($this->getBtcPayServerBaseUrl(), $this->getApiKey('default', 0));
+
+        return $btcPayInvoiceClient->getPaymentMethods($btcStoreId);
+    }
 }
