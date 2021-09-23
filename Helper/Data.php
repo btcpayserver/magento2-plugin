@@ -18,7 +18,8 @@ class Data
         'btcpay.store.canviewinvoices',
         'btcpay.store.cancreateinvoice',
         'btcpay.store.webhooks.canmodifywebhooks',
-        'btcpay.store.canviewstoresettings'
+        'btcpay.store.canviewstoresettings',
+        'btcpay.store.canmodifyinvoices'
     ];
 
     /**
