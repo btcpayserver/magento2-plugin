@@ -84,15 +84,12 @@ class Save extends Action implements CsrfAwareActionInterface
                 if ($allBtcStores && count($allBtcStores) === 1) {
                     $btcStoreId = $allBtcStores[0]['id'];
                     if ($btcStoreId) {
-                        $this->configResource->saveConfig('payment/btcpay/btcpay_store_id', $btcStoreId, 'stores', $magentoStoreId);
-
                         // Create webhook as well
-                        //TODO: CREATE WEBHOOK(s) for every magento2 store
-
                         $allMagentoStoreViews = $this->helper->getAllMagentoStoreViewIds();
 
-                        foreach ($allMagentoStoreViews as $magentoStoreView){
-                            $webhook = $this->helper->installWebhookIfNeeded($magentoStoreView, true);
+                        foreach ($allMagentoStoreViews as $magentoStoreView) {
+                            $this->configResource->saveConfig('payment/btcpay/btcpay_store_id', $btcStoreId, 'stores', $magentoStoreView);
+                            $this->helper->installWebhookIfNeeded((int)$magentoStoreView, true);
                         }
 
                     }
