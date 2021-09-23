@@ -125,5 +125,7 @@ class ReturnAfterPayment extends Action
         }
 
         return $resultRedirect;
+
+        //TODO: if order is placed manually put payment url in order confirmation mail
     }
 }
