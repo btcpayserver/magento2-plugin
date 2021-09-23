@@ -66,7 +66,6 @@ class Update extends \Magento\Backend\App\Action
             try {
                 $btcPayInvoiceId = $this->btcPayService->getBtcPayInvoiceIdFromMagentoId((int)$invoiceId);
                 if ($btcPayInvoiceId !== null) {
-                    //TODO: get BTCPayStore id
                     $order = $this->btcPayService->updateInvoice($btcPayStoreId, $btcPayInvoiceId);
                     if ($order) {
                         $this->messageManager->addSuccessMessage(__('Updated BTCPay Server Invoice %1 successfully', $btcPayInvoiceId));
