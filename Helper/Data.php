@@ -129,9 +129,24 @@ class Data
 
                     if ($btcPayStoreId) {
                         if ($this->installWebhookIfNeeded($magentoStoreId, true)) {
-                            // There are no errors...
+                            $paymentMethods = $this->btcPayService->getBtcPayStorePaymentMethods($btcPayStoreId);
 
-                            // TODO check if the store has any actual payment methods we can use. The store may still be misconfigured (i.e. no wallet is configured). To check this, we need a new API call, but we don't have it yet.
+                            if (count($paymentMethods) === 0) {
+                                $errors[] = __('Please configure a payment method in BTCPay Server for this BTCPay store.');
+                            } else {
+                                $enabledPaymentMethod = false;
+                                foreach ($paymentMethods as $paymentMethod) {
+                                    if ($paymentMethod->isEnabled()) {
+                                        $enabledPaymentMethod = true;
+                                    }
+
+                                    if (!$enabledPaymentMethod) {
+                                        $errors[] = __('No enabled payment method for this BTCPay store in BTCPay Server.');
+                                    } else {
+                                        // No errors
+                                    }
+                                }
+                            }
                         } else {
                             $errors[] = __('Could not install the webhook in BTCPay Server for this Magento installation.');
                         }
@@ -182,7 +197,7 @@ class Data
                         if ($autoCreateIfNeeded) {
                             try {
                                 $webhook = $this->btcPayService->createWebhook($magentoStoreId, $apiKey);
-                                if (count($webhook) === 0) {
+                                if (!$webhook) {
                                     return false;
                                 }
                                 return true;
@@ -228,7 +243,7 @@ class Data
             // Bad configuration
             return false;
         }
-        
+
     }
 
     public function getApiKeyInfo($scope, $scopeId)
@@ -272,8 +287,7 @@ class Data
         $magentoRootDomain = str_replace(['http://', 'https://'], '', $magentoRootDomain);
         $magentoRootDomain = rtrim($magentoRootDomain, '/');
 
-        //TODO: remove later XDEBUG_SESSION query
-        $redirectToUrlAfterCreation = $this->btcPayService->getReceiveApikeyUrl($magentoStoreId) . '?XDEBUG_SESSION_START=1';
+        $redirectToUrlAfterCreation = $this->btcPayService->getReceiveApikeyUrl($magentoStoreId);
 
         $applicationIdentifier = 'magento2';
         $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl();
@@ -330,4 +344,5 @@ class Data
     {
         return $this->btcPayService->getApiKey($scope, $scopeId);
     }
+
 }
