@@ -26,7 +26,7 @@ The installation process is just like any other Magento 2 module that you'd inst
 
 - Add the `Storefront_BTCPay` module using composer by running:
 ```
-composer require storefront/magento2-btcpay-module
+composer require btcpayserver/magento2-plugin
 ```
 - Enable the new module
 ```

@@ -1,5 +1,5 @@
 {
-    "name": "storefront/magento2-btcpay-module",
+    "name": "btcpayserver/magento2-btcpay-module",
     "description": "",
     "type": "magento2-module",
     "license": "mit",
@@ -8,12 +8,20 @@
         {
             "email": "wouter.samaey@storefront.be",
             "name": "Wouter Samaey"
+        },
+        {
+            "email": "judith.demets@storefront.be",
+            "name": "Judith Demets"
+        },
+        {
+            "email": "info@storefront.be",
+            "name": "Storefront Team"
         }
     ],
     "minimum-stability": "dev",
     "require": {
         "php": "^7.3",
-        "btcpayserver\/btcpayserver-greenfield-php": "dev-master"
+        "btcpayserver\/btcpayserver-greenfield-php": "^1.2"
     },
     "autoload": {
         "files": [
@@ -22,11 +30,5 @@
         "psr-4": {
             "Storefront\\BTCPay\\": ""
         }
-    },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/btcpayserver/btcpayserver-greenfield-php"
-        }
-    ]
+    }
 }
