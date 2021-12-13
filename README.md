@@ -6,6 +6,7 @@
 - PHP 7.2 or greater. Tested with PHP 7.4.
 - Your BTCPay Server must be setup with HTTPS or HTTP using TOR for security.
 - You need an API key for your user in BTCPay Server (new since module v2.0)
+- Single-Store Mode is not supported.
 
 ## Features
 - Allows you to pay with BTCPay Server in Magento 2 stores
