@@ -205,6 +205,13 @@ class BTCPayService
 
         $ba = $order->getBillingAddress();
         $sa = $order->getShippingAddress();
+      
+        // if there is no shipping address, use the billing address
+        // this happens if all products in an order are virtual or downloadable
+        // and no shipping is required
+        if (!$sa) {
+          $sa = $ba;
+        }
 
         $postData = [];
         $postData['amount'] = PreciseNumber::parseFloat((float)$order->getGrandTotal());
