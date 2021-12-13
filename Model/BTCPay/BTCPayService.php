@@ -204,13 +204,11 @@ class BTCPayService
         $defaultLanguage = str_replace('_', '-', $orderLocale);
 
         $ba = $order->getBillingAddress();
-        $sa = $order->getShippingAddress();
       
-        // if there is no shipping address, use the billing address
-        // this happens if all products in an order are virtual or downloadable
-        // and no shipping is required
         if ($order->getIsVirtual() || $order->getIsDownloadable()) {
           $sa = $ba;
+        } else {
+          $sa = $order->getShippingAddress();
         }
 
         $postData = [];
