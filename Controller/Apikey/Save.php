@@ -98,13 +98,13 @@ class Save extends Action implements CsrfAwareActionInterface
                 //Clear config cache.
                 $this->reinitableConfig->reinit();
 
-                echo ___('exact_online.connection_succeeded_close_window', 'Success! You can now close this window.');
+                echo __('exact_online.connection_succeeded_close_window', 'Success! You can now close this window.');
             } catch (\Exception $e) {
                 $this->logger->error($e);
-                echo ___('exact_online.connection_failed_close_window', 'Something went wrong. Please try again.');
+                echo __('exact_online.connection_failed_close_window', 'Something went wrong. Please try again.');
             }
         } else {
-            echo ___('exact_online.connection_access_denied_close_window', 'Forbidden.');
+            echo __('exact_online.connection_access_denied_close_window', 'Forbidden.');
         }
     }
 
