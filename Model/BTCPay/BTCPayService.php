@@ -204,7 +204,12 @@ class BTCPayService
         $defaultLanguage = str_replace('_', '-', $orderLocale);
 
         $ba = $order->getBillingAddress();
-        $sa = $order->getShippingAddress();
+      
+        if ($order->getIsVirtual() || $order->getIsDownloadable()) {
+          $sa = $ba;
+        } else {
+          $sa = $order->getShippingAddress();
+        }
 
         $postData = [];
         $postData['amount'] = PreciseNumber::parseFloat((float)$order->getGrandTotal());
