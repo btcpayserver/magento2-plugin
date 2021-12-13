@@ -209,7 +209,7 @@ class BTCPayService
         // if there is no shipping address, use the billing address
         // this happens if all products in an order are virtual or downloadable
         // and no shipping is required
-        if (!$sa) {
+        if ($order->getIsVirtual() || $order->getIsDownloadable()) {
           $sa = $ba;
         }
 
