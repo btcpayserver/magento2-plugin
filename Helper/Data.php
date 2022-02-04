@@ -165,7 +165,7 @@ class Data
                     }
                     if (count($superfluousPermissions)) {
                         foreach ($superfluousPermissions as $superfluousPermission) {
-                            $errors[] = __('Your API key has the %1 permission, but we don\'t need it. Please use an API key that has the exact permissions for increased security.', '<span style="font-family: monospace; background: #EEE; padding: 2px 4px; display: inline-block">' . $superfluousPermission . '</span>');
+                            $errors[] = __('Your API key has the %1 permission, but we don\'t need it. Please use an API key that has the exact permissions for increased security. As long as this is not fixed, it is impossible to use this payment method', '<span style="font-family: monospace; background: #EEE; padding: 2px 4px; display: inline-block">' . $superfluousPermission . '</span>');
                         }
                     }
                 }
