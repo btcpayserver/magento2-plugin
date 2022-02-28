@@ -165,6 +165,8 @@ class BTCPayService
     {
 
         $r = $this->getStoreConfig('payment/btcpay/btcpay_base_url', 0);
+
+        $r = rtrim($r, '/') . '/';
         return $r;
     }
 
@@ -204,11 +206,11 @@ class BTCPayService
         $defaultLanguage = str_replace('_', '-', $orderLocale);
 
         $ba = $order->getBillingAddress();
-      
+
         if ($order->getIsVirtual() || $order->getIsDownloadable()) {
-          $sa = $ba;
+            $sa = $ba;
         } else {
-          $sa = $order->getShippingAddress();
+            $sa = $order->getShippingAddress();
         }
 
         $postData = [];
