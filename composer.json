@@ -3,7 +3,6 @@
     "description": "",
     "type": "magento2-module",
     "license": "mit",
-    "version": "2.0.0",
     "authors": [
         {
             "email": "wouter.samaey@storefront.be",
