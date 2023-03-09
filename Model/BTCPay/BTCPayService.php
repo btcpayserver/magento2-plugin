@@ -660,7 +660,7 @@ class BTCPayService
     {
         $client = new \BTCPayServer\Client\Webhook($this->getBtcPayServerBaseUrl(), $apiKey);
 
-        $webhooks = $client->getWebhooks($btcPayStoreId);
+        $webhooks = $client->getStoreWebhooks($btcPayStoreId);
 
         $url = $this->getWebhookUrl($magentoStoreId);
 
