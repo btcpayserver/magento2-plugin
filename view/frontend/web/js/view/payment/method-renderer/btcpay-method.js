@@ -9,17 +9,12 @@ define(
             defaults: {
                 template: 'Storefront_BTCPay/payment/btcpay'
             },
+            redirectAfterPlaceOrder: false, // Disable the standard redirect to Magento's "Thank You" page
             getMailingAddress: function () {
                 return window.checkoutConfig.payment.checkmo.mailingAddress;
             },
             getInstructions: function () {
                 return window.checkoutConfig.payment.instructions[this.item.method];
-            },
-            placeOrder: function (data, event) {
-                // Disable the standard redirect to Magento's "Thank You" page
-                this.redirectAfterPlaceOrder = false;
-
-                return this._super(data, event);
             },
             afterPlaceOrder: function () {
                 $.mage.redirect(window.checkoutConfig.payment.btcpay.paymentRedirectUrl);
