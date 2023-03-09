@@ -1,2 +1,4 @@
 .githooks
 .idea
+/vendor
+/composer.lock
