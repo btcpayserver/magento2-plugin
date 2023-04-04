@@ -603,7 +603,7 @@ class BTCPayService
             $config[$row->getPath()] = $row->getValue();
         }
 
-        return $config[$path];
+        return $config[$path] ?? null;
     }
 
     public function getInvoice(string $invoiceId, string $btcpayStoreId, int $magentoStoreId): \BTCPayServer\Result\Invoice
