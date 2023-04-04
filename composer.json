@@ -20,7 +20,7 @@
     "minimum-stability": "dev",
     "require": {
         "php": ">=7.3",
-        "btcpayserver\/btcpayserver-greenfield-php": "^2.1"
+        "btcpayserver\/btcpayserver-greenfield-php": "^2.2"
     },
     "autoload": {
         "files": [
