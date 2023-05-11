@@ -697,7 +697,8 @@ class BTCPayService
     public function getReceiveApikeyUrl(int $magentoStoreId): string
     {
         $url = $this->getStoreConfig('web/secure/base_url', $magentoStoreId);
-        $url .= 'btcpay/apikey/save';
+        $url = rtrim($url, '/');
+        $url .= '/btcpay/apikey/save';
         $hashedSecret = $this->hashSecret($magentoStoreId);
         return $url . '?secret=' . urlencode($hashedSecret) . '&store=' . $magentoStoreId;
     }
