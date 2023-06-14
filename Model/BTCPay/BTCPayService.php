@@ -422,7 +422,7 @@ class BTCPayService
                             if ($autoCancel) {
                                 $btcpayInvoices = $this->getInvoicesByOrderIds($magentoStoreId, [$order->getIncrementId()]);
                                 $isEverythingExpired = true;
-                                foreach ($btcpayInvoices->getInvoices() as $invoice) {
+                                foreach ($btcpayInvoices->all() as $invoice) {
                                     if (!$invoice->isExpired()) {
                                         $isEverythingExpired = false;
                                         break;
@@ -662,7 +662,7 @@ class BTCPayService
 
         $url = $this->getWebhookUrl($magentoStoreId);
 
-        foreach ($webhooks as $webhook) {
+        foreach ($webhooks->all() as $webhook) {
             $data = $webhook->getData();
             if ($data['url'] === $url) {
                 return $data;

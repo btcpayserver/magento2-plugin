@@ -54,7 +54,7 @@ class CheckOrderStatus implements ObserverInterface
                 //Check Order Status
                 $invoices = $this->btcService->getInvoicesByOrderIds($currentStoreId, $orderIdArr);
 
-                $invoices = $invoices->getInvoices();
+                $invoices = $invoices->all();
                 if (count($invoices) !== 0) {
                     $invoice = $invoices[0];
 
@@ -65,7 +65,7 @@ class CheckOrderStatus implements ObserverInterface
                         //Only cancel when no other open invoices for the same orderId
                         $btcpayInvoices = $this->btcService->getInvoicesByOrderIds($currentStoreId, [$order->getIncrementId()]);
                         $isEverythingNew = true;
-                        foreach ($btcpayInvoices->getInvoices() as $invoice) {
+                        foreach ($btcpayInvoices->all() as $invoice) {
                             if (!$invoice->isNew()) {
                                 $isEverythingNew = false;
                                 break;
