@@ -164,6 +164,11 @@ class BTCPayService
     public function getBtcPayServerBaseUrl(): ?string
     {
         $r = $this->getStoreConfig('payment/btcpay/btcpay_base_url', 0);
+
+        if (!$r) {
+            return null;
+        }
+
         $r = rtrim((string)$r, '/') . '/';
         return $r;
     }
