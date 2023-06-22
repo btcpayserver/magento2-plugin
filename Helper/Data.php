@@ -291,8 +291,11 @@ class Data
 
         $applicationIdentifier = 'magento2';
         $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl();
+        $authorizeUrl = null;
 
-        $authorizeUrl = \BTCPayServer\Client\ApiKey::getAuthorizeUrl($baseUrl, \Storefront\BTCPay\Helper\Data::REQUIRED_API_PERMISSIONS, 'Magento 2 @ ' . $magentoRootDomain, true, false, $redirectToUrlAfterCreation, $applicationIdentifier);
+        if ($baseUrl) {
+            $authorizeUrl = \BTCPayServer\Client\ApiKey::getAuthorizeUrl($baseUrl, \Storefront\BTCPay\Helper\Data::REQUIRED_API_PERMISSIONS, 'Magento 2 @ ' . $magentoRootDomain, true, true, $redirectToUrlAfterCreation, $applicationIdentifier);
+        }
 
         return $authorizeUrl;
     }
