@@ -382,7 +382,7 @@ class BTCPayService
                         $settledStatus = \Magento\Sales\Model\Order::STATE_COMPLETE;
 
                         if ($invoice->isOverpaid()) {
-                            $order->addCommentToStatusHistory('Payment confirmed: overpaid.');
+                            $order->addCommentToStatusHistory('Payment confirmed: overpaid.', $settledStatus, true);
                         } elseif ($order->canInvoice()) {
 
                             // You can't be sure of the amount, when marked manually the additionalStatus is set to 'Marked' and has priority over 'Overpaid'
