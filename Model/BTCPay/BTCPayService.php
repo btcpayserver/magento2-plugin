@@ -719,7 +719,7 @@ class BTCPayService
 
     public function getWebhookSecret(int $magentoStoreId): ?string
     {
-        $secret = $this->getConfigWithoutCache('payment/btcpay/webhook_secret', 'default', 0);
+        $secret = $this->getStoreConfig('payment/btcpay/webhook_secret', 0);
         if (!$secret) {
             $secret = $this->createWebhookSecret();
 
