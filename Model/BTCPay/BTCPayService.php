@@ -379,7 +379,8 @@ class BTCPayService
                         break;
                     case BTCPayServerInvoice::STATUS_SETTLED:
                         // 2) Payments are settled (marked or not)
-                        $settledStatus = \Magento\Sales\Model\Order::STATE_COMPLETE;
+                        $settledStatus = \Magento\Sales\Model\Order::STATE_PROCESSING;
+
 
                         if ($invoice->isOverpaid()) {
                             $order->addCommentToStatusHistory('Payment confirmed: overpaid.', $settledStatus, true);
