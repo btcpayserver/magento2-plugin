@@ -598,7 +598,7 @@ class BTCPayService
 
     private function getConfigWithoutCache($path, $scope, $scopeId): ?string
     {
-        $dataCollection = $this->configValueFactory->create()->getCollection();
+        $dataCollection = $this->configCollectionFactory->create();
         $dataCollection->addFieldToFilter('path', ['like' => $path . '%']);
         $dataCollection->addFieldToFilter('scope', ['like' => $scope . '%']);
         $dataCollection->addFieldToFilter('scope_id', ['like' => $scopeId . '%']);
