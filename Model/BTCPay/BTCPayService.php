@@ -805,13 +805,53 @@ class BTCPayService
         return $url;
     }
 
-    public function getReceiveApikeyUrl(int $magentoStoreId): string
+    public function getReceiveApikeyUrl(int $magentoStoreId, ?string $baseUrl = null): string
     {
         $url = $this->getStoreConfig('web/secure/base_url', $magentoStoreId);
         $url = rtrim($url, '/');
         $url .= '/btcpay/apikey/save';
-        $hashedSecret = $this->hashSecret($magentoStoreId);
-        return $url . '?secret=' . urlencode($hashedSecret) . '&store=' . $magentoStoreId;
+
+        if ($baseUrl === null) {
+            $hashedSecret = $this->hashSecret($magentoStoreId);
+            return $url . '?secret=' . urlencode($hashedSecret) . '&store=' . $magentoStoreId;
+        }
+
+        $baseUrl = $this->normalizeBtcPayServerBaseUrl($baseUrl);
+        $params = [
+            'secret' => $this->hashApiKeyPairingSecret($magentoStoreId, $baseUrl),
+            'store' => $magentoStoreId,
+            'base_url' => $baseUrl,
+        ];
+
+        return $url . '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    public function normalizeBtcPayServerBaseUrl(string $baseUrl): string
+    {
+        $baseUrl = trim($baseUrl);
+        $parts = parse_url($baseUrl);
+
+        if (
+            $parts === false
+            || !isset($parts['scheme'], $parts['host'])
+            || !in_array(strtolower($parts['scheme']), ['http', 'https'], true)
+            || isset($parts['user'])
+            || isset($parts['pass'])
+            || isset($parts['query'])
+            || isset($parts['fragment'])
+        ) {
+            throw new \InvalidArgumentException('Invalid BTCPay Server URL.');
+        }
+
+        return rtrim($baseUrl, '/') . '/';
+    }
+
+    public function hashApiKeyPairingSecret(int $magentoStoreId, string $baseUrl): string
+    {
+        $baseUrl = $this->normalizeBtcPayServerBaseUrl($baseUrl);
+        $secret = (string)$this->getWebhookSecret($magentoStoreId);
+
+        return hash_hmac('sha256', $magentoStoreId . '|' . $baseUrl, $secret);
     }
 
     public function getCurrentMagentoStoreId(): ?int

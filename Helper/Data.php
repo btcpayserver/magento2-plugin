@@ -239,7 +239,7 @@ class Data
 
             }
             return false;
-        } catch (ForbiddenException $e) {
+        } catch (ForbiddenException | \BTCPayServer\Exception\ForbiddenException $e) {
             // Bad configuration
             return false;
         }
@@ -280,17 +280,25 @@ class Data
         return $storeIds;
     }
 
-    public function getGenerateApiKeyUrl(int $magentoStoreId)
+    public function getGenerateApiKeyUrl(int $magentoStoreId, ?string $baseUrl = null)
     {
         $magentoRootDomain = $this->scopeConfig->getValue('web/secure/base_url', 'default', 0);
         $magentoRootDomain = parse_url($magentoRootDomain, PHP_URL_HOST);
         $magentoRootDomain = str_replace(['http://', 'https://'], '', $magentoRootDomain);
         $magentoRootDomain = rtrim($magentoRootDomain, '/');
 
-        $redirectToUrlAfterCreation = $this->btcPayService->getReceiveApikeyUrl($magentoStoreId);
+        if ($baseUrl === null) {
+            $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl();
+            $redirectToUrlAfterCreation = $this->btcPayService->getReceiveApikeyUrl($magentoStoreId);
+        } else {
+            $baseUrl = $this->btcPayService->normalizeBtcPayServerBaseUrl($baseUrl);
+            $redirectToUrlAfterCreation = $this->btcPayService->getReceiveApikeyUrl(
+                $magentoStoreId,
+                $baseUrl
+            );
+        }
 
         $applicationIdentifier = 'magento2';
-        $baseUrl = $this->btcPayService->getBtcPayServerBaseUrl();
         $authorizeUrl = null;
 
         if ($baseUrl) {
