@@ -83,50 +83,77 @@ class ReturnAfterPayment extends Action
         $orderId = $request->getParam('orderId');
         $btcPayInvoiceId = $request->getParam('invoiceId');
         $hash = $request->getParam('hash');
-
-        $isInvoiceProcessing = false;
-        $valid = false;
-        $isInvoiceExpired = false;
-
         $resultRedirect = $this->resultRedirectFactory->create();
 
-        $order = $this->orderFactory->create()->load($orderId);
-        if ($order->getId()) {
-            $correctHash = $this->btcPayService->getOrderHash($order);
-
-            if ($hash === $correctHash) {
-                $valid = true;
-
-                $magentoStoreId = (int)$order->getStoreId();
-                $btcPayStoreId = $this->btcPayService->getBtcPayStore($magentoStoreId);
-
-                $invoice = $this->btcPayService->getInvoice($btcPayInvoiceId, $btcPayStoreId, $magentoStoreId);
-                $isInvoiceExpired = $invoice->isExpired();
-                $isInvoiceProcessing = $invoice->isProcessing();
-                $isInvoiceSettled = $invoice->isSettled();
-            }
-        } else {
-            // Order cannot be found
-            $order = null;
+        if (!is_scalar($orderId)
+            || !ctype_digit((string)$orderId)
+            || !is_scalar($btcPayInvoiceId)
+            || (string)$btcPayInvoiceId === ''
+            || !is_scalar($hash)
+            || (string)$hash === ''
+        ) {
+            return $resultRedirect->setUrl($this->url->getUrl('checkout/cart/'));
         }
 
-        if ($order && $valid) {
-            if ($isInvoiceProcessing || $isInvoiceSettled) {
+        try {
+            $order = $this->orderFactory->create()->load((int)$orderId);
+            if (!$order->getId()) {
+                return $resultRedirect->setUrl($this->url->getUrl('checkout/cart/'));
+            }
+
+            $hash = (string)$hash;
+            $validCurrentHash = $this->btcPayService->isValidOrderHash($order, $hash);
+            $validLegacyHash = !$validCurrentHash
+                && $this->btcPayService->isValidLegacyOrderHash($order, $hash)
+                && $this->checkoutSessionOwnsOrder($order);
+            if (!$validCurrentHash && !$validLegacyHash) {
+                return $resultRedirect->setUrl($this->url->getUrl('checkout/cart/'));
+            }
+
+            $invoice = $this->btcPayService->getVerifiedInvoiceForOrder(
+                $order,
+                (string)$btcPayInvoiceId
+            );
+            if (!$invoice) {
+                return $resultRedirect->setUrl($this->url->getUrl('checkout/cart/'));
+            }
+
+            if ($invoice->isProcessing() || $invoice->isSettled()) {
                 $this->checkoutSession->setLastQuoteId($order->getQuoteId());
                 $this->checkoutSession->setLastSuccessQuoteId($order->getQuoteId());
                 $this->checkoutSession->setLastOrderId($order->getId());
                 $this->checkoutSession->setLastRealOrderId($order->getIncrementId());
-                $resultRedirect->setUrl($order->getStore()->getUrl('checkout/onepage/success'));
+                return $resultRedirect->setUrl(
+                    $order->getStore()->getUrl('checkout/onepage/success')
+                );
             }
-            if ($isInvoiceExpired) {
-                $resultRedirect->setUrl($this->url->getUrl('btcpay/cart/restore', ['order_id' => $orderId]));
+
+            if ($invoice->isExpired()) {
+                return $resultRedirect->setUrl($order->getStore()->getUrl(
+                    'btcpay/cart/restore',
+                    [
+                        'order_id' => $order->getId(),
+                        'invoice_id' => (string)$btcPayInvoiceId,
+                        'hash' => $validCurrentHash
+                            ? $hash
+                            : $this->btcPayService->getOrderHash($order),
+                        '_secure' => true,
+                    ]
+                ));
             }
-        } else {
-            $resultRedirect->setUrl($this->url->getUrl('checkout/cart/'));
+        } catch (\Throwable $exception) {
+            $this->logger->error($exception);
         }
 
-        return $resultRedirect;
+        return $resultRedirect->setUrl($this->url->getUrl('checkout/cart/'));
 
         //TODO: if order is placed manually put payment url in order confirmation mail
+    }
+
+    private function checkoutSessionOwnsOrder(\Magento\Sales\Model\Order $order): bool
+    {
+        return (string)$this->checkoutSession->getLastOrderId() === (string)$order->getId()
+            || (string)$this->checkoutSession->getLastRealOrderId()
+                === (string)$order->getIncrementId();
     }
 }
