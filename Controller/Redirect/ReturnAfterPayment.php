@@ -101,11 +101,14 @@ class ReturnAfterPayment extends Action
                 return $resultRedirect->setUrl($this->url->getUrl('checkout/cart/'));
             }
 
+            if (!$this->checkoutSessionOwnsOrder($order)) {
+                return $resultRedirect->setUrl($this->url->getUrl('checkout/cart/'));
+            }
+
             $hash = (string)$hash;
             $validCurrentHash = $this->btcPayService->isValidOrderHash($order, $hash);
             $validLegacyHash = !$validCurrentHash
-                && $this->btcPayService->isValidLegacyOrderHash($order, $hash)
-                && $this->checkoutSessionOwnsOrder($order);
+                && $this->btcPayService->isValidLegacyOrderHash($order, $hash);
             if (!$validCurrentHash && !$validLegacyHash) {
                 return $resultRedirect->setUrl($this->url->getUrl('checkout/cart/'));
             }
@@ -153,7 +156,7 @@ class ReturnAfterPayment extends Action
     private function checkoutSessionOwnsOrder(\Magento\Sales\Model\Order $order): bool
     {
         return (string)$this->checkoutSession->getLastOrderId() === (string)$order->getId()
-            || (string)$this->checkoutSession->getLastRealOrderId()
+            && (string)$this->checkoutSession->getLastRealOrderId()
                 === (string)$order->getIncrementId();
     }
 }

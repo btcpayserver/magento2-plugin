@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Storefront\BTCPay\Controller\Cart;
 
 use Exception;
+use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\Controller\ResultInterface;
@@ -55,6 +56,11 @@ class Restore extends Action
     private $btcPayService;
 
     /**
+     * @var CheckoutSession
+     */
+    private $checkoutSession;
+
+    /**
      * Constructor
      *
      * @param Context $context
@@ -65,7 +71,7 @@ class Restore extends Action
      * @param Registry $registry
      * @param OrderManagementInterface $orderManager
      */
-    public function __construct(Context $context, LoggerInterface $logger, PageFactory $resultPageFactory, OrderRepositoryInterface $orderRepository, Cart $cart, Registry $registry, OrderManagementInterface $orderManager, OrderStatusHistoryInterface $orderStatusHistory, BTCPayService $btcPayService)
+    public function __construct(Context $context, LoggerInterface $logger, PageFactory $resultPageFactory, OrderRepositoryInterface $orderRepository, Cart $cart, Registry $registry, OrderManagementInterface $orderManager, OrderStatusHistoryInterface $orderStatusHistory, BTCPayService $btcPayService, CheckoutSession $checkoutSession)
     {
         $this->resultPageFactory = $resultPageFactory;
         $this->logger = $logger;
@@ -75,6 +81,7 @@ class Restore extends Action
         $this->orderManager = $orderManager;
         $this->orderStatusHistory;
         $this->btcPayService = $btcPayService;
+        $this->checkoutSession = $checkoutSession;
         parent:: __construct($context);
     }
 
@@ -101,7 +108,9 @@ class Restore extends Action
 
         try {
             $order = $this->orderRepository->get((int)$orderId);
-            if (!$this->btcPayService->isValidOrderHash($order, (string)$hash)) {
+            if (!$this->checkoutSessionOwnsOrder($order)
+                || !$this->btcPayService->isValidOrderHash($order, (string)$hash)
+            ) {
                 return $resultRedirect->setPath('checkout/cart');
             }
 
@@ -150,5 +159,12 @@ class Restore extends Action
         }
 
         return $resultRedirect->setPath('checkout/cart');
+    }
+
+    private function checkoutSessionOwnsOrder(Order $order): bool
+    {
+        return (string)$this->checkoutSession->getLastOrderId() === (string)$order->getId()
+            && (string)$this->checkoutSession->getLastRealOrderId()
+                === (string)$order->getIncrementId();
     }
 }
