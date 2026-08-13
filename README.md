@@ -2,9 +2,9 @@
 
 ## Requirements
 - BTCPay Server supported versions: >=1.3.0 (including >=2.0.0)
-- Magento 2.4.2 or later installation (tested on Community Edition 2.4.6-p6)
+- Magento 2.4.2 or later installation (tested up to Community Edition 2.4.9)
 - Magento < 2.4 should also work, but is untested
-- PHP 8.0 or greater. Tested with PHP 8.2
+- PHP 8.0 or greater. Tested with PHP 8.3 and 8.5
 - Your BTCPay Server must be setup with HTTPS or HTTP using TOR for security
 - You need an API key for your user in BTCPay Server (new since module v2.0)
 - Single-Store Mode is not supported
