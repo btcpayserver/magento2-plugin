@@ -69,13 +69,13 @@ class BTCPay extends AbstractMethod {
      */
     private $btcPayHelper;
 
-    public function __construct(\Storefront\BTCPay\Helper\Data $btcPayHelper, \Magento\Framework\Model\Context $context, \Magento\Framework\Registry $registry, \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory, \Magento\Framework\Api\AttributeValueFactory $customAttributeFactory, \Magento\Payment\Helper\Data $paymentData, \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig, \Magento\Framework\UrlInterface $url, \Magento\Payment\Model\Method\Logger $logger, \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null, \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null, array $data = [], DirectoryHelper $directory = null) {
+    public function __construct(\Storefront\BTCPay\Helper\Data $btcPayHelper, \Magento\Framework\Model\Context $context, \Magento\Framework\Registry $registry, \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory, \Magento\Framework\Api\AttributeValueFactory $customAttributeFactory, \Magento\Payment\Helper\Data $paymentData, \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig, \Magento\Framework\UrlInterface $url, \Magento\Payment\Model\Method\Logger $logger, ?\Magento\Framework\Model\ResourceModel\AbstractResource $resource = null, ?\Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null, array $data = [], ?DirectoryHelper $directory = null) {
         parent::__construct($context, $registry, $extensionFactory, $customAttributeFactory, $paymentData, $scopeConfig, $logger, $resource, $resourceCollection, $data, $directory);
         $this->url = $url;
         $this->btcPayHelper = $btcPayHelper;
     }
 
-    public function isAvailable(\Magento\Quote\Api\Data\CartInterface $quote = null) {
+    public function isAvailable(?\Magento\Quote\Api\Data\CartInterface $quote = null) {
         $r = parent::isAvailable($quote);
 
         $errors = $this->btcPayHelper->getInstallationErrors((int) $quote->getStoreId(), true);

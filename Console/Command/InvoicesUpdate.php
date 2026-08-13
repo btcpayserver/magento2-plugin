@@ -36,7 +36,7 @@ class InvoicesUpdate extends Command {
      */
     private $btcPayService;
 
-    public function __construct(BTCPayService $btcPayService, string $name = null) {
+    public function __construct(BTCPayService $btcPayService, ?string $name = null) {
         parent::__construct($name);
         $this->btcPayService = $btcPayService;
     }
@@ -44,9 +44,11 @@ class InvoicesUpdate extends Command {
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output) {
+    protected function execute(InputInterface $input, OutputInterface $output): int {
         $numUpdated = $this->btcPayService->updateIncompleteInvoices();
         $output->writeln('Updated ' . $numUpdated . ' invoices from BTCPay Server');
+
+        return 0;
     }
 
     /**

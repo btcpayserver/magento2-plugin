@@ -43,7 +43,7 @@ class PayOrder extends Command
     private $orderFactory;
 
 
-    public function __construct(BTCPayService $btcPayService, \Magento\Sales\Api\Data\OrderInterfaceFactory $orderFactory, string $name = null)
+    public function __construct(BTCPayService $btcPayService, \Magento\Sales\Api\Data\OrderInterfaceFactory $orderFactory, ?string $name = null)
     {
         parent::__construct($name);
         $this->btcPayService = $btcPayService;
@@ -53,7 +53,7 @@ class PayOrder extends Command
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $orderIncrementId = $input->getArgument('order');
         $order = $this->orderFactory->create()->loadByIncrementId($orderIncrementId);
@@ -64,6 +64,8 @@ class PayOrder extends Command
             $output->writeln(__('Could not find order %1', $orderIncrementId));
             exit(1);
         }
+
+        return 0;
     }
 
     /**

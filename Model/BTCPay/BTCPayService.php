@@ -608,7 +608,7 @@ class BTCPayService
         }
     }
 
-    private function doRequest(int $magentoStoreId, string $url, string $method, array $postData = null): ResponseInterface
+    private function doRequest(int $magentoStoreId, string $url, string $method, ?array $postData = null): ResponseInterface
     {
         $apiKey = $this->getApiKey('default', 0);
         $client = $this->getClient($magentoStoreId);
