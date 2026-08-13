@@ -49,14 +49,15 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\Store\Model\StoresConfig;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 use Storefront\BTCPay\Model\BTCPay\Exception\ForbiddenException;
 use Storefront\BTCPay\Model\Invoice;
 use Storefront\BTCPay\Model\OrderStatuses;
+use Storefront\BTCPay\Model\Security\PaymentDataValidator;
 
 class BTCPayService
 {
     const CONFIG_API_KEY = 'payment/btcpay/api_key';
+    const CONFIG_SEND_CUSTOMER_DATA = 'payment/btcpay/send_customer_data';
 
     /**
      * @var ScopeConfigInterface
@@ -127,6 +128,11 @@ class BTCPayService
      */
     private $priceHelper;
 
+    /**
+     * @var PaymentDataValidator
+     */
+    private $paymentDataValidator;
+
 
     public function __construct(ResourceConnection $resource, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger, Url $urlBuider, StoreManagerInterface $storeManager, WriterInterface $configWriter, ValueFactory $configValueFactory, CollectionFactory $configCollectionFactory, RequestInterface $request, StoresConfig $storesConfig, ReinitableConfigInterface $reinitableConfig, Data $priceHelper)
     {
@@ -179,7 +185,7 @@ class BTCPayService
      * @throws NoSuchEntityException
      * @throws \JsonException
      */
-    public function createInvoice(Order $order): array
+    public function createInvoice(Order $order, ?string $returnReference = null): array
     {
         $magentoStoreId = (int)$order->getStoreId();
         $btcPayStoreId = $this->getBtcPayStore($magentoStoreId);
@@ -194,43 +200,58 @@ class BTCPayService
 
         $expirationMinutes = null;
 
-        $invoiceIdPlaceholder = 'INVOICE_ID';
-        $orderHash = $this->getOrderHash($order);
-        $returnUrl = $order->getStore()->getUrl('btcpay/redirect/returnafterpayment', [
-            'orderId' => $order->getId(),
-            'invoiceId' => $invoiceIdPlaceholder,
-            'hash' => $orderHash,
-            '_secure' => true
-        ]);
-
-        $returnUrl = str_replace($invoiceIdPlaceholder, '{InvoiceId}', $returnUrl);
+        if ($returnReference !== null
+            && preg_match('/^[a-f0-9]{64}$/D', $returnReference) === 1
+        ) {
+            $returnUrl = $order->getStore()->getUrl('btcpay/redirect/returnreference', [
+                'reference' => $returnReference,
+                '_secure' => true,
+                '_nosid' => true,
+            ]);
+        } else {
+            // Invoice creation outside a browser checkout (for example via CLI)
+            // must not put order access credentials in BTCPay's public metadata.
+            $returnUrl = $order->getStore()->getUrl('checkout/cart', [
+                '_secure' => true,
+                '_nosid' => true,
+            ]);
+        }
 
         $orderLocale = $this->getStoreConfig('general/locale/code', $magentoStoreId);
         $defaultLanguage = str_replace('_', '-', $orderLocale);
 
-        $ba = $order->getBillingAddress();
-
-        if ($order->getIsVirtual() || $order->getIsDownloadable()) {
-            $sa = $ba;
-        } else {
-            $sa = $order->getShippingAddress();
-        }
-
         $postData = [];
-        $postData['amount'] = PreciseNumber::parseFloat((float)$order->getGrandTotal());
-
+        $postData['amount'] = PreciseNumber::parseString((string)$order->getGrandTotal());
         $postData['currency'] = $order->getOrderCurrencyCode();
-        $postData['metadata']['buyerName'] = trim($order->getBillingAddress()->getCompany() . ', ' . $order->getCustomerName(), ', ');
-        /*        $postData['metadata']['buyerEmail'] = $order->getCustomerEmail();*/
-        $postData['metadata']['buyerCountry'] = $sa->getCountryId();
-        $postData['metadata']['buyerZip'] = $sa->getPostcode();
-        $postData['metadata']['buyerCity'] = $sa->getCity();
-        $postData['metadata']['buyerState'] = $sa->getRegionCode();
-        $postData['metadata']['buyerAddress1'] = $sa->getStreetLine(1);
-        $postData['metadata']['buyerAddress2'] = $sa->getStreetLine(2);
-        $postData['metadata']['buyerPhone'] = $ba->getTelephone();
         $postData['metadata']['physical'] = !$order->getIsVirtual();
         $postData['metadata']['taxIncluded'] = $order->getTaxAmount() > 0;
+
+        $buyerEmail = null;
+        if ($this->scopeConfig->isSetFlag(
+            self::CONFIG_SEND_CUSTOMER_DATA,
+            ScopeInterface::SCOPE_STORE,
+            $magentoStoreId
+        )) {
+            $ba = $order->getBillingAddress();
+            $sa = ($order->getIsVirtual() || $order->getIsDownloadable())
+                ? $ba
+                : $order->getShippingAddress();
+            $buyerEmail = $order->getCustomerEmail();
+
+            $postData['metadata']['buyerName'] = trim($ba->getCompany() . ', ' . $order->getCustomerName(), ', ');
+            $postData['metadata']['buyerCountry'] = $sa->getCountryId();
+            $postData['metadata']['buyerZip'] = $sa->getPostcode();
+            $postData['metadata']['buyerCity'] = $sa->getCity();
+            $postData['metadata']['buyerState'] = $sa->getRegionCode();
+            $postData['metadata']['buyerAddress1'] = $sa->getStreetLine(1);
+            $postData['metadata']['buyerAddress2'] = $sa->getStreetLine(2);
+            $postData['metadata']['buyerPhone'] = $ba->getTelephone();
+            $postData['metadata']['buyerAddress3'] = $sa->getStreetLine(3);
+            $postData['metadata']['buyerCompany'] = $ba->getCompany();
+            $postData['metadata']['buyerFirstname'] = $order->getCustomerFirstname();
+            $postData['metadata']['buyerMiddlename'] = $order->getCustomerMiddlename();
+            $postData['metadata']['buyerLastname'] = $order->getCustomerLastname();
+        }
 
         //$postData['metadata']['posData'] = null;
         // $postData['metadata']['itemCode'] = '';
@@ -243,20 +264,32 @@ class BTCPayService
         $postData['checkout']['redirectAutomatically'] = true;
         $postData['checkout']['defaultLanguage'] = $defaultLanguage;
 
-        // Some extra fields not part of the BTCPay Server spec, but we are including them anyway
-        $postData['metadata']['magentoOrderId'] = $order->getId();
-        $postData['metadata']['buyerAddress3'] = $sa->getStreetLine(3);
-        $postData['metadata']['buyerCompany'] = $ba->getCompany();
-        $postData['metadata']['buyerFirstname'] = $order->getCustomerFirstname();
-        $postData['metadata']['buyerMiddlename'] = $order->getCustomerMiddlename();
-        $postData['metadata']['buyerLastname'] = $order->getCustomerLastname();
-        $postData['metadata']['magentoStoreId'] = $magentoStoreId;
-
         $checkoutOptions = InvoiceCheckoutOptions::create(null, null, null, null, null, $returnUrl, true, $defaultLanguage);
 
-        $invoice = $client->createInvoice($btcPayStoreId, $postData['currency'], $postData['amount'], $order->getIncrementId(), $order->getCustomerEmail(), $postData['metadata'], $checkoutOptions);
+        $invoice = $client->createInvoice(
+            $btcPayStoreId,
+            $postData['currency'],
+            $postData['amount'],
+            $order->getIncrementId(),
+            $buyerEmail,
+            $postData['metadata'],
+            $checkoutOptions
+        );
 
-        return $invoice->getData();
+        $this->getPaymentDataValidator()->assertInvoiceMatchesOrder(
+            $order,
+            $invoice,
+            $invoice->getId(),
+            $btcPayStoreId
+        );
+
+        // These local association values must come from Magento, not from the
+        // remote response that saveInvoiceInDb() persists.
+        $invoiceData = $invoice->getData();
+        $invoiceData['metadata']['magentoOrderId'] = $order->getId();
+        $invoiceData['metadata']['magentoStoreId'] = $magentoStoreId;
+
+        return $invoiceData;
 
         // Example:
         // {
@@ -337,9 +370,12 @@ class BTCPayService
 
             $invoice = $this->getInvoice($invoiceId, $btcPayStoreId, $magentoStoreId);
 
-            if ($order->getIncrementId() !== $invoice->getData()['metadata']['orderId']) {
-                throw new RuntimeException('The supplied order "' . $orderId . '"" does not match BTCPay Invoice "' . $invoiceId . '"". Cannot process BTCPay Server Webhook.');
-            }
+            $this->getPaymentDataValidator()->assertInvoiceMatchesOrder(
+                $order,
+                $invoice,
+                $invoiceId,
+                $btcPayStoreId
+            );
 
             $invoiceStatus = $invoice->getStatus();
 
@@ -541,9 +577,17 @@ class BTCPayService
      */
     public function getOrderHash(Order $order): string
     {
-        $preHash = $order->getId() . '-' . $order->getSecret() . '-' . $order->getCreatedAt();
-        $r = sha1($preHash);
-        return $r;
+        return $this->getPaymentDataValidator()->createOrderToken($order);
+    }
+
+    public function isValidOrderHash(Order $order, string $hash): bool
+    {
+        return $this->getPaymentDataValidator()->isValidOrderToken($order, $hash);
+    }
+
+    public function isValidLegacyOrderHash(Order $order, string $hash): bool
+    {
+        return $this->getPaymentDataValidator()->isValidLegacyOrderToken($order, $hash);
     }
 
     public function getApiKeyPermissions($scope, $scopeId): ?array
@@ -564,7 +608,7 @@ class BTCPayService
         }
     }
 
-    private function doRequest(int $magentoStoreId, string $url, string $method, array $postData = null): ResponseInterface
+    private function doRequest(int $magentoStoreId, string $url, string $method, ?array $postData = null): ResponseInterface
     {
         $apiKey = $this->getApiKey('default', 0);
         $client = $this->getClient($magentoStoreId);
@@ -619,6 +663,82 @@ class BTCPayService
         $invoice = $client->getInvoice($btcpayStoreId, $invoiceId);
 
         return $invoice;
+    }
+
+    public function getVerifiedInvoiceForOrder(Order $order, string $invoiceId): ?BTCPayServerInvoice
+    {
+        if ($invoiceId === '') {
+            return null;
+        }
+
+        $tableName = $this->db->getTableName('btcpay_invoices');
+        $row = $this->db->fetchRow(
+            $this->db->select()
+                ->from($tableName)
+                ->where('order_id = ?', (int)$order->getId())
+                ->where('invoice_id = ?', $invoiceId)
+                ->limit(1)
+        );
+        if (!$row || (int)$row['magento_store_id'] !== (int)$order->getStoreId()) {
+            return null;
+        }
+
+        $btcPayStoreId = (string)$row['btcpay_store_id'];
+        $invoice = $this->getInvoice(
+            $invoiceId,
+            $btcPayStoreId,
+            (int)$order->getStoreId()
+        );
+        $this->getPaymentDataValidator()->assertInvoiceMatchesOrder(
+            $order,
+            $invoice,
+            $invoiceId,
+            $btcPayStoreId
+        );
+
+        return $invoice;
+    }
+
+    public function canRestoreExpiredOrder(Order $order): bool
+    {
+        if (!$order->canCancel() || $order->hasInvoices()) {
+            return false;
+        }
+
+        $tableName = $this->db->getTableName('btcpay_invoices');
+        $rows = $this->db->fetchAll(
+            $this->db->select()
+                ->from($tableName)
+                ->where('order_id = ?', (int)$order->getId())
+        );
+        if (!$rows) {
+            return false;
+        }
+
+        foreach ($rows as $row) {
+            if ((int)$row['magento_store_id'] !== (int)$order->getStoreId()) {
+                return false;
+            }
+
+            $invoiceId = (string)$row['invoice_id'];
+            $btcPayStoreId = (string)$row['btcpay_store_id'];
+            $invoice = $this->getInvoice(
+                $invoiceId,
+                $btcPayStoreId,
+                (int)$order->getStoreId()
+            );
+            $this->getPaymentDataValidator()->assertInvoiceMatchesOrder(
+                $order,
+                $invoice,
+                $invoiceId,
+                $btcPayStoreId
+            );
+            if (!$this->getPaymentDataValidator()->isTerminalUnpaidInvoice($invoice)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function getAllBtcPayStores($baseUrl, $apiKey): ?array
@@ -700,13 +820,53 @@ class BTCPayService
         return $url;
     }
 
-    public function getReceiveApikeyUrl(int $magentoStoreId): string
+    public function getReceiveApikeyUrl(int $magentoStoreId, ?string $baseUrl = null): string
     {
         $url = $this->getStoreConfig('web/secure/base_url', $magentoStoreId);
         $url = rtrim($url, '/');
         $url .= '/btcpay/apikey/save';
-        $hashedSecret = $this->hashSecret($magentoStoreId);
-        return $url . '?secret=' . urlencode($hashedSecret) . '&store=' . $magentoStoreId;
+
+        if ($baseUrl === null) {
+            $hashedSecret = $this->hashSecret($magentoStoreId);
+            return $url . '?secret=' . urlencode($hashedSecret) . '&store=' . $magentoStoreId;
+        }
+
+        $baseUrl = $this->normalizeBtcPayServerBaseUrl($baseUrl);
+        $params = [
+            'secret' => $this->hashApiKeyPairingSecret($magentoStoreId, $baseUrl),
+            'store' => $magentoStoreId,
+            'base_url' => $baseUrl,
+        ];
+
+        return $url . '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    public function normalizeBtcPayServerBaseUrl(string $baseUrl): string
+    {
+        $baseUrl = trim($baseUrl);
+        $parts = parse_url($baseUrl);
+
+        if (
+            $parts === false
+            || !isset($parts['scheme'], $parts['host'])
+            || !in_array(strtolower($parts['scheme']), ['http', 'https'], true)
+            || isset($parts['user'])
+            || isset($parts['pass'])
+            || isset($parts['query'])
+            || isset($parts['fragment'])
+        ) {
+            throw new \InvalidArgumentException('Invalid BTCPay Server URL.');
+        }
+
+        return rtrim($baseUrl, '/') . '/';
+    }
+
+    public function hashApiKeyPairingSecret(int $magentoStoreId, string $baseUrl): string
+    {
+        $baseUrl = $this->normalizeBtcPayServerBaseUrl($baseUrl);
+        $secret = (string)$this->getWebhookSecret($magentoStoreId);
+
+        return hash_hmac('sha256', $magentoStoreId . '|' . $baseUrl, $secret);
     }
 
     public function getCurrentMagentoStoreId(): ?int
@@ -894,5 +1054,14 @@ class BTCPayService
 
         $invoice = $client->markInvoiceStatus($btcPayStoreId, $btcPayinvoiceId, $markInvoiceAs);
         return $invoice->getData();
+    }
+
+    private function getPaymentDataValidator(): PaymentDataValidator
+    {
+        if ($this->paymentDataValidator === null) {
+            $this->paymentDataValidator = new PaymentDataValidator();
+        }
+
+        return $this->paymentDataValidator;
     }
 }

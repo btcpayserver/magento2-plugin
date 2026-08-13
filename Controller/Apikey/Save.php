@@ -61,51 +61,98 @@ class Save extends Action implements CsrfAwareActionInterface
     public function execute()
     {
         $magentoStoreId = 0;
-
         $apiKey = $this->getRequest()->getParam('apiKey');
-
         $givenSecret = $this->getRequest()->getParam('secret');
 
-        $secret = $this->btcService->hashSecret($magentoStoreId);
-        if ($givenSecret === $secret) {
-            try {
+        try {
+            $baseUrlParam = $this->getRequest()->getParam('base_url');
+            if ($baseUrlParam === null) {
                 $baseUrl = $this->btcService->getBtcPayServerBaseUrl();
+                $secret = $this->btcService->hashSecret($magentoStoreId);
+            } elseif (is_string($baseUrlParam)) {
+                $baseUrl = $this->btcService->normalizeBtcPayServerBaseUrl($baseUrlParam);
+                $secret = $this->btcService->hashApiKeyPairingSecret($magentoStoreId, $baseUrl);
+            } else {
+                return $this->getResponse()
+                    ->setHttpResponseCode(403)
+                    ->setBody((string)__('Forbidden.'));
+            }
+        } catch (\InvalidArgumentException $e) {
+            return $this->getResponse()
+                ->setHttpResponseCode(403)
+                ->setBody((string)__('Forbidden.'));
+        }
 
-                // Safety check
-                $client = new \BTCPayServer\Client\ApiKey($baseUrl, $apiKey);
-                $client->getCurrent();
+        if (!is_string($givenSecret) || !hash_equals($secret, $givenSecret)) {
+            return $this->getResponse()
+                ->setHttpResponseCode(403)
+                ->setBody((string)__('Forbidden.'));
+        }
 
-                // Save API key to config settings
-                $this->configResource->saveConfig('payment/btcpay/api_key', $apiKey);
+        try {
+            if (!is_string($apiKey) || $apiKey === '' || !$baseUrl) {
+                throw new \InvalidArgumentException('Missing API key or BTCPay Server URL.');
+            }
 
-                // When only 1 BTCStore, save immediately
-                $allBtcStores = $this->btcService->getAllBtcPayStores($baseUrl, $apiKey);
+            // Validate the API key and store access before changing Magento configuration.
+            $client = new \BTCPayServer\Client\ApiKey($baseUrl, $apiKey);
+            $client->getCurrent();
+            $allBtcStores = $this->btcService->getAllBtcPayStores($baseUrl, $apiKey);
 
-                if ($allBtcStores && count($allBtcStores) === 1) {
-                    $btcStoreId = $allBtcStores[0]['id'];
-                    if ($btcStoreId) {
-                        // Create webhook as well
-                        $allMagentoStoreViews = $this->helper->getAllMagentoStoreViewIds();
+            if ($baseUrlParam !== null) {
+                $this->configResource->saveConfig('payment/btcpay/btcpay_base_url', $baseUrl);
+            }
+            $this->configResource->saveConfig('payment/btcpay/api_key', $apiKey);
 
-                        foreach ($allMagentoStoreViews as $magentoStoreView) {
-                            $this->configResource->saveConfig('payment/btcpay/btcpay_store_id', $btcStoreId, 'stores', $magentoStoreView);
-                            $this->helper->installWebhookIfNeeded((int)$magentoStoreView, true);
-                        }
-
+            $magentoStoreViewsToConfigure = [];
+            if ($allBtcStores && count($allBtcStores) === 1) {
+                $btcStoreId = $allBtcStores[0]['id'];
+                if ($btcStoreId) {
+                    $magentoStoreViewsToConfigure = $this->helper->getAllMagentoStoreViewIds();
+                    foreach ($magentoStoreViewsToConfigure as $magentoStoreView) {
+                        $this->configResource->saveConfig(
+                            'payment/btcpay/btcpay_store_id',
+                            $btcStoreId,
+                            'stores',
+                            $magentoStoreView
+                        );
                     }
                 }
-
-                //Clear config cache.
-                $this->reinitableConfig->reinit();
-
-                echo __('Success! You can now close this window.');
-            } catch (\Throwable $e) {
-                $this->logger->error($e);
-                echo __('Something went wrong. Please try again.');
             }
-        } else {
-            echo __('Forbidden.');
+
+            // Webhook installation must read the newly saved URL, key and store IDs.
+            $this->reinitableConfig->reinit();
+        } catch (\Throwable $e) {
+            $this->logger->error($e);
+            return $this->getResponse()
+                ->setHttpResponseCode(500)
+                ->setBody((string)__('Something went wrong. Please try again.'));
         }
+
+        $webhookSetupFailed = false;
+        foreach ($magentoStoreViewsToConfigure as $magentoStoreView) {
+            try {
+                if (!$this->helper->installWebhookIfNeeded((int)$magentoStoreView, true)) {
+                    $webhookSetupFailed = true;
+                }
+            } catch (\Throwable $e) {
+                $webhookSetupFailed = true;
+                $this->logger->warning('BTCPay API key saved, but automatic webhook setup failed.', [
+                    'exception' => $e,
+                ]);
+            }
+        }
+
+        $message = __('The API key was saved successfully. You can close this window now.');
+        if ($webhookSetupFailed) {
+            $message = __(
+                'The API key was saved successfully. Automatic webhook setup was not completed. '
+                . 'Please review the BTCPay configuration on the Payment Methods page. '
+                . 'You can close this window now.'
+            );
+        }
+
+        return $this->getResponse()->setBody((string)$message);
     }
 
     public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException

@@ -23,6 +23,7 @@ use Magento\Sales\Model\OrderRepository;
 use Psr\Log\LoggerInterface;
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
 use Storefront\BTCPay\Model\OrderStatuses;
+use Storefront\BTCPay\Model\Security\OrderReturnReference;
 
 class ForwardToPayment extends Action
 {
@@ -54,8 +55,13 @@ class ForwardToPayment extends Action
      */
     private $checkoutSession;
 
+    /**
+     * @var OrderReturnReference
+     */
+    private $orderReturnReference;
 
-    public function __construct(Context $context, Session $checkoutSession, CookieManagerInterface $cookieManager, CookieMetadataFactory $cookieMetadataFactory, SessionManagerInterface $sessionManager, \Storefront\BTCPay\Model\BTCPay\BTCPayService $btcPayService, CustomerSession $customerSession)
+
+    public function __construct(Context $context, Session $checkoutSession, CookieManagerInterface $cookieManager, CookieMetadataFactory $cookieMetadataFactory, SessionManagerInterface $sessionManager, \Storefront\BTCPay\Model\BTCPay\BTCPayService $btcPayService, CustomerSession $customerSession, OrderReturnReference $orderReturnReference)
     {
         parent::__construct($context);
         $this->checkoutSession = $checkoutSession;
@@ -64,6 +70,7 @@ class ForwardToPayment extends Action
         $this->sessionManager = $sessionManager;
         $this->btcPayService = $btcPayService;
         $this->customerSession = $customerSession;
+        $this->orderReturnReference = $orderReturnReference;
     }
 
 //    public function __construct(RedirectInterface $redirect, ResponseInterface $response, OrderRepository $orderRepository, , ) {
@@ -91,9 +98,14 @@ class ForwardToPayment extends Action
         $resultRedirect = $this->resultRedirectFactory->create();
 
         if ($order) {
-            $btcpayInvoice = $this->btcPayService->createInvoice($order);
+            $returnReference = $this->orderReturnReference->create($order);
+            $btcpayInvoice = $this->btcPayService->createInvoice($order, $returnReference);
             $invoiceId = $btcpayInvoice['id'];
             if ($invoiceId) {
+
+                if (!$this->orderReturnReference->bindInvoice((string)$invoiceId)) {
+                    throw new \RuntimeException('Could not secure the BTCPay return URL.');
+                }
 
                 $savedInvoiceInDb = $this->btcPayService->saveInvoiceInDb($btcpayInvoice);
 

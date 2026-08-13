@@ -4,6 +4,7 @@
         <payment>
             <btcpay>
                 <active>1</active>
+                <send_customer_data>0</send_customer_data>
                 <title>Pay with Bitcoin</title>
                 <http_scheme>https</http_scheme>
                 <payment_confirmed_status></payment_confirmed_status>
