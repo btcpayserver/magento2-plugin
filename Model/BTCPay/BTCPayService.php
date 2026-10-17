@@ -58,6 +58,12 @@ class BTCPayService
 {
     const CONFIG_API_KEY = 'payment/btcpay/api_key';
     const CONFIG_SEND_CUSTOMER_DATA = 'payment/btcpay/send_customer_data';
+    const CONFIG_PAIRING_TOKEN = 'payment/btcpay/pairing_token';
+
+    /**
+     * Pairing tokens expire one hour after they have been minted.
+     */
+    const PAIRING_TOKEN_TTL = 3600;
 
     /**
      * @var ScopeConfigInterface
@@ -826,17 +832,14 @@ class BTCPayService
         $url = rtrim($url, '/');
         $url .= '/btcpay/apikey/save';
 
-        if ($baseUrl === null) {
-            $hashedSecret = $this->hashSecret($magentoStoreId);
-            return $url . '?secret=' . urlencode($hashedSecret) . '&store=' . $magentoStoreId;
-        }
-
-        $baseUrl = $this->normalizeBtcPayServerBaseUrl($baseUrl);
+        $normalizedBaseUrl = $baseUrl === null ? null : $this->normalizeBtcPayServerBaseUrl($baseUrl);
         $params = [
-            'secret' => $this->hashApiKeyPairingSecret($magentoStoreId, $baseUrl),
+            'token' => $this->createPairingToken($normalizedBaseUrl),
             'store' => $magentoStoreId,
-            'base_url' => $baseUrl,
         ];
+        if ($normalizedBaseUrl !== null) {
+            $params['base_url'] = $normalizedBaseUrl;
+        }
 
         return $url . '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
     }
@@ -861,12 +864,88 @@ class BTCPayService
         return rtrim($baseUrl, '/') . '/';
     }
 
-    public function hashApiKeyPairingSecret(int $magentoStoreId, string $baseUrl): string
+    /**
+     * Mint a single-use pairing token for the public API-key callback.
+     *
+     * Only the hash of the token is persisted, together with the creation
+     * timestamp and the normalized BTCPay Server URL the pairing is bound to.
+     * The token itself is only ever present in the callback URL.
+     *
+     * @param string|null $normalizedBaseUrl Normalized BTCPay Server URL, or null to pair against the currently configured URL
+     * @return string The raw token to place in the callback URL
+     */
+    public function createPairingToken(?string $normalizedBaseUrl): string
     {
-        $baseUrl = $this->normalizeBtcPayServerBaseUrl($baseUrl);
-        $secret = (string)$this->getWebhookSecret($magentoStoreId);
+        $token = bin2hex(random_bytes(32));
+        $this->configWriter->save(
+            self::CONFIG_PAIRING_TOKEN,
+            implode(':', [
+                hash('sha256', $token),
+                (string)time(),
+                rawurlencode($normalizedBaseUrl ?? ''),
+            ])
+        );
+        return $token;
+    }
 
-        return hash_hmac('sha256', $magentoStoreId . '|' . $baseUrl, $secret);
+    /**
+     * Verify and consume a pairing token.
+     *
+     * A token is single-use, expires after PAIRING_TOKEN_TTL seconds, and is
+     * only valid for the BTCPay Server URL it was minted for.
+     *
+     * A request presenting a wrong token is rejected without touching the
+     * stored token, so public garbage requests cannot disrupt a pending
+     * pairing. Consumption of a presented correct token is atomic: the stored
+     * row is removed with a conditional delete matching its exact value, so
+     * only one of several concurrent requests can succeed and the token can
+     * never be replayed. A token whose hash matches is consumed even when it
+     * has expired or is presented for the wrong URL, because the presenter has
+     * proven possession of the token.
+     *
+     * @param string $token Raw token from the callback request
+     * @param string|null $normalizedBaseUrl Normalized BTCPay Server URL from the callback request, or null
+     * @return bool
+     */
+    public function consumePairingToken(string $token, ?string $normalizedBaseUrl): bool
+    {
+        $stored = $this->getConfigWithoutCache(self::CONFIG_PAIRING_TOKEN, 'default', 0);
+        if (!is_string($stored) || $stored === '') {
+            return false;
+        }
+
+        // rawurlencode() removed all colons from the URL, so the value has
+        // exactly the three parts hash, creation timestamp, and encoded URL.
+        $parts = explode(':', $stored, 3);
+        if (count($parts) !== 3) {
+            return false;
+        }
+        [$storedHash, $created, $encodedBaseUrl] = $parts;
+
+        if (!hash_equals($storedHash, hash('sha256', $token))) {
+            return false;
+        }
+
+        // Atomic single use: only the request whose conditional delete removes
+        // the stored row succeeds, every concurrent request deletes nothing.
+        $deleted = $this->db->delete(
+            $this->db->getTableName('core_config_data'),
+            [
+                'path = ?' => self::CONFIG_PAIRING_TOKEN,
+                'scope = ?' => 'default',
+                'scope_id = ?' => 0,
+                'value = ?' => $stored,
+            ]
+        );
+        if ($deleted !== 1) {
+            return false;
+        }
+
+        if (time() - (int)$created > self::PAIRING_TOKEN_TTL) {
+            return false;
+        }
+
+        return ($normalizedBaseUrl ?? '') === rawurldecode($encodedBaseUrl);
     }
 
     public function getCurrentMagentoStoreId(): ?int
@@ -892,15 +971,7 @@ class BTCPayService
 
     public function createWebhookSecret(): string
     {
-        $str = (string)rand();
-        return hash("sha256", $str);
-    }
-
-    public function hashSecret(int $magentoStoreId)
-    {
-        $secret = $this->getWebhookSecret($magentoStoreId);
-        $salt = (string)$magentoStoreId;
-        return sha1($secret . $salt);
+        return bin2hex(random_bytes(32));
     }
 
     public function deleteWebhook(int $magentoStoreId, string $btcStoreId, string $webhookId, string $apiKey)

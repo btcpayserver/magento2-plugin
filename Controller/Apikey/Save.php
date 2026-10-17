@@ -60,18 +60,15 @@ class Save extends Action implements CsrfAwareActionInterface
 
     public function execute()
     {
-        $magentoStoreId = 0;
         $apiKey = $this->getRequest()->getParam('apiKey');
-        $givenSecret = $this->getRequest()->getParam('secret');
+        $token = $this->getRequest()->getParam('token');
 
         try {
             $baseUrlParam = $this->getRequest()->getParam('base_url');
             if ($baseUrlParam === null) {
                 $baseUrl = $this->btcService->getBtcPayServerBaseUrl();
-                $secret = $this->btcService->hashSecret($magentoStoreId);
             } elseif (is_string($baseUrlParam)) {
                 $baseUrl = $this->btcService->normalizeBtcPayServerBaseUrl($baseUrlParam);
-                $secret = $this->btcService->hashApiKeyPairingSecret($magentoStoreId, $baseUrl);
             } else {
                 return $this->getResponse()
                     ->setHttpResponseCode(403)
@@ -83,7 +80,14 @@ class Save extends Action implements CsrfAwareActionInterface
                 ->setBody((string)__('Forbidden.'));
         }
 
-        if (!is_string($givenSecret) || !hash_equals($secret, $givenSecret)) {
+        // The pairing token is minted by the admin-only Generate action. It is
+        // single-use, short-lived, and bound to the BTCPay Server URL that was
+        // paired. Presenting a wrong token never disturbs a pending pairing; a
+        // correct token is consumed exactly once and can never be replayed.
+        $normalizedBaseUrl = $baseUrlParam === null ? null : $baseUrl;
+        if (!is_string($token) || $token === ''
+            || !$this->btcService->consumePairingToken($token, $normalizedBaseUrl)
+        ) {
             return $this->getResponse()
                 ->setHttpResponseCode(403)
                 ->setBody((string)__('Forbidden.'));
