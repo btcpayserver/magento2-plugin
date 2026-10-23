@@ -10,6 +10,7 @@ use Magento\Framework\Webapi\Rest\Request;
 use RuntimeException;
 use Storefront\BTCPay\Helper\Data;
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
+use Storefront\BTCPay\Model\Webhook\DeliveryTracker;
 
 class Webhook implements WebhookInterface
 {
@@ -25,12 +26,21 @@ class Webhook implements WebhookInterface
      * @var Data
      */
     private $helper;
+    /**
+     * @var DeliveryTracker
+     */
+    private $deliveryTracker;
 
-    public function __construct(BTCPayService $btcPayService, Request $request, Data $helper)
-    {
+    public function __construct(
+        BTCPayService $btcPayService,
+        Request $request,
+        Data $helper,
+        DeliveryTracker $deliveryTracker
+    ) {
         $this->btcPayService = $btcPayService;
         $this->request = $request;
         $this->helper = $helper;
+        $this->deliveryTracker = $deliveryTracker;
     }
 
     /**
@@ -85,6 +95,17 @@ class Webhook implements WebhookInterface
                 $btcpayStoreId = $data['storeId'] ?? null;
                 $dataType = $data['type'];
 
+                // A redelivery is the same event as the delivery it refers to.
+                // Deduplicating on the original ID also makes BTCPay retries
+                // idempotent once the original delivery has been processed.
+                $deliveryId = $data['deliveryId'] ?? null;
+                if (!empty($data['isRedelivery']) && !empty($data['originalDeliveryId'])) {
+                    $deliveryId = $data['originalDeliveryId'];
+                }
+                if (!is_string($deliveryId) || $deliveryId === '') {
+                    $deliveryId = null;
+                }
+
                 // Only use the "id" field from the POSTed data and discard the rest. We are not trusting the other posted data.
                 unset($data);
                 if ($btcpayInvoiceId) {
@@ -93,8 +114,24 @@ class Webhook implements WebhookInterface
                         $logPayment = true;
                     }
 
+                    if ($deliveryId !== null
+                        && !$this->deliveryTracker->claim($deliveryId, $btcpayInvoiceId, $dataType)
+                    ) {
+                        // This delivery was already processed. Do not touch the
+                        // invoice, the order, or the local invoice record again.
+                        return true;
+                    }
 
-                    $this->btcPayService->updateInvoice($btcpayStoreId, $btcpayInvoiceId, $logPayment);
+                    try {
+                        $this->btcPayService->updateInvoice($btcpayStoreId, $btcpayInvoiceId, $logPayment);
+                    } catch (\Throwable $e) {
+                        if ($deliveryId !== null) {
+                            // Processing failed, so allow BTCPay to retry.
+                            $this->deliveryTracker->release($deliveryId);
+                        }
+                        throw $e;
+                    }
+
                     return true;
                 }
 
