@@ -73,7 +73,7 @@ class ServerInfo extends \Magento\Config\Block\System\Config\Form\Field
             $storeId = (int)$magentoStore->getId();
 
             $html = $html . '  <tr>
-    <td>' . $magentoStore->getName() . '</td>
+    <td>' . $this->escapeHtml($magentoStore->getName()) . '</td>
     <td>' . $this->getErrorHtml($storeId) . '</td>
   </tr>';
 

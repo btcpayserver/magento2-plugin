@@ -5,6 +5,7 @@ namespace Storefront\BTCPay\Helper;
 
 use Magento\Framework\App\Config;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Escaper;
 use Magento\Store\Api\StoreRepositoryInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
@@ -51,7 +52,12 @@ class Data
      */
     private $storeManager;
 
-    public function __construct(\Storefront\BTCPay\Model\BTCPay\BTCPayService $BTCPayService, ScopeConfigInterface $scopeConfig, \Magento\Framework\App\CacheInterface $cache, LoggerInterface $logger, StoreRepositoryInterface $storeRepository, StoreManagerInterface $storeManager)
+    /**
+     * @var Escaper
+     */
+    private $escaper;
+
+    public function __construct(\Storefront\BTCPay\Model\BTCPay\BTCPayService $BTCPayService, ScopeConfigInterface $scopeConfig, \Magento\Framework\App\CacheInterface $cache, LoggerInterface $logger, StoreRepositoryInterface $storeRepository, StoreManagerInterface $storeManager, Escaper $escaper)
     {
         $this->btcPayService = $BTCPayService;
         $this->logger = $logger;
@@ -59,6 +65,7 @@ class Data
         $this->scopeConfig = $scopeConfig;
         $this->storeRepository = $storeRepository;
         $this->storeManager = $storeManager;
+        $this->escaper = $escaper;
     }
 
     public function getWebhookSecret(): ?string
@@ -160,12 +167,12 @@ class Data
 
                     if (count($missingPermissions)) {
                         foreach ($missingPermissions as $missingPermission) {
-                            $errors[] = __('Your API key does not have the %1 permission. Please regenerate the API key.', $missingPermission);
+                            $errors[] = __('Your API key does not have the %1 permission. Please regenerate the API key.', $this->escaper->escapeHtml($missingPermission));
                         }
                     }
                     if (count($superfluousPermissions)) {
                         foreach ($superfluousPermissions as $superfluousPermission) {
-                            $errors[] = __('Your API key has the %1 permission, but we don\'t need it. Please use an API key that has the exact permissions for increased security. As long as this is not fixed, it is impossible to use this payment method', '<span style="font-family: monospace; background: #EEE; padding: 2px 4px; display: inline-block">' . $superfluousPermission . '</span>');
+                            $errors[] = __('Your API key has the %1 permission, but we don\'t need it. Please use an API key that has the exact permissions for increased security. As long as this is not fixed, it is impossible to use this payment method', '<span style="font-family: monospace; background: #EEE; padding: 2px 4px; display: inline-block">' . $this->escaper->escapeHtml($superfluousPermission) . '</span>');
                         }
                     }
                 }
