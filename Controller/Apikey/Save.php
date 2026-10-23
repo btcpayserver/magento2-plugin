@@ -167,6 +167,12 @@ class Save extends Action implements CsrfAwareActionInterface
                 . 'You can close this window now.'
             );
         }
+        if (stripos((string)$baseUrl, 'http://') === 0) {
+            $message = (string)$message . ' ' . __(
+                'Warning: the BTCPay Server URL uses plain HTTP. Only use HTTP for local testing; '
+                . 'switch to HTTPS in production.'
+            );
+        }
 
         return $this->getResponse()->setBody((string)$message);
     }
