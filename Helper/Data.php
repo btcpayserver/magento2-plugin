@@ -7,7 +7,6 @@ use Magento\Framework\App\Config;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Escaper;
 use Magento\Store\Api\StoreRepositoryInterface;
-use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
 use Storefront\BTCPay\Model\BTCPay\Exception\CannotCreateWebhook;
@@ -70,7 +69,9 @@ class Data
 
     public function getWebhookSecret(): ?string
     {
-        return $this->scopeConfig->getValue('payment/btcpay/webhook_secret', ScopeInterface::SCOPE_STORE, 0);
+        // Read through the service so encrypted secrets are decrypted and a
+        // missing secret is not created while verifying an incoming webhook.
+        return $this->btcPayService->getStoredWebhookSecret();
     }
 
     public function getInstallationErrors(int $magentoStoreId, bool $useCache): array
