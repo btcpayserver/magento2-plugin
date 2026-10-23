@@ -20,6 +20,12 @@
 
     <preference for="Storefront\BTCPay\Api\WebhookInterface" type="Storefront\BTCPay\Api\Webhook" />
 
+    <!-- Bound the public webhook body before Magento reads/decodes it -->
+    <type name="Magento\Framework\Webapi\Rest\Request">
+        <plugin name="btcpay_webhook_body_size_limit"
+                type="Storefront\BTCPay\Plugin\WebhookBodySizeLimit" sortOrder="10"/>
+    </type>
+
 
     <!-- Commands -->
     <type name="Magento\Framework\Console\CommandList">

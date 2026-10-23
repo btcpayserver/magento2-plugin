@@ -10,6 +10,7 @@ use Magento\Framework\App\Config\ReinitableConfigInterface;
 use Magento\Framework\App\CsrfAwareActionInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
+use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
@@ -47,7 +48,12 @@ class Save extends Action implements CsrfAwareActionInterface
      */
     private $helper;
 
-    public function __construct(Context $context, BTCPayService $btcService, StoreManagerInterface $storeManager, LoggerInterface $logger, Config $configResource, ReinitableConfigInterface $reinitableConfig, Data $helper)
+    /**
+     * @var EncryptorInterface
+     */
+    private $encryptor;
+
+    public function __construct(Context $context, BTCPayService $btcService, StoreManagerInterface $storeManager, LoggerInterface $logger, Config $configResource, ReinitableConfigInterface $reinitableConfig, Data $helper, EncryptorInterface $encryptor)
     {
         parent::__construct($context);
         $this->btcService = $btcService;
@@ -56,22 +62,20 @@ class Save extends Action implements CsrfAwareActionInterface
         $this->configResource = $configResource;
         $this->reinitableConfig = $reinitableConfig;
         $this->helper = $helper;
+        $this->encryptor = $encryptor;
     }
 
     public function execute()
     {
-        $magentoStoreId = 0;
         $apiKey = $this->getRequest()->getParam('apiKey');
-        $givenSecret = $this->getRequest()->getParam('secret');
+        $token = $this->getRequest()->getParam('token');
 
         try {
             $baseUrlParam = $this->getRequest()->getParam('base_url');
             if ($baseUrlParam === null) {
                 $baseUrl = $this->btcService->getBtcPayServerBaseUrl();
-                $secret = $this->btcService->hashSecret($magentoStoreId);
             } elseif (is_string($baseUrlParam)) {
                 $baseUrl = $this->btcService->normalizeBtcPayServerBaseUrl($baseUrlParam);
-                $secret = $this->btcService->hashApiKeyPairingSecret($magentoStoreId, $baseUrl);
             } else {
                 return $this->getResponse()
                     ->setHttpResponseCode(403)
@@ -83,7 +87,14 @@ class Save extends Action implements CsrfAwareActionInterface
                 ->setBody((string)__('Forbidden.'));
         }
 
-        if (!is_string($givenSecret) || !hash_equals($secret, $givenSecret)) {
+        // The pairing token is minted by the admin-only Generate action. It is
+        // single-use, short-lived, and bound to the BTCPay Server URL that was
+        // paired. Presenting a wrong token never disturbs a pending pairing; a
+        // correct token is consumed exactly once and can never be replayed.
+        $normalizedBaseUrl = $baseUrlParam === null ? null : $baseUrl;
+        if (!is_string($token) || $token === ''
+            || !$this->btcService->consumePairingToken($token, $normalizedBaseUrl)
+        ) {
             return $this->getResponse()
                 ->setHttpResponseCode(403)
                 ->setBody((string)__('Forbidden.'));
@@ -102,7 +113,12 @@ class Save extends Action implements CsrfAwareActionInterface
             if ($baseUrlParam !== null) {
                 $this->configResource->saveConfig('payment/btcpay/btcpay_base_url', $baseUrl);
             }
-            $this->configResource->saveConfig('payment/btcpay/api_key', $apiKey);
+            // Encrypt at rest. The value is written directly through the config
+            // resource model, so Magento's encrypted backend model is not invoked.
+            $this->configResource->saveConfig(
+                'payment/btcpay/api_key',
+                $this->encryptor->encrypt($apiKey)
+            );
 
             $magentoStoreViewsToConfigure = [];
             if ($allBtcStores && count($allBtcStores) === 1) {
@@ -149,6 +165,12 @@ class Save extends Action implements CsrfAwareActionInterface
                 'The API key was saved successfully. Automatic webhook setup was not completed. '
                 . 'Please review the BTCPay configuration on the Payment Methods page. '
                 . 'You can close this window now.'
+            );
+        }
+        if (stripos((string)$baseUrl, 'http://') === 0) {
+            $message = (string)$message . ' ' . __(
+                'Warning: the BTCPay Server URL uses plain HTTP. Only use HTTP for local testing; '
+                . 'switch to HTTPS in production.'
             );
         }
 

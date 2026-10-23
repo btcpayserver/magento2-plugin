@@ -38,6 +38,7 @@
                 <field id="btcpay_base_url" translate="label" type="text" sortOrder="50" showInDefault="1"
                        showInWebsite="0" showInStore="0">
                     <label>BTCPay Base Url</label>
+                    <comment model="Storefront\BTCPay\Model\Config\BtcPayBaseUrlComment"/>
                 </field>
 
                 <field id="webhook_secret" translate="label" type="text" sortOrder="55" showInDefault="0"
