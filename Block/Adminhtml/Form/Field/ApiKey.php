@@ -63,7 +63,7 @@ class ApiKey extends \Magento\Config\Block\System\Config\Form\Field
 
         $apiKey = $this->helper->getApiKey('default', 0);
         $apiKeyHtml = $apiKey
-            ? $this->escapeHtml($apiKey)
+            ? $this->escapeHtml($this->helper->maskApiKey($apiKey))
             : '<span style="color: red">' . $this->escapeHtml(__('No API key yet.')) . '</span>';
         $buttonId = 'btcpay-generate-api-key';
 

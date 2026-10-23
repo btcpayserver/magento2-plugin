@@ -10,6 +10,7 @@ use Magento\Framework\App\Config\ReinitableConfigInterface;
 use Magento\Framework\App\CsrfAwareActionInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
+use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
 use Storefront\BTCPay\Model\BTCPay\BTCPayService;
@@ -47,7 +48,12 @@ class Save extends Action implements CsrfAwareActionInterface
      */
     private $helper;
 
-    public function __construct(Context $context, BTCPayService $btcService, StoreManagerInterface $storeManager, LoggerInterface $logger, Config $configResource, ReinitableConfigInterface $reinitableConfig, Data $helper)
+    /**
+     * @var EncryptorInterface
+     */
+    private $encryptor;
+
+    public function __construct(Context $context, BTCPayService $btcService, StoreManagerInterface $storeManager, LoggerInterface $logger, Config $configResource, ReinitableConfigInterface $reinitableConfig, Data $helper, EncryptorInterface $encryptor)
     {
         parent::__construct($context);
         $this->btcService = $btcService;
@@ -56,6 +62,7 @@ class Save extends Action implements CsrfAwareActionInterface
         $this->configResource = $configResource;
         $this->reinitableConfig = $reinitableConfig;
         $this->helper = $helper;
+        $this->encryptor = $encryptor;
     }
 
     public function execute()
@@ -106,7 +113,12 @@ class Save extends Action implements CsrfAwareActionInterface
             if ($baseUrlParam !== null) {
                 $this->configResource->saveConfig('payment/btcpay/btcpay_base_url', $baseUrl);
             }
-            $this->configResource->saveConfig('payment/btcpay/api_key', $apiKey);
+            // Encrypt at rest. The value is written directly through the config
+            // resource model, so Magento's encrypted backend model is not invoked.
+            $this->configResource->saveConfig(
+                'payment/btcpay/api_key',
+                $this->encryptor->encrypt($apiKey)
+            );
 
             $magentoStoreViewsToConfigure = [];
             if ($allBtcStores && count($allBtcStores) === 1) {

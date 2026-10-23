@@ -257,9 +257,27 @@ class Data
         }
         $generateUrl = $this->getGenerateApiKeyUrl($scopeId);
         $apiKeyInfo['api_created'] = $apiCreated;
-        $apiKeyInfo['api_key'] = $apiKey;
+        $apiKeyInfo['api_key'] = $apiCreated ? $this->maskApiKey($apiKey) : $apiKey;
         $apiKeyInfo['generate_url'] = $generateUrl;
         return $apiKeyInfo;
+    }
+
+    /**
+     * Mask a secret for display. Never render the raw credential in the admin UI.
+     */
+    public function maskApiKey(?string $apiKey): string
+    {
+        if (!is_string($apiKey) || $apiKey === '') {
+            return '';
+        }
+
+        // Only reveal a suffix for keys long enough that four characters do not
+        // materially reduce the secret's entropy.
+        if (strlen($apiKey) < 24) {
+            return str_repeat('*', 12);
+        }
+
+        return str_repeat('*', 12) . substr($apiKey, -4);
     }
 
     public function getAllMagentoStoreViews()

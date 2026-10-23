@@ -37,6 +37,7 @@ use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\DB\Transaction;
+use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -139,8 +140,13 @@ class BTCPayService
      */
     private $paymentDataValidator;
 
+    /**
+     * @var EncryptorInterface
+     */
+    private $encryptor;
 
-    public function __construct(ResourceConnection $resource, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger, Url $urlBuider, StoreManagerInterface $storeManager, WriterInterface $configWriter, ValueFactory $configValueFactory, CollectionFactory $configCollectionFactory, RequestInterface $request, StoresConfig $storesConfig, ReinitableConfigInterface $reinitableConfig, Data $priceHelper)
+
+    public function __construct(ResourceConnection $resource, ScopeConfigInterface $scopeConfig, OrderRepository $orderRepository, Transaction $transaction, LoggerInterface $logger, Url $urlBuider, StoreManagerInterface $storeManager, WriterInterface $configWriter, ValueFactory $configValueFactory, CollectionFactory $configCollectionFactory, RequestInterface $request, StoresConfig $storesConfig, ReinitableConfigInterface $reinitableConfig, Data $priceHelper, EncryptorInterface $encryptor)
     {
         $this->scopeConfig = $scopeConfig;
         $this->db = $resource->getConnection();
@@ -156,6 +162,7 @@ class BTCPayService
         $this->storesConfig = $storesConfig;
         $this->reinitableConfig = $reinitableConfig;
         $this->priceHelper = $priceHelper;
+        $this->encryptor = $encryptor;
     }
 
     /**
@@ -644,6 +651,22 @@ class BTCPayService
     public function getApiKey($scope, $scopeId): ?string
     {
         $config = $this->getConfigWithoutCache('payment/btcpay/api_key', $scope, $scopeId);
+        if (!is_string($config) || $config === '') {
+            return null;
+        }
+
+        // Values written since 2026-10 are encrypted with Magento's encryptor.
+        // Magento ciphertext is prefixed with "<key version>:<cipher version>:".
+        if (preg_match('/^\d+:\d+:/', $config) === 1) {
+            try {
+                $decrypted = $this->encryptor->decrypt($config);
+            } catch (\Throwable $e) {
+                return null;
+            }
+            return $decrypted !== '' ? $decrypted : null;
+        }
+
+        // Legacy plaintext values keep working until the key is saved again.
         return $config;
     }
 
