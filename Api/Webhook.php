@@ -63,7 +63,7 @@ class Webhook implements WebhookInterface
             $secret = $this->helper->getWebhookSecret();
             $expectedHeader = 'sha256=' . hash_hmac('sha256', $postedString, $secret);
 
-            if ($expectedHeader === $signatureHeader) {
+            if (hash_equals($expectedHeader, (string)$signatureHeader)) {
                 // Event "Invoice created"
                 // {
                 //  "deliveryId": "string",
