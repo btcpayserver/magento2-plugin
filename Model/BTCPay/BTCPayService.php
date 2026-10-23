@@ -58,6 +58,7 @@ use Storefront\BTCPay\Model\Security\PaymentDataValidator;
 class BTCPayService
 {
     const CONFIG_API_KEY = 'payment/btcpay/api_key';
+    const CONFIG_WEBHOOK_SECRET = 'payment/btcpay/webhook_secret';
     const CONFIG_SEND_CUSTOMER_DATA = 'payment/btcpay/send_customer_data';
     const CONFIG_PAIRING_TOKEN = 'payment/btcpay/pairing_token';
 
@@ -650,24 +651,34 @@ class BTCPayService
 
     public function getApiKey($scope, $scopeId): ?string
     {
-        $config = $this->getConfigWithoutCache('payment/btcpay/api_key', $scope, $scopeId);
-        if (!is_string($config) || $config === '') {
+        return $this->decryptConfigValue(
+            $this->getConfigWithoutCache(self::CONFIG_API_KEY, $scope, $scopeId)
+        );
+    }
+
+    /**
+     * Decrypt a config value written with EncryptorInterface.
+     *
+     * Magento ciphertext is prefixed with "<key version>:<cipher version>:".
+     * Legacy plaintext values are returned unchanged so existing installations
+     * keep working until the value is written again.
+     */
+    private function decryptConfigValue(?string $value): ?string
+    {
+        if (!is_string($value) || $value === '') {
             return null;
         }
 
-        // Values written since 2026-10 are encrypted with Magento's encryptor.
-        // Magento ciphertext is prefixed with "<key version>:<cipher version>:".
-        if (preg_match('/^\d+:\d+:/', $config) === 1) {
+        if (preg_match('/^\d+:\d+:/', $value) === 1) {
             try {
-                $decrypted = $this->encryptor->decrypt($config);
+                $decrypted = $this->encryptor->decrypt($value);
             } catch (\Throwable $e) {
                 return null;
             }
             return $decrypted !== '' ? $decrypted : null;
         }
 
-        // Legacy plaintext values keep working until the key is saved again.
-        return $config;
+        return $value;
     }
 
     private function getConfigWithoutCache($path, $scope, $scopeId): ?string
@@ -982,14 +993,35 @@ class BTCPayService
 
     public function getWebhookSecret(int $magentoStoreId): ?string
     {
-        $secret = $this->getConfigWithoutCache('payment/btcpay/webhook_secret', 'default', 0);
-        if (!$secret) {
+        $stored = $this->getConfigWithoutCache(self::CONFIG_WEBHOOK_SECRET, 'default', 0);
+        if (!is_string($stored) || $stored === '') {
             $secret = $this->createWebhookSecret();
 
-            //Save globally
-            $this->configWriter->save('payment/btcpay/webhook_secret', $secret);
+            // Encrypt at rest. The value is written directly through the config
+            // writer, so Magento's encrypted backend model is not invoked.
+            $this->configWriter->save(
+                self::CONFIG_WEBHOOK_SECRET,
+                $this->encryptor->encrypt($secret)
+            );
+
+            return $secret;
         }
-        return $secret;
+
+        return $this->decryptConfigValue($stored);
+    }
+
+    /**
+     * Read the stored webhook secret without creating a new one.
+     *
+     * This is used when verifying an incoming webhook signature: a missing
+     * secret must not trigger creation of a new secret that BTCPay Server does
+     * not know about.
+     */
+    public function getStoredWebhookSecret(): ?string
+    {
+        return $this->decryptConfigValue(
+            $this->getConfigWithoutCache(self::CONFIG_WEBHOOK_SECRET, 'default', 0)
+        );
     }
 
     public function createWebhookSecret(): string

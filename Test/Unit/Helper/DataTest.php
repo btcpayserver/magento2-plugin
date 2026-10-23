@@ -48,6 +48,19 @@ class DataTest extends TestCase
         self::assertStringNotContainsString('<script>alert(2)</script>', $rendered);
     }
 
+    public function testWebhookSecretIsReadThroughService(): void
+    {
+        $btcPayService = $this->createMock(BTCPayService::class);
+        $btcPayService->expects(self::once())
+            ->method('getStoredWebhookSecret')
+            ->willReturn('decrypted-secret');
+
+        self::assertSame(
+            'decrypted-secret',
+            $this->createHelper($btcPayService)->getWebhookSecret()
+        );
+    }
+
     private function createHelper(BTCPayService $btcPayService): Data
     {
         $escaper = $this->createMock(Escaper::class);
