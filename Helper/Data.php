@@ -146,13 +146,13 @@ class Data
                                 foreach ($paymentMethods as $paymentMethod) {
                                     if ($paymentMethod->isEnabled()) {
                                         $enabledPaymentMethod = true;
+                                        break;
                                     }
+                                }
 
-                                    if (!$enabledPaymentMethod) {
-                                        $errors[] = __('No enabled payment method for this BTCPay store in BTCPay Server.');
-                                    } else {
-                                        // No errors
-                                    }
+                                // Only report an error when no payment method is enabled at all.
+                                if (!$enabledPaymentMethod) {
+                                    $errors[] = __('No enabled payment method for this BTCPay store in BTCPay Server.');
                                 }
                             }
                         } else {
